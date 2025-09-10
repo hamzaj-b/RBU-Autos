@@ -1,3 +1,4 @@
+import Image from "next/image";
 import React from "react";
 
 const page = () => {
@@ -5,34 +6,39 @@ const page = () => {
     <>
       <div className="min-h-screen bg-gray-100">
         <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="bg-white p-6 rounded-lg shadow-md">
+          <div className="bg-white flex justify-between p-6 rounded-lg shadow-md">
+            <div>
+             
             <div className="text-lg font-semibold text-gray-800">
               New Net Income
             </div>
             <div className="text-2xl font-bold text-green-600 mt-2">£8,245.00</div>
             <div className="text-sm text-gray-500 mt-2">+0.5% from last week</div>
             <div className="mt-4 flex items-center space-x-2">
-              <div className="w-10 h-10 bg-green-200 rounded-full flex items-center justify-center">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 text-green-600"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M5 15l7-7 7 7"
-                  ></path>
-                </svg>
-              </div>
+            <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center">
+          <Image
+            src="/imgs/previousArrow.png"
+            alt="Previous Arrow"
+            width={16}
+            height={16}
+            className="w-4 h-4 sm:w-5 sm:h-5 group-hover:filter group-hover:brightness-0 group-hover:invert"
+            quality={50}
+            loading="lazy"
+          />
+        </div>
               <div className="text-green-600">+0.5%</div>
             </div>
           </div>
+          <div className="w-1/2 flex justify-end items-end gap-2">
+          <div className="w-12 h-20 bg-black rounded-t-md"></div>
+          <div className="w-12 h-16 bg-black rounded-t-md"></div>
+          <div className="w-12 h-12 bg-green-500 rounded-t-md"></div>
+          <div className="w-12 h-20 bg-black rounded-t-md"></div>
+          </div>
+          </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-md">
+          <div className="bg-white p-6 rounded-lg shadow-md flex justify-between">
+            <div className="w-1/2">
             <div className="text-lg font-semibold text-gray-800">
               Total Bookings
             </div>
@@ -57,9 +63,17 @@ const page = () => {
               </div>
               <div className="text-blue-600">+10%</div>
             </div>
+            </div>
+            <div className="w-1/2 flex justify-end items-end gap-2">
+          <div className="w-12 h-14 bg-black rounded-t-md"></div>
+          <div className="w-12 h-16 bg-black rounded-t-md"></div>
+          <div className="w-12 h-22 bg-green-500 rounded-t-md"></div>
+          <div className="w-12 h-18 bg-black rounded-t-md"></div>
+          </div>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-md">
+          <div className="bg-white p-6 rounded-lg shadow-md flex justify-between">
+            <div className="w-1/2">
             <div className="text-lg font-semibold text-gray-800">
               Work Completed
             </div>
@@ -84,13 +98,31 @@ const page = () => {
               </div>
               <div className="text-yellow-600">+1.0%</div>
             </div>
+            </div>
+            <div className="w-1/2 flex justify-end items-end gap-2">
+          <div className="w-12 h-18 bg-green-500 rounded-t-md"></div>
+          <div className="w-12 h-14 bg-black rounded-t-md"></div>
+          <div className="w-12 h-22 bg-black rounded-t-md"></div>
+          <div className="w-12 h-14 bg-black rounded-t-md"></div>
+          </div>
           </div>
         </div>
         <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="col-span-3 bg-white p-6 rounded-lg shadow-md">
+            <div className="flex justify-between items-center">
             <div className="text-lg font-semibold text-gray-800">Overall Sales</div>
-            <div className="text-2xl font-bold text-green-600 mt-2">£56,345.98</div>
-            <div className="text-sm text-gray-500 mt-2">+23.5% from last month</div>
+            <div className=" border border-gray-300 rounded-md px-2 py-1 text-xs font-semibold text-gray-800">Last 7 Days</div>
+            </div>
+            <div className="flex justify-between items-center">
+              <div className="w-1/2 flex items-end gap-4">
+            <div className="text-xl  font-bold text-green-600 mt-2">£56,345.98</div>
+            <div className="flex gap-1 items-center text-xs bg-orange-500 rounded-full px-2 py-1 text-white ">+ 23.5%</div>
+            </div>
+            <div className=" w-1/2 flex justify-start gap-4">
+<div className="flex items-center gap-2 text-gray-500"> <span className="w-3 h-3 bg-yellow-primary rounded-full"></span> Organic </div>
+<div className="flex items-center gap-2 text-gray-500 "><span className="w-3 h-3 bg-yellow-primary rounded-full"></span> Proffessional </div>
+            </div>
+            </div>
             <div className="mt-4">
               <div className="h-32 bg-green-200 rounded-md"></div>
             </div>
@@ -132,7 +164,7 @@ const page = () => {
         </div>
         <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <div className="col-span-2 bg-white p-6 rounded-lg shadow-md">
-            <div className="text-lg font-semibold text-gray-800">Recent Orders</div>
+            <div className="text-lg font-semibold text-gray-600">Recent Orders</div>
             <table className="w-full mt-4 table-auto">
               <thead>
                 <tr>
@@ -146,14 +178,17 @@ const page = () => {
                   <th className="px-4 py-2 text-left text-sm text-gray-600">
                     Status
                   </th>
+                  <th className="px-4 py-2 text-left text-sm text-gray-600">
+                    Assign
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td className="px-4 py-2 text-sm">01</td>
-                  <td className="px-4 py-2 text-sm">Shirt Creme</td>
-                  <td className="px-4 py-2 text-sm">March 24, 2022 09:20 AM</td>
-                  <td className="px-4 py-2 text-sm text-green-500">Completed</td>
+                  <td className="px-4 py-2 text-sm text-gray-600">01</td>
+                  <td className="px-4 py-2 text-sm text-gray-600">Shirt Creme</td>
+                  <td className="px-4 py-2 text-sm text-gray-600">March 24, 2022 <br/> <span className="text-sm text-gray-400">09:20 AM</span> </td>
+                  <td className="flex justify-center px-2 py-1 text-sm rounded-full bg-gray-100 text-green-500">Completed</td>
                 </tr>
                 <tr>
                   <td className="px-4 py-2 text-sm">02</td>
