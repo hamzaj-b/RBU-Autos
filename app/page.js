@@ -1,16 +1,33 @@
 import Image from "next/image";
 import React from "react";
+import CustomShape from "./components/CustomShape";
+import Chart from "./components/Chart";
+import { FaEllipsisVertical } from "react-icons/fa6";
+import { FaRegCalendarAlt } from "react-icons/fa";
 
 const page = () => {
   return (
     <>
       <div className="min-h-screen bg-gray-100">
         <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="bg-white flex justify-between p-6 rounded-lg shadow-md">
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <div className="flex justify-between items-center">
+              <div>
+                <Image 
+        src="/Icon (2).png" 
+        alt="icon" 
+        width={40} 
+        height={20} 
+      /> </div>
+      <div>
+       <h3 className="text-xl font-semibold text-gray-800 ">New Net Income</h3>
+      </div>
+      <div>
+        <FaEllipsisVertical className="text-lg"/>
+      </div>
+            </div>
+          <div className="flex justify-between mt-2">
             <div>
-              <div className="text-lg font-semibold text-gray-800">
-                New Net Income
-              </div>
               <div className="text-2xl font-bold text-green-600 mt-2">
                 £8,245.00
               </div>
@@ -33,18 +50,32 @@ const page = () => {
               </div>
             </div>
             <div className="w-1/2 flex justify-end items-end gap-2">
-              <div className="w-12 h-20 bg-black rounded-t-md"></div>
-              <div className="w-12 h-16 bg-black rounded-t-md"></div>
-              <div className="w-12 h-12 bg-green-500 rounded-t-md"></div>
-              <div className="w-12 h-20 bg-black rounded-t-md"></div>
+              <CustomShape color="bg-black" width="w-12" height="h-20" />
+              <CustomShape color="bg-black" width="w-12" height="h-20" />
+              <CustomShape color="bg-green-500" width="w-12" height="h-24" />
+              <CustomShape color="bg-black" width="w-12" height="h-20" />
             </div>
           </div>
+          </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-md flex justify-between">
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <div className="flex justify-between items-center">
+              <div>
+                <Image 
+        src="/Icon (3).png" 
+        alt="icon" 
+        width={40} 
+        height={20} 
+      /> </div>
+      <div>
+       <h3 className="text-xl font-semibold text-gray-800">Total Bookings</h3>
+      </div>
+      <div>
+        <FaEllipsisVertical className="text-lg"/>
+      </div>
+            </div>
+          <div className="flex justify-between mt-2">
             <div className="w-1/2">
-              <div className="text-lg font-semibold text-gray-800">
-                Total Bookings
-              </div>
               <div className="text-2xl font-bold text-blue-600 mt-2">256</div>
               <div className="text-sm text-gray-500 mt-2">
                 +10% from last week
@@ -63,18 +94,32 @@ const page = () => {
               </div>
             </div>
             <div className="w-1/2 flex justify-end items-end gap-2">
-              <div className="w-12 h-14 bg-black rounded-t-md"></div>
-              <div className="w-12 h-16 bg-black rounded-t-md"></div>
-              <div className="w-12 h-22 bg-green-500 rounded-t-md"></div>
-              <div className="w-12 h-18 bg-black rounded-t-md"></div>
+              <CustomShape color="bg-black" width="w-12" height="h-18" />
+              <CustomShape color="bg-black" width="w-12" height="h-18" />
+              <CustomShape color="bg-green-500" width="w-12" height="h-24" />
+              <CustomShape color="bg-black" width="w-12" height="h-20" />
             </div>
           </div>
+          </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-md flex justify-between">
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <div className="flex justify-between items-center">
+              <div>
+                <Image 
+        src="/Icon (4).png" 
+        alt="icon" 
+        width={40} 
+        height={20} 
+      /> </div>
+      <div>
+       <h3 className="text-xl font-semibold text-gray-800">New Net Income</h3>
+      </div>
+      <div>
+        <FaEllipsisVertical className="text-lg"/>
+      </div>
+            </div>
+          <div className="flex justify-between mt-2">
             <div className="w-1/2">
-              <div className="text-lg font-semibold text-gray-800">
-                Work Completed
-              </div>
               <div className="text-2xl font-bold text-yellow-600 mt-2">
                 1,256
               </div>
@@ -95,12 +140,13 @@ const page = () => {
               </div>
             </div>
             <div className="w-1/2 flex justify-end items-end gap-2">
-              <div className="w-12 h-18 bg-green-500 rounded-t-md"></div>
-              <div className="w-12 h-14 bg-black rounded-t-md"></div>
-              <div className="w-12 h-22 bg-black rounded-t-md"></div>
-              <div className="w-12 h-14 bg-black rounded-t-md"></div>
+              <CustomShape color="bg-green-500" width="w-12" height="h-24" />
+              <CustomShape color="bg-black" width="w-12" height="h-18" />
+              <CustomShape color="bg-black" width="w-12" height="h-20" />
+              <CustomShape color="bg-black" width="w-12" height="h-18" />
             </div>
           </div>
+        </div>
         </div>
         <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="col-span-3 bg-white p-6 rounded-lg shadow-md">
@@ -108,8 +154,8 @@ const page = () => {
               <div className="text-lg font-semibold text-gray-800">
                 Overall Sales
               </div>
-              <div className=" border border-gray-300 rounded-md px-2 py-1 text-xs font-semibold text-gray-800">
-                Last 7 Days
+              <div className="flex gap-2 items-center border border-gray-300 rounded-md px-2 py-1 text-xs font-semibold text-gray-800">
+                Last 7 Days <FaRegCalendarAlt />
               </div>
             </div>
             <div className="flex justify-between items-center">
@@ -134,7 +180,7 @@ const page = () => {
               </div>
             </div>
             <div className="mt-4">
-              <div className="h-32 bg-green-200 rounded-md"></div>
+              <Chart/>
             </div>
           </div>
 
