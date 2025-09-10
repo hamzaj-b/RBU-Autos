@@ -9,23 +9,54 @@ import {
   Wrench,
 } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation"; // Import usePathname
 
 export default function Sidebar() {
+  // Get the current pathname
+  const pathname = usePathname();
+
   // Define the links and their associated data
   const links = [
     {
-      href: "#",
+      href: "/dashboard", // Adjusted href to be an actual route
       label: "Dashboard",
       icon: <LayoutDashboard />,
-      isActive: true,
     },
-    { href: "#", label: "Repair tracker", icon: <Wrench /> },
-    { href: "#", label: "Create Work Order", icon: <Users /> },
-    { href: "#", label: "Customers", icon: <Users /> },
-    { href: "#", label: "Bookings", icon: <CalendarDays /> },
-    { href: "#", label: "Diagnostics", icon: <Lightbulb /> },
-    { href: "#", label: "Staff Management", icon: <SquareUser /> },
-    { href: "#", label: "Marketing", icon: <SquareUser /> },
+    {
+      href: "/repair-tracker", // Adjusted href to be an actual route
+      label: "Repair tracker",
+      icon: <Wrench />,
+    },
+    {
+      href: "/work-order", // Adjusted href to be an actual route
+      label: "Create Work Order",
+      icon: <Users />,
+    },
+    {
+      href: "/customers",
+      label: "Customers",
+      icon: <Users />,
+    },
+    {
+      href: "/bookings", // Adjusted href to be an actual route
+      label: "Bookings",
+      icon: <CalendarDays />,
+    },
+    {
+      href: "/diagnostics", // Adjusted href to be an actual route
+      label: "Diagnostics",
+      icon: <Lightbulb />,
+    },
+    {
+      href: "/staff-management", // Adjusted href to be an actual route
+      label: "Staff Management",
+      icon: <SquareUser />,
+    },
+    {
+      href: "/marketing", // Adjusted href to be an actual route
+      label: "Marketing",
+      icon: <SquareUser />,
+    },
   ];
 
   return (
@@ -39,26 +70,30 @@ export default function Sidebar() {
         </h2>
       </div>
       <nav className="w-full">
-        {links.map((link, index) => (
-          <Link
-            key={index}
-            href={link.href}
-            className={`flex items-center px-4 py-3 mx-6 ${
-              link.isActive
-                ? "bg-yellow-primary text-black font-semibold rounded-lg"
-                : "text-gray-600 hover:bg-gray-100 rounded"
-            }`}
-          >
-            <span
-              className={`mr-2 ${
-                link.isActive ? "text-black" : "text-yellow-primary"
+        {links.map((link, index) => {
+          const isActive = pathname === link.href; // Check if the current route matches the link href
+
+          return (
+            <Link
+              key={index}
+              href={link.href}
+              className={`flex items-center px-4 py-3 mx-6 ${
+                isActive
+                  ? "bg-yellow-primary text-black font-semibold rounded-lg"
+                  : "text-gray-600 hover:bg-gray-100 rounded"
               }`}
             >
-              {link.icon}
-            </span>{" "}
-            {link.label}
-          </Link>
-        ))}
+              <span
+                className={`mr-2 ${
+                  isActive ? "text-black" : "text-yellow-primary"
+                }`}
+              >
+                {link.icon}
+              </span>{" "}
+              {link.label}
+            </Link>
+          );
+        })}
       </nav>
     </div>
   );

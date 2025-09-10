@@ -1,31 +1,30 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
-import { usePathname } from "next/navigation"; // Correct import
+import { usePathname } from "next/navigation";
 
 export default function ClientLayout({ children }) {
-  const pathname = usePathname(); // Get current path using usePathname
-  const [isAuthRoute, setIsAuthRoute] = useState(false);
+  const pathname = usePathname();
 
-  useEffect(() => {
-    // Update the state based on the current route
-    setIsAuthRoute(pathname.startsWith("/auth"));
-  }, [pathname]); // Update on pathname change
+  // Compute directly if this is an auth route or a print route
+  const isAuthRoute = pathname.startsWith("/auth");
+
+  // Conditionally render sidebar/header
+  const showSidebarAndHeader = !isAuthRoute;
 
   return (
     <div className="flex h-screen bg-gray-100">
-      {/* Conditionally render Sidebar and Header only if not on /auth routes */}
-      {!isAuthRoute && (
+      {/* Sidebar */}
+      {showSidebarAndHeader && (
         <div className="w-64">
           <Sidebar />
         </div>
       )}
 
       <div className="flex-1 flex flex-col">
-        {/* Conditionally render Header only if not on /auth routes */}
-        {!isAuthRoute && <Header />}
+        {/* Header */}
+        {showSidebarAndHeader && <Header />}
         <main className="flex-1 overflow-y-auto">{children}</main>
       </div>
     </div>
