@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Sidebar from "./components/Sidebar";
-import Header from "./components/Header";
+import Sidebar from "./components/shared/Sidebar";
+import Header from "./components/shared/Header";
 import { usePathname } from "next/navigation"; // Correct import
 
 export default function ClientLayout({ children }) {

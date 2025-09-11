@@ -34,3 +34,76 @@ body {
 button:hover {
   cursor: pointer;
 }
+
+
+/* 🔹 Style only the view switch button group */
+.fc .fc-toolbar-chunk .fc-button-group:first-of-type {
+  @apply flex gap-0 rounded-md overflow-hidden bg-gray-200 p-1;
+}
+
+/* 🔹 Reset ALL buttons (remove outlines, borders, default dark flash) */
+.fc .fc-button {
+  @apply px-4 py-2 text-sm font-medium text-black transition;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* 🔹 Remove default focus/active flash */
+.fc .fc-button:focus,
+.fc .fc-button:active,
+.fc .fc-button:visited {
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  color: black !important;
+}
+
+/* 🔹 Style ONLY view switch buttons (Month, Week, Day) */
+.fc .fc-dayGridMonth-button,
+.fc .fc-timeGridWeek-button,
+.fc .fc-timeGridDay-button {
+  @apply bg-gray-200;
+}
+
+.fc .fc-dayGridMonth-button:hover,
+.fc .fc-timeGridWeek-button:hover,
+.fc .fc-timeGridDay-button:hover {
+  @apply bg-gray-300;
+  color: black !important;
+}
+
+.fc .fc-dayGridMonth-button.fc-button-active,
+.fc .fc-timeGridWeek-button.fc-button-active,
+.fc .fc-timeGridDay-button.fc-button-active {
+  background: #DEE33E !important;
+  /* Highlight color */
+  color: black !important;
+  box-shadow: none !important;
+}
+
+/* 🔹 Prev/Next buttons */
+.fc .fc-prev-button,
+.fc .fc-next-button {
+  background: transparent !important;
+  color: #111 !important;
+  border-radius: 6px;
+  padding: 6px 10px !important;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+
+.fc .fc-prev-button:hover,
+.fc .fc-next-button:hover {
+  background: #e5e7eb !important;
+  /* Tailwind gray-200 */
+  color: black !important;
+  transform: scale(1.05);
+}
+
+.fc .fc-prev-button:active,
+.fc .fc-next-button:active {
+  background: #d1d5db !important;
+  /* Tailwind gray-300 */
+  transform: scale(0.95);
+}
