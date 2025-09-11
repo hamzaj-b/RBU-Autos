@@ -1,38 +1,41 @@
-"use client"; // if you’re using Next.js App Router
+"use client";
 
 import React from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
-import interactionPlugin from "@fullcalendar/interaction"; // for clickable dates
+import interactionPlugin from "@fullcalendar/interaction";
 import { CalendarDays } from "lucide-react";
 
-// Dummy JSON data
+// Updated events data with bookingName + title
 const eventsData = [
   {
     id: "1",
-    title: "Team Meeting",
+    bookingName: "John Doe",
+    title: "Vehicle Maintenance",
     start: "2025-09-12T10:00:00",
     end: "2025-09-12T11:30:00",
   },
   {
     id: "2",
-    title: "Project Deadline",
-    start: "2025-09-15",
-    allDay: true,
+    bookingName: "Jane Smith",
+    title: "Oil Change",
+    start: "2025-09-15T09:00:00",
+    end: "2025-09-15T10:00:00",
   },
   {
     id: "3",
+    bookingName: "David Wilson",
     title: "Client Call",
     start: "2025-09-16T14:00:00",
     end: "2025-09-16T15:00:00",
   },
   {
     id: "4",
+    bookingName: "Emily Johnson",
     title: "Workshop",
-    start: "2025-09-20",
-    end: "2025-09-23",
-    allDay: true,
+    start: "2025-09-20T09:00:00",
+    end: "2025-09-20T17:00:00",
   },
 ];
 
@@ -45,24 +48,33 @@ export default function CalendarView() {
         </div>
         <p className="text-yellow-bold">Calendar</p>
       </div>
+
       <FullCalendar
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
         initialView="dayGridMonth"
         headerToolbar={{
-          left: "prev,next", // only prev/next buttons
-          center: "today title", // today + month/year in center
-          right: "dayGridMonth,timeGridWeek,timeGridDay", // view switcher
+          left: "prev,next",
+          center: "today title",
+          right: "dayGridMonth,timeGridWeek,timeGridDay",
         }}
-        titleFormat={{ year: "numeric", month: "long" }} // "September 2025"
+        titleFormat={{ year: "numeric", month: "long" }}
         buttonText={{
-          today: "", // keep it labeled
+          today: "",
           month: "Month",
           week: "Week",
           day: "Day",
         }}
         events={eventsData}
-        eventColor="#3b82f6"
         height="auto"
+        eventContent={(arg) => {
+          const bookingName = arg.event.extendedProps.bookingName;
+          return (
+            <div className="bg-yellow-primary text-black rounded-md p-2 text-sm leading-tight">
+              <div className="font-semibold">{bookingName}</div>
+              <div className="text-xs">{arg.event.title}</div>
+            </div>
+          );
+        }}
       />
     </div>
   );
