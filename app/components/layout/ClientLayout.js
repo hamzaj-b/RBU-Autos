@@ -1,7 +1,7 @@
 "use client";
 
-import Sidebar from "./Sidebar";
-import Header from "./Header";
+import Sidebar from "../shared/Sidebar";
+import Header from "../shared/Header";
 import { usePathname } from "next/navigation";
 
 export default function ClientLayout({ children }) {

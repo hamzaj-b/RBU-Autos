@@ -18,7 +18,7 @@ export default function Sidebar() {
   // Define the links and their associated data
   const links = [
     {
-      href: "/dashboard", // Adjusted href to be an actual route
+      href: "/", // Adjusted href to be an actual route
       label: "Dashboard",
       icon: <LayoutDashboard />,
     },

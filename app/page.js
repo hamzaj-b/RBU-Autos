@@ -1,7 +1,7 @@
 import Image from "next/image";
 import React from "react";
-import CustomShape from "./components/CustomShape";
-import Chart from "./components/Chart";
+import CustomShape from "./components/app/CustomShape";
+import Chart from "./components/app/Chart";
 import { FaEllipsisVertical } from "react-icons/fa6";
 import { FaRegCalendarAlt } from "react-icons/fa";
 
@@ -13,29 +13,70 @@ const page = () => {
           <div className="bg-white p-6 rounded-lg shadow-md">
             <div className="flex justify-between items-center">
               <div>
-                <Image 
-        src="/Icon (2).png" 
-        alt="icon" 
-        width={40} 
-        height={20} 
-      /> </div>
-      <div>
-       <h3 className="text-xl font-semibold text-gray-800 ">New Net Income</h3>
-      </div>
-      <div>
-        <FaEllipsisVertical className="text-lg"/>
-      </div>
+                <Image src="/Icon (2).png" alt="icon" width={40} height={20} />{" "}
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold text-gray-800 ">
+                  New Net Income
+                </h3>
+              </div>
+              <div>
+                <FaEllipsisVertical className="text-lg" />
+              </div>
             </div>
-          <div className="flex justify-between mt-2">
-            <div>
-              <div className="text-2xl font-bold text-green-600 mt-2">
-                £8,245.00
+            <div className="flex justify-between mt-2">
+              <div>
+                <div className="text-2xl font-bold text-green-600 mt-2">
+                  £8,245.00
+                </div>
+                <div className="text-sm text-gray-500 mt-2">
+                  +0.5% from last week
+                </div>
+                <div className="mt-4 flex items-center space-x-2">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center">
+                    <Image
+                      src="/previous.png"
+                      alt="Previous Arrow"
+                      width={16}
+                      height={16}
+                      className="w-4 h-4 sm:w-5 sm:h-5 group-hover:filter group-hover:brightness-0 group-hover:invert"
+                      quality={50}
+                      loading="lazy"
+                    />
+                  </div>
+                  <div className="text-green-600">+0.5%</div>
+                </div>
               </div>
-              <div className="text-sm text-gray-500 mt-2">
-                +0.5% from last week
+              <div className="w-1/2 flex justify-end items-end gap-2">
+                <CustomShape color="bg-black" width="w-12" height="h-20" />
+                <CustomShape color="bg-black" width="w-12" height="h-20" />
+                <CustomShape color="bg-green-500" width="w-12" height="h-24" />
+                <CustomShape color="bg-black" width="w-12" height="h-20" />
               </div>
-              <div className="mt-4 flex items-center space-x-2">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center">
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <div className="flex justify-between items-center">
+              <div>
+                <Image src="/Icon (3).png" alt="icon" width={40} height={20} />{" "}
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold text-gray-800">
+                  Total Bookings
+                </h3>
+              </div>
+              <div>
+                <FaEllipsisVertical className="text-lg" />
+              </div>
+            </div>
+            <div className="flex justify-between mt-2">
+              <div className="w-1/2">
+                <div className="text-2xl font-bold text-blue-600 mt-2">256</div>
+                <div className="text-sm text-gray-500 mt-2">
+                  +10% from last week
+                </div>
+                <div className="mt-4 flex items-center space-x-2">
                   <Image
                     src="/previous.png"
                     alt="Previous Arrow"
@@ -45,108 +86,61 @@ const page = () => {
                     quality={50}
                     loading="lazy"
                   />
+                  <div className="text-blue-600">+10%</div>
                 </div>
-                <div className="text-green-600">+0.5%</div>
+              </div>
+              <div className="w-1/2 flex justify-end items-end gap-2">
+                <CustomShape color="bg-black" width="w-12" height="h-18" />
+                <CustomShape color="bg-black" width="w-12" height="h-18" />
+                <CustomShape color="bg-green-500" width="w-12" height="h-24" />
+                <CustomShape color="bg-black" width="w-12" height="h-20" />
               </div>
             </div>
-            <div className="w-1/2 flex justify-end items-end gap-2">
-              <CustomShape color="bg-black" width="w-12" height="h-20" />
-              <CustomShape color="bg-black" width="w-12" height="h-20" />
-              <CustomShape color="bg-green-500" width="w-12" height="h-24" />
-              <CustomShape color="bg-black" width="w-12" height="h-20" />
-            </div>
-          </div>
           </div>
 
           <div className="bg-white p-6 rounded-lg shadow-md">
             <div className="flex justify-between items-center">
               <div>
-                <Image 
-        src="/Icon (3).png" 
-        alt="icon" 
-        width={40} 
-        height={20} 
-      /> </div>
-      <div>
-       <h3 className="text-xl font-semibold text-gray-800">Total Bookings</h3>
-      </div>
-      <div>
-        <FaEllipsisVertical className="text-lg"/>
-      </div>
-            </div>
-          <div className="flex justify-between mt-2">
-            <div className="w-1/2">
-              <div className="text-2xl font-bold text-blue-600 mt-2">256</div>
-              <div className="text-sm text-gray-500 mt-2">
-                +10% from last week
+                <Image src="/Icon (4).png" alt="icon" width={40} height={20} />{" "}
               </div>
-              <div className="mt-4 flex items-center space-x-2">
-                <Image
-                  src="/previous.png"
-                  alt="Previous Arrow"
-                  width={16}
-                  height={16}
-                  className="w-4 h-4 sm:w-5 sm:h-5 group-hover:filter group-hover:brightness-0 group-hover:invert"
-                  quality={50}
-                  loading="lazy"
-                />
-                <div className="text-blue-600">+10%</div>
-              </div>
-            </div>
-            <div className="w-1/2 flex justify-end items-end gap-2">
-              <CustomShape color="bg-black" width="w-12" height="h-18" />
-              <CustomShape color="bg-black" width="w-12" height="h-18" />
-              <CustomShape color="bg-green-500" width="w-12" height="h-24" />
-              <CustomShape color="bg-black" width="w-12" height="h-20" />
-            </div>
-          </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <div className="flex justify-between items-center">
               <div>
-                <Image 
-        src="/Icon (4).png" 
-        alt="icon" 
-        width={40} 
-        height={20} 
-      /> </div>
-      <div>
-       <h3 className="text-xl font-semibold text-gray-800">New Net Income</h3>
-      </div>
-      <div>
-        <FaEllipsisVertical className="text-lg"/>
-      </div>
-            </div>
-          <div className="flex justify-between mt-2">
-            <div className="w-1/2">
-              <div className="text-2xl font-bold text-yellow-600 mt-2">
-                1,256
+                <h3 className="text-xl font-semibold text-gray-800">
+                  New Net Income
+                </h3>
               </div>
-              <div className="text-sm text-gray-500 mt-2">
-                +1.0% from last week
-              </div>
-              <div className="mt-4 flex items-center space-x-2">
-                <Image
-                  src="/previous.png"
-                  alt="Previous Arrow"
-                  width={16}
-                  height={16}
-                  className="w-4 h-4 sm:w-5 sm:h-5 group-hover:filter group-hover:brightness-0 group-hover:invert"
-                  quality={50}
-                  loading="lazy"
-                />
-                <div className="text-yellow-600">+1.0%</div>
+              <div>
+                <FaEllipsisVertical className="text-lg" />
               </div>
             </div>
-            <div className="w-1/2 flex justify-end items-end gap-2">
-              <CustomShape color="bg-green-500" width="w-12" height="h-24" />
-              <CustomShape color="bg-black" width="w-12" height="h-18" />
-              <CustomShape color="bg-black" width="w-12" height="h-20" />
-              <CustomShape color="bg-black" width="w-12" height="h-18" />
+            <div className="flex justify-between mt-2">
+              <div className="w-1/2">
+                <div className="text-2xl font-bold text-yellow-600 mt-2">
+                  1,256
+                </div>
+                <div className="text-sm text-gray-500 mt-2">
+                  +1.0% from last week
+                </div>
+                <div className="mt-4 flex items-center space-x-2">
+                  <Image
+                    src="/previous.png"
+                    alt="Previous Arrow"
+                    width={16}
+                    height={16}
+                    className="w-4 h-4 sm:w-5 sm:h-5 group-hover:filter group-hover:brightness-0 group-hover:invert"
+                    quality={50}
+                    loading="lazy"
+                  />
+                  <div className="text-yellow-600">+1.0%</div>
+                </div>
+              </div>
+              <div className="w-1/2 flex justify-end items-end gap-2">
+                <CustomShape color="bg-green-500" width="w-12" height="h-24" />
+                <CustomShape color="bg-black" width="w-12" height="h-18" />
+                <CustomShape color="bg-black" width="w-12" height="h-20" />
+                <CustomShape color="bg-black" width="w-12" height="h-18" />
+              </div>
             </div>
           </div>
-        </div>
         </div>
         <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="col-span-3 bg-white p-6 rounded-lg shadow-md">
@@ -180,7 +174,7 @@ const page = () => {
               </div>
             </div>
             <div className="mt-4">
-              <Chart/>
+              <Chart />
             </div>
           </div>
 
