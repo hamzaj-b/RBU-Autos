@@ -2,10 +2,11 @@ import Image from "next/image";
 import React from "react";
 import CustomShape from "./components/CustomShape";
 import Chart from "./components/Chart";
-import { FaEllipsisVertical } from "react-icons/fa6";
-import { FaRegCalendarAlt } from "react-icons/fa";
+import ServiceReport from "./components/ServicesChart";
+import RecentWorkOrder from "./components/RecentWorkOrder";
 
 const page = () => {
+  
   return (
     <>
       <div className="min-h-screen bg-gray-100">
@@ -23,7 +24,7 @@ const page = () => {
        <h3 className="text-xl font-semibold text-gray-800 ">New Net Income</h3>
       </div>
       <div>
-        <FaEllipsisVertical className="text-lg"/>
+       ...
       </div>
             </div>
           <div className="flex justify-between mt-2">
@@ -50,10 +51,10 @@ const page = () => {
               </div>
             </div>
             <div className="w-1/2 flex justify-end items-end gap-2">
+            <CustomShape color="bg-green-500" width="w-12" height="h-24" />
+              <CustomShape color="bg-black" width="w-12" height="h-18" />
               <CustomShape color="bg-black" width="w-12" height="h-20" />
-              <CustomShape color="bg-black" width="w-12" height="h-20" />
-              <CustomShape color="bg-green-500" width="w-12" height="h-24" />
-              <CustomShape color="bg-black" width="w-12" height="h-20" />
+              <CustomShape color="bg-black" width="w-12" height="h-18" />
             </div>
           </div>
           </div>
@@ -71,7 +72,7 @@ const page = () => {
        <h3 className="text-xl font-semibold text-gray-800">Total Bookings</h3>
       </div>
       <div>
-        <FaEllipsisVertical className="text-lg"/>
+        ...
       </div>
             </div>
           <div className="flex justify-between mt-2">
@@ -115,7 +116,7 @@ const page = () => {
        <h3 className="text-xl font-semibold text-gray-800">New Net Income</h3>
       </div>
       <div>
-        <FaEllipsisVertical className="text-lg"/>
+        ...
       </div>
             </div>
           <div className="flex justify-between mt-2">
@@ -148,14 +149,14 @@ const page = () => {
           </div>
         </div>
         </div>
-        <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="col-span-3 bg-white p-6 rounded-lg shadow-md">
+        <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="col-span-2 bg-white p-6 rounded-lg shadow-md">
             <div className="flex justify-between items-center">
               <div className="text-lg font-semibold text-gray-800">
                 Overall Sales
               </div>
               <div className="flex gap-2 items-center border border-gray-300 rounded-md px-2 py-1 text-xs font-semibold text-gray-800">
-                Last 7 Days <FaRegCalendarAlt />
+                Last 7 Days 
               </div>
             </div>
             <div className="flex justify-between items-center">
@@ -179,13 +180,14 @@ const page = () => {
                 </div>
               </div>
             </div>
-            <div className="mt-4">
+            <div className=" mt-4">
               <Chart/>
             </div>
           </div>
 
-          <div className="col-span-1/2 bg-white p-6 rounded-lg shadow-md">
-            <div className="text-lg font-semibold text-gray-800">
+          <div className="col-span-1 bg-white p-6 rounded-lg shadow-md">
+          <ServiceReport/>
+            {/* <div className="text-lg font-semibold text-gray-800">
               Service Report
             </div>
             <div className="flex justify-between items-center mt-4">
@@ -217,56 +219,12 @@ const page = () => {
               <div className="w-1/3 text-center text-sm text-gray-600">
                 Full Service
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
         <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <div className="col-span-2 bg-white p-6 rounded-lg shadow-md">
-            <div className="text-lg font-semibold text-gray-600">
-              Recent Orders
-            </div>
-            <table className="w-full mt-4 table-auto">
-              <thead>
-                <tr>
-                  <th className="px-4 py-2 text-left text-sm text-gray-600">
-                    No
-                  </th>
-                  <th className="px-4 py-2 text-left text-sm text-gray-600">
-                    Customer
-                  </th>
-                  <th className="px-4 py-2 text-left text-sm text-gray-600">
-                    Order Date
-                  </th>
-                  <th className="px-4 py-2 text-left text-sm text-gray-600">
-                    Status
-                  </th>
-                  <th className="px-4 py-2 text-left text-sm text-gray-600">
-                    Assign
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td className="px-4 py-2 text-sm text-gray-600">01</td>
-                  <td className="px-4 py-2 text-sm text-gray-600">
-                    Shirt Creme
-                  </td>
-                  <td className="px-4 py-2 text-sm text-gray-600">
-                    March 24, 2022 <br />{" "}
-                    <span className="text-sm text-gray-400">09:20 AM</span>{" "}
-                  </td>
-                  <td className="flex justify-center px-2 py-1 text-sm rounded-full bg-gray-100 text-green-500">
-                    Completed
-                  </td>
-                </tr>
-                <tr>
-                  <td className="px-4 py-2 text-sm">02</td>
-                  <td className="px-4 py-2 text-sm">Shirt Creme</td>
-                  <td className="px-4 py-2 text-sm">March 24, 2022 09:20 AM</td>
-                  <td className="px-4 py-2 text-sm text-yellow-500">Pending</td>
-                </tr>
-              </tbody>
-            </table>
+          <RecentWorkOrder  />
           </div>
 
           <div className="bg-white p-6 rounded-lg shadow-md">
