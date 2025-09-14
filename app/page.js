@@ -5,9 +5,35 @@ import Chart from "./components/app/Chart";
 import ServiceReport from "./components/ServicesChart";
 import RecentWorkOrder from "./components/RecentWorkOrder";
 import CustomShape from "./components/app/CustomShape";
-
+import { IoEllipsisVertical } from "react-icons/io5";
+import { FaRegCalendarAlt } from "react-icons/fa";
 const page = () => {
-  
+   const dummyData = [
+        {
+          id: "01",
+          customer: "Shirt Creme",
+          image: "/user1.png",
+          orderDate: "March 24, 2022",
+          orderTime: "09:20 AM",
+          status: "Completed",
+        },
+        {
+          id: "02",
+          customer: "Shirt Creme",
+          image: "/user1.png",
+          orderDate: "March 24, 2022",
+          orderTime: "09:20 AM",
+          status: "Pending",
+        },
+        {
+          id: "03",
+          customer: "#A4064B",
+          image: "/user1.png",
+          orderDate: "March 24, 2022",
+          orderTime: "09:20 AM",
+          status: "Pending",
+        },
+      ];
   return (
     <>
       <div className="min-h-screen bg-gray-100">
@@ -25,7 +51,7 @@ const page = () => {
        <h3 className="text-xl font-semibold text-gray-800 ">New Net Income</h3>
       </div>
       <div>
-       ...
+       <IoEllipsisVertical/>
       </div>
             </div>
             <div className="flex justify-between mt-2">
@@ -71,7 +97,7 @@ const page = () => {
                 </h3>
               </div>
               <div>
-                ...
+                <IoEllipsisVertical/>
               </div>
             </div>
             <div className="flex justify-between mt-2">
@@ -115,7 +141,7 @@ const page = () => {
        <h3 className="text-xl font-semibold text-gray-800">New Net Income</h3>
       </div>
       <div>
-        ...
+        <IoEllipsisVertical/>
       </div>
             </div>
             <div className="flex justify-between mt-2">
@@ -156,7 +182,7 @@ const page = () => {
                 Overall Sales
               </div>
               <div className="flex gap-2 items-center border border-gray-300 rounded-md px-2 py-1 text-xs font-semibold text-gray-800">
-                Last 7 Days 
+                Last 7 Days <FaRegCalendarAlt />
               </div>
             </div>
             <div className="flex justify-between items-center">
@@ -224,7 +250,7 @@ const page = () => {
         </div>
         <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <div className="col-span-2 bg-white p-6 rounded-lg shadow-md">
-          <RecentWorkOrder  />
+          <RecentWorkOrder data={dummyData} containerWidth="w-full" heading="Recent Orders" />;
           </div>
 
           <div className="bg-white p-6 rounded-lg shadow-md">

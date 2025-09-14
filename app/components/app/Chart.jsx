@@ -24,17 +24,17 @@ const Chart = () => {
 
       {/* X-axis labels and bars */}
       <div className="flex-col justify-between items-start">
-        <div className='flex justify-center gap-4 '>
-            <CustomShape color="bg-gray-100" width="w-20" height="h-60" />
-            <CustomShape color="bg-gray-100" width="w-20" height="h-60" />
-            <CustomShape color="bg-gray-100" width="w-20" height="h-60" />
-            <CustomShape color="bg-yellow-primary" width="w-20" height="h-60" />
-            <CustomShape color="bg-gray-100" width="w-20" height="h-60" />
-            <CustomShape color="bg-gray-100" width="w-20" height="h-60" />
-            <CustomShape color="bg-gray-100" width="w-20" height="h-60" />
+        <div className='grid grid-cols-7 gap-4'>
+            <CustomShape color="bg-gray-100" width="w-18" height="h-60" />
+            <CustomShape color="bg-gray-100" width="w-18" height="h-60" />
+            <CustomShape color="bg-gray-100" width="w-18" height="h-60" />
+            <CustomShape color="bg-yellow-primary" width="w-18" height="h-60" />
+            <CustomShape color="bg-gray-100" width="w-18" height="h-60" />
+            <CustomShape color="bg-gray-100" width="w-18" height="h-60" />
+            <CustomShape color="bg-gray-100" width="w-18" height="h-60" />
 
         </div>
-      <div className=" flex justify-center gap-8 items-start mt-10">
+      <div className=" grid grid-cols-7 gap-4 mt-10">
         {dataPoints.map((point) => (
           <div key={point.month} className="flex flex-col items-center">
             <div

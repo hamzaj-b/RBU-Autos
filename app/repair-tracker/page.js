@@ -1,6 +1,7 @@
 "use client";
 import { Search, SlidersHorizontal } from "lucide-react";
 import { useState } from "react";
+import RecentWorkOrder from "../components/RecentWorkOrder";
 
 export default function RepairTracker() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -100,7 +101,8 @@ export default function RepairTracker() {
         </div>
       </div>
       <div className="bg-white p-2 rounded-lg">
-        <h2 className="text-lg p-4 text-gray-500 font-semibold mb-4">
+        <RecentWorkOrder data={dummyData} containerWidth="w-full" />
+        {/* <h2 className="text-lg p-4 text-gray-500 font-semibold mb-4">
           Recent Work Order
         </h2>
         <div className="grid grid-cols-5 gap-4 bg-gray-200 rounded-2xl py-4 px-4 mx-2 font-medium text-gray-600 mb-2">
@@ -139,7 +141,7 @@ export default function RepairTracker() {
               className="p-1 rounded-lg border border-gray-300"
             />
           </div>
-        ))}
+        ))} */}
       </div>
     </div>
   );
