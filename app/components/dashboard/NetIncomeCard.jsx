@@ -1,0 +1,122 @@
+"use client";
+import React from "react";
+import { MoreVertical, ArrowDown } from "lucide-react";
+
+// Tiny stacked avatars (dummy)
+function Avatars() {
+  return (
+    <div className="flex -space-x-2">
+      <img
+        src="/profile.png"
+        alt="u1"
+        className="h-6 w-6 rounded-full ring-2 ring-white"
+      />
+      <img
+        src="user1.png"
+        alt="u2"
+        className="h-6 w-6 rounded-full ring-2 ring-white"
+      />
+      <span className="inline-flex h-6 min-w-[24px] items-center justify-center rounded-full bg-[#B8BF25] px-1 text-[11px] font-semibold text-white ring-2 ring-white">
+        25+
+      </span>
+    </div>
+  );
+}
+
+// Improved SVG micro bar chart with even spacing
+function MiniBars({ data = [54, 22, 96, 44], accentIndex = 1 }) {
+  const w = 140; // svg width
+  const h = 80; // svg height
+  const padX = 12;
+  const barW = 18;
+  const gap = 18;
+  const radius = 4;
+  const max = Math.max(...data, 1);
+
+  return (
+    <svg
+      width={w}
+      height={h}
+      viewBox={`0 0 ${w} ${h}`}
+      className="block overflow-visible"
+    >
+      {data.map((v, i) => {
+        const x = padX + i * (barW + gap);
+        const barH = Math.round((v / max) * (h - 12));
+        const y = h - barH;
+        const isAccent = i === accentIndex;
+        const fill = isAccent ? "#B8BF25" : "#0D1426"; // lime vs navy
+        return (
+          <rect
+            key={i}
+            x={x}
+            y={y}
+            width={barW}
+            height={barH}
+            rx={radius}
+            ry={radius}
+            fill={fill}
+          />
+        );
+      })}
+    </svg>
+  );
+}
+
+const currency = (n) =>
+  new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(
+    n
+  );
+
+export default function NewNetIncomeCard({
+  title = "New Net Income",
+  amount = 8245,
+  deltaPct = -0.5,
+  bars = [62, 28, 95, 46],
+  accentIndex = 1,
+}) {
+  const down = deltaPct < 0;
+  const pctText = `${down ? "-" : "+"}${Math.abs(deltaPct).toLocaleString(
+    undefined,
+    { maximumFractionDigits: 1 }
+  )}%`;
+
+  return (
+    <div className="w-full rounded-[18px] bg-white p-5 shadow-sm ring-1 ring-gray-200/70 flex flex-col justify-between">
+      {/* top row */}
+      <div className="flex items-start justify-between">
+        <div className="flex items-center gap-3">
+          <img src="/icon2.png" alt="" />
+          <div className="text-[22px] font-bold tracking-tight text-[#0a1733]">
+            {title}
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <Avatars />
+          <button className="grid h-8 w-8 place-items-center rounded-full text-[#9AA3AF] hover:bg-gray-50">
+            <MoreVertical className="h-5 w-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* amount row */}
+      <div className="mt-4 flex items-end justify-between">
+        <div>
+          <div className="text-[32px] font-bold tracking-tight text-[#0a1733]">
+            {currency(amount)}
+          </div>
+          <div className="mt-3 flex items-center gap-2 text-[15px]">
+            <img src="/previous.png" width={18} alt="" />
+            <span className="text-[#9AA20C] font-semibold">{pctText}</span>
+            <span className="text-[#8f97a3]">from last week</span>
+          </div>
+        </div>
+
+        {/* mini chart */}
+        <div className="shrink-0 rounded-2xl bg-white pr-1">
+          <MiniBars data={bars} accentIndex={accentIndex} />
+        </div>
+      </div>
+    </div>
+  );
+}

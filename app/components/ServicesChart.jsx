@@ -11,8 +11,8 @@ const ServiceReport = () => {
     datasets: [
       {
         data: [47, 28, 18], // Corresponding to the values in the image
-        backgroundColor: ['#F9D84D', '#89C56B', '#E6E6E6'], // Yellow, Green, and Light Gray
-        borderColor: ['#F9D84D', '#89C56B', '#E6E6E6'],
+        backgroundColor: ['#F9D84D', '#89C56B', '#0d1426'], // Yellow, Green, and Light Gray
+        borderColor: ['#F9D84D', '#89C56B', '#0d1426'],
         borderWidth: 1,
       },
     ],
@@ -53,7 +53,7 @@ const ServiceReport = () => {
           <span className='text-xs text-gray-500'>Tuning</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          <div style={{ width: '14px', height: '14px', backgroundColor: '#FFFFFF', marginRight: '5px', borderRadius:'100%' }}></div>
+          <div style={{ width: '14px', height: '14px', backgroundColor: '#0d1426', marginRight: '5px', borderRadius:'100%' }}></div>
           <span className='text-xs text-gray-500' >Full Service</span>
         </div>
       </div>
