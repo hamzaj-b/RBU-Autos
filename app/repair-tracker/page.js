@@ -102,46 +102,6 @@ export default function RepairTracker() {
       </div>
       <div className="bg-white p-2 rounded-lg">
         <RecentWorkOrder data={dummyData} containerWidth="w-full" />
-        {/* <h2 className="text-lg p-4 text-gray-500 font-semibold mb-4">
-          Recent Work Order
-        </h2>
-        <div className="grid grid-cols-5 gap-4 bg-gray-200 rounded-2xl py-4 px-4 mx-2 font-medium text-gray-600 mb-2">
-          <span>No</span>
-          <span>Customer</span>
-          <span>Order Date</span>
-          <span>Status</span>
-          <span>Assign</span>
-        </div>
-        {filteredData.map((item) => (
-          <div
-            key={item.id}
-            className="grid grid-cols-5 gap-4 py-2 mx-6 border-b border-gray-200"
-          >
-            <span>{item.id}</span>
-            <span className="flex items-center gap-2">
-              <img src={item.image} width={50} alt="" />
-              {item.customer}
-            </span>
-            <span className="flex flex-col">
-              {item.orderDate}
-              <span className="text-gray-500">{item.orderTime}</span>
-            </span>
-            <span
-              className={`px-4 py-1 rounded-full items-center justify-center flex ${
-                item.status === "Completed"
-                  ? "bg-green-100 text-yellow-bold"
-                  : "bg-yellow-100 text-yellow-600"
-              }`}
-            >
-              {item.status}
-            </span>
-            <input
-              type="text"
-              placeholder="Select Employee"
-              className="p-1 rounded-lg border border-gray-300"
-            />
-          </div>
-        ))} */}
       </div>
     </div>
   );

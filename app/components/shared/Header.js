@@ -3,14 +3,35 @@
 import { Bell, Mail, Search } from "lucide-react";
 import Link from "next/link";
 
-export default function Header() {
+export default function Header({ toggleSidebar, className = "" }) {
   return (
-    <div className="w-full bg-white flex items-center px-6 py-4">
-      <div className="flex-1">
+    <div className={`w-1/3 bg-white flex items-center px-6 py-4 ${className}`}>
+      <div>
+      <button
+            className="md:hidden text-black rounded"
+            onClick={toggleSidebar}
+          >
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M4 6h16M4 12h16m-7 6h7"
+              />
+            </svg>
+          </button>
+      </div>
+      <div className="hidden md:block md:flex-1">
         <h2 className="text-xl font-semibold text-gray-800">Hi, User</h2>
         <p className="text-sm text-gray-500">Let's check your Garage today</p>
       </div>
-      <div className="flex-1">
+      <div className="hidden md:block md:flex-1">
         <div className="relative">
           <input
             type="text"
@@ -18,26 +39,26 @@ export default function Header() {
             className="w-full px-10 py-2 bg-gray-100 text-gray-800 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <span className="absolute left-3 top-2 text-gray-500">
-            <Search />{" "}
+            <Search />
           </span>
           <span className="absolute right-3 top-2 text-gray-500">⌘K</span>
         </div>
       </div>
       <div className="flex-1 flex items-center space-x-4 justify-end">
-        <button className="text-gray-600 hover:text-gray-800">
+        <button className="relative text-gray-600 hover:text-gray-800">
           <span className="text-xl">
             <Mail />
           </span>
-          <span className="absolute w-2 h-2 bg-red-500 rounded-full top-7 right-41"></span>
+          <span className="absolute w-2 h-2 bg-red-500 rounded-full top-1 right-[-6px]"></span>
         </button>
-        <button className="text-gray-600 hover:text-gray-800">
+        <button className="relative text-gray-600 hover:text-gray-800">
           <span className="text-xl">
             <Bell />
           </span>
-          <span className="absolute w-2 h-2 bg-red-500 rounded-full top-7 right-50"></span>
+          <span className="absolute w-2 h-2 bg-red-500 rounded-full top-1 right-[-6px]"></span>
         </button>
         <div className="flex items-center space-x-2">
-          <Link href={"/auth/login"}>
+          <Link href="/auth/login">
             <img
               src="/profile.png"
               alt="Profile"

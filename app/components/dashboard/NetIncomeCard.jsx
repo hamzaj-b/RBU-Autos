@@ -82,31 +82,36 @@ export default function NewNetIncomeCard({
   )}%`;
 
   return (
-    <div className="w-full rounded-[18px] bg-white p-5 shadow-sm ring-1 ring-gray-200/70 flex flex-col justify-between">
+    <div className="w-full rounded-[18px] bg-white p-4 sm:p-5 shadow-sm ring-1 ring-gray-200/70 flex flex-col justify-between">
       {/* top row */}
       <div className="flex items-start justify-between">
-        <div className="flex items-center gap-3">
-          <img src="/icon2.png" alt="" />
-          <div className="text-[22px] font-bold tracking-tight text-[#0a1733]">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <img src="/icon2.png" alt="" className="w-5 sm:w-auto" />
+          <div className="text-lg sm:text-[22px] font-bold tracking-tight text-[#0a1733]">
             {title}
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <Avatars />
-          <button className="grid h-8 w-8 place-items-center rounded-full text-[#9AA3AF] hover:bg-gray-50">
-            <MoreVertical className="h-5 w-5" />
+          <button className="grid h-7 sm:h-8 w-7 sm:w-8 place-items-center rounded-full text-[#9AA3AF] hover:bg-gray-50">
+            <MoreVertical className="h-4 sm:h-5 w-4 sm:w-5" />
           </button>
         </div>
       </div>
 
       {/* amount row */}
-      <div className="mt-4 flex items-end justify-between">
+      <div className="mt-3 sm:mt-4 flex items-end justify-between">
         <div>
-          <div className="text-[32px] font-bold tracking-tight text-[#0a1733]">
+          <div className="text-xl sm:text-[32px] font-bold tracking-tight text-[#0a1733]">
             {currency(amount)}
           </div>
-          <div className="mt-3 flex items-center gap-2 text-[15px]">
-            <img src="/previous.png" width={18} alt="" />
+          <div className="mt-2 sm:mt-3 flex items-center gap-1 sm:gap-2 text-sm sm:text-[15px]">
+          <img 
+  src="/previous.png" 
+  width={14}
+  className="sm:w-[18px]"  
+  alt="" 
+/>
             <span className="text-[#9AA20C] font-semibold">{pctText}</span>
             <span className="text-[#8f97a3]">from last week</span>
           </div>

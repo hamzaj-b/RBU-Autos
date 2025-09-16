@@ -66,7 +66,7 @@ const page = () => {
             ;
           </div>
 
-          <WeeklyTransactionsCard />
+          {/* <WeeklyTransactionsCard /> */}
         </div>
       </div>
     </>

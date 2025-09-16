@@ -1,32 +1,57 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Sidebar from "./components/shared/Sidebar";
 import Header from "./components/shared/Header";
-import { usePathname } from "next/navigation"; // Correct import
+import { usePathname } from "next/navigation";
 
 export default function ClientLayout({ children }) {
-  const pathname = usePathname(); // Get current path using usePathname
+  const pathname = usePathname();
   const [isAuthRoute, setIsAuthRoute] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const sidebarRef = useRef(null);
 
   useEffect(() => {
-    // Update the state based on the current route
     setIsAuthRoute(pathname.startsWith("/auth"));
-  }, [pathname]); // Update on pathname change
+  }, [pathname]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
+        setIsSidebarOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
 
   return (
     <div className="flex h-screen bg-gray-100">
-      {/* Conditionally render Sidebar and Header only if not on /auth routes */}
       {!isAuthRoute && (
-        <div className="w-64">
-          <Sidebar />
-        </div>
+        <>
+          <div
+            ref={sidebarRef}
+            className={`fixed inset-y-0 left-0 transform ${
+              isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+            } md:translate-x-0 w-64 h-screen bg-white shadow-lg flex flex-col items-center py-6 transition-transform duration-300 z-40`}
+          >
+            <Sidebar />
+          </div>
+        </>
       )}
 
       <div className="flex-1 flex flex-col">
-        {/* Conditionally render Header only if not on /auth routes */}
-        {!isAuthRoute && <Header />}
-        <main className="flex-1 overflow-y-auto">{children}</main>
+        {!isAuthRoute && (
+          <Header toggleSidebar={toggleSidebar} className={`md:ml-auto md:w-5/6 ${isSidebarOpen ? "block" : "w-full"}`} />
+        )}
+        <main className="flex-1 overflow-y-auto md:w-5/6 md:ml-auto">{children}</main>
       </div>
     </div>
   );
