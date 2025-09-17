@@ -3,13 +3,11 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  --color-yellow-primary: #3bb5ff;
-  --color-yellow-bold: #3bb5ff;
   --color-blue-theme: #3bb5ff;
   --color-blue-bold: #164a6a;
   --color-blue-light: #dcf2fc;
 
-  /* Added the yellow-primary color */
+  /* Added the blue-theme color */
 }
 
 @theme inline {
@@ -17,12 +15,12 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --color-yellow-primary: var(--color-yellow-primary);
-  --color-yellow-bold: var(--color-yellow-bold);
+  --color-blue-theme: var(--color-blue-theme);
+  --color-blue-bold: var(--color-blue-bold);
   --color-blue: var(--color-blue-theme);
   --color-darkBlue: var(--color-blue-bold);
   --color-lightBlue: var(--color-blue-light);
-  /* Set the yellow-primary color */
+  /* Set the blue-theme color */
 }
 
 @media (prefers-color-scheme: dark) {

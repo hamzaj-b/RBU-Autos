@@ -1,6 +1,7 @@
 "use client";
 import { Search, SlidersHorizontal } from "lucide-react";
 import { useState } from "react";
+import EmployeeWorkOrder from "../components/EmployeeWorkOrder";
 
 export default function RepairTracker() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -48,28 +49,31 @@ export default function RepairTracker() {
   });
 
   return (
-    <div className="container mx-auto p-8 text-black">
+    <div className="container mx-auto p-6 text-black">
       <div className="bg-white p-4 rounded-lg mb-4">
         <div className="flex space-x-4 mb-4">
           <div className="relative w-full">
             <input
               type="text"
               placeholder="Search vehicle"
-              className="w-full px-10 py-4 rounded-lg bg-gray-100"
+              className="w-full px-14 py-2 md:py-4 rounded-lg bg-gray-100 text-sm md:text-base"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-            <span className="absolute left-3 top-4 text-gray-500">
+            <span className=" absolute left-3 top-2 md:top-4 text-gray-500">
               <Search />{" "}
             </span>
           </div>
-          <button className="p-2 px-4 rounded-lg bg-gray-100 flex items-center text-gray-500">
+          <button className=" md:py-2 px-2 md:px-4 rounded-lg bg-gray-100 flex items-center text-gray-500">
             <SlidersHorizontal />
-            Filters
+            <span className="hidden md:block">Filters</span>
           </button>
         </div>
       </div>
-      <div className="bg-white p-2 rounded-lg">
+      <div className="p-2 bg-white">
+        <EmployeeWorkOrder data={dummyData}/>
+      </div>
+      {/* <div className="bg-white p-2 rounded-lg">
         <h2 className="text-lg p-4 text-gray-500 font-semibold mb-4">
           Recent Work Order
         </h2>
@@ -113,7 +117,7 @@ export default function RepairTracker() {
             </div>
           </div>
         ))}
-      </div>
+      </div> */}
     </div>
   );
 }

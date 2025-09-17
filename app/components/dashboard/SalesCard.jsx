@@ -301,7 +301,6 @@ export default function OverallSalesCard() {
                     </linearGradient>
                   </defs>
 
-                  {/* Hide internal X ticks to avoid duplicate months */}
                   <XAxis
                     dataKey="month"
                     axisLine={false}
@@ -329,7 +328,6 @@ export default function OverallSalesCard() {
                     cursor={{ stroke: "#e5e7eb" }}
                   />
 
-                  {/* Series (conditional render via legend toggles) */}
                   {show.professional && (
                     <Area
                       type="monotone"

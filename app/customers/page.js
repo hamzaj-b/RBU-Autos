@@ -106,8 +106,8 @@ const Home = () => {
   };
 
   return (
-    <div className="min-h-screen text-black p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="container min-h-screen mx-auto text-black p-6">
+      <div className=" mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <select className="bg-white border border-gray-300 rounded-md px-4 py-2 text-sm">
@@ -132,25 +132,23 @@ const Home = () => {
         </div>
 
         {/* Search */}
-        <div className="bg-white rounded-lg flex gap-4 shadow-sm p-6 mb-6">
+        <div className="bg-white p-4 rounded-lg mb-4">
+        <div className="flex space-x-4 mb-4">
           <div className="relative w-full">
             <input
               type="text"
-              placeholder="Search by name, email, or others..."
+              placeholder="Search vehicle"
+              className="w-full px-14 py-2 md:py-4 rounded-lg bg-gray-100 text-sm md:text-base"
               value={searchTerm}
-              onChange={handleSearch}
-              className="block w-full pl-10 pr-3 py-2 rounded-md bg-gray-100 focus:ring-blue-500"
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
-            <span className="absolute left-3 top-2 text-gray-500">
+            <span className=" absolute left-3 top-2 md:top-4 text-gray-500">
               <Search />{" "}
             </span>
           </div>
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center space-x-2 bg-gray-100 text-gray-500 rounded-md px-4 py-2 text-sm"
-          >
-            <SlidersHorizontal className="w-5 h-5" />
-            <span>Filters</span>
+          <button className=" md:py-2 px-2 md:px-4 rounded-lg bg-gray-100 flex items-center text-gray-500">
+            <SlidersHorizontal />
+            <span className="hidden md:block">Filters</span>
           </button>
         </div>
 
@@ -338,6 +336,7 @@ const Home = () => {
               <ChevronRight className="text-gray-500" />
             </button>
           </div>
+        </div>
         </div>
       </div>
     </div>

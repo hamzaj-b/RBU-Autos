@@ -44,9 +44,9 @@ export default function CalendarView() {
     <div className="p-8 bg-white text-black rounded-2xl shadow-md">
       <div className="text-2xl font-bold mb-4 flex items-center gap-2">
         <div className="p-2 border border-darkBlue rounded-full">
-          <CalendarDays className="text-yellow-bold" />
+          <CalendarDays className="text-blue-bold" />
         </div>
-        <p className="text-yellow-bold">Calendar</p>
+        <p className="text-blue-bold">Calendar</p>
       </div>
 
       <FullCalendar
@@ -69,7 +69,7 @@ export default function CalendarView() {
         eventContent={(arg) => {
           const bookingName = arg.event.extendedProps.bookingName;
           return (
-            <div className="bg-yellow-primary text-black rounded-md p-2 text-sm leading-tight">
+            <div className="bg-blue-theme text-black rounded-md p-2 text-sm leading-tight">
               <div className="font-semibold">{bookingName}</div>
               <div className="text-xs">{arg.event.title}</div>
             </div>

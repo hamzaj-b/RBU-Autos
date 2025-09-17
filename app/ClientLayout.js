@@ -40,7 +40,7 @@ export default function ClientLayout({ children }) {
             ref={sidebarRef}
             className={`fixed inset-y-0 left-0 transform ${
               isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-            } md:translate-x-0 w-64 h-screen bg-white shadow-lg flex flex-col items-center py-6 transition-transform duration-300 z-40`}
+            } md:translate-x-0 w-64 h-screen bg-white  flex flex-col items-center py-6 transition-transform duration-300 z-40`}
           >
             <Sidebar />
           </div>
@@ -49,9 +49,9 @@ export default function ClientLayout({ children }) {
 
       <div className="flex-1 flex flex-col">
         {!isAuthRoute && (
-          <Header toggleSidebar={toggleSidebar} className={`md:ml-auto md:w-full ${isSidebarOpen ? "block" : "w-full"}`} />
+          <Header toggleSidebar={toggleSidebar} className={`md:pl-[270px] md:w-full ${isSidebarOpen ? "block" : "w-full"}`} />
         )}
-        <main className="flex-1 overflow-y-auto md:w-5/6 md:ml-auto">{children}</main>
+        <main className="flex-1 overflow-y-auto md:pl-[260px] md:w-full ">{children}</main>
       </div>
     </div>
   );

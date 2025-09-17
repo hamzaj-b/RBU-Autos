@@ -48,22 +48,21 @@ const page = () => {
         </div>
 
         <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="col-span-2 bg-white p-6 rounded-lg shadow-md">
+          <div className="md:col-span-2 bg-white p-6 rounded-lg shadow-md">
             <OverallSalesCard />
           </div>
 
-          <div className="col-span-1 bg-white p-6 rounded-lg shadow-md">
+          <div className="md:col-span-1 bg-white p-6 rounded-lg shadow-md">
             <ServiceReport />
           </div>
         </div>
         <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="col-span-3 bg-white p-6 rounded-lg shadow-md">
+          <div className="md:col-span-3 bg-white p-2 md:p-6 rounded-lg shadow-md">
             <RecentWorkOrder
               data={dummyData}
               containerWidth="w-full"
               heading="Recent Orders"
             />
-            ;
           </div>
 
           {/* <WeeklyTransactionsCard /> */}

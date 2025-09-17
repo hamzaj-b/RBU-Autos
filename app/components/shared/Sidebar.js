@@ -31,7 +31,7 @@ export default function Sidebar() {
         <div className="flex items-center justify-center">
           <img src="/rbu-logo.png" width={120} alt="Logo" />
         </div>
-        <h2 className="text-xl font-extrabold text-yellow-primary mt-2">
+        <h2 className="text-xl font-extrabold text-blue-theme mt-2">
           RBU <span className="text-black">AUTO INC</span>
         </h2>
       </div>
@@ -45,13 +45,13 @@ export default function Sidebar() {
               href={link.href}
               className={`flex items-center px-4 py-3 mx-6 ${
                 isActive
-                  ? "bg-yellow-primary text-black font-semibold rounded-lg"
+                  ? "bg-blue-theme text-black font-semibold rounded-lg"
                   : "text-gray-600 hover:bg-gray-100 rounded"
               }`}
             >
               <span
                 className={`mr-2 ${
-                  isActive ? "text-black" : "text-yellow-primary"
+                  isActive ? "text-black" : "text-blue-theme"
                 }`}
               >
                 {link.icon}
