@@ -71,7 +71,7 @@ export default function RepairTracker() {
         </div>
         <div className="flex space-x-4">
           <button
-            className={`px-4 py-2 rounded-full text-yellow-bold ${
+            className={`px-4 py-2 rounded-full text-green-800 ${
               statusFilter === "Completed" ? "bg-green-400" : "bg-green-100"
             }`}
             onClick={() => setStatusFilter("Completed")}

@@ -16,7 +16,7 @@ function Avatars() {
         alt="u2"
         className="h-6 w-6 rounded-full ring-2 ring-white"
       />
-      <span className="inline-flex h-6 min-w-[24px] items-center justify-center rounded-full bg-[#B8BF25] px-1 text-[11px] font-semibold text-white ring-2 ring-white">
+      <span className="inline-flex h-6 min-w-[24px] items-center justify-center rounded-full bg-blue px-1 text-[11px] font-semibold text-white ring-2 ring-white">
         25+
       </span>
     </div>
@@ -45,7 +45,7 @@ function MiniBars({ data = [54, 22, 96, 44], accentIndex = 1 }) {
         const barH = Math.round((v / max) * (h - 12));
         const y = h - barH;
         const isAccent = i === accentIndex;
-        const fill = isAccent ? "#B8BF25" : "#0D1426"; // lime vs navy
+        const fill = isAccent ? "#3BB5FF" : "#0D1426"; // lime vs navy
         return (
           <rect
             key={i}
@@ -112,7 +112,7 @@ export default function NewNetIncomeCard({
   className="sm:w-[18px]"  
   alt="" 
 />
-            <span className="text-[#9AA20C] font-semibold">{pctText}</span>
+            <span className="text-[#3BB5FF] font-semibold">{pctText}</span>
             <span className="text-[#8f97a3]">from last week</span>
           </div>
         </div>

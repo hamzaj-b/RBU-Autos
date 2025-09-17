@@ -1,7 +1,7 @@
 import Image from "next/image";
 import React from "react";
 
-import ServiceReport from "./components/ServicesChart";
+import ServiceReport from "./components/dashboard/ServicesChart";
 import RecentWorkOrder from "./components/RecentWorkOrder";
 import CustomShape from "./components/app/CustomShape";
 import { IoEllipsisVertical } from "react-icons/io5";
@@ -57,7 +57,7 @@ const page = () => {
           </div>
         </div>
         <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="col-span-2 bg-white p-6 rounded-lg shadow-md">
+          <div className="col-span-3 bg-white p-6 rounded-lg shadow-md">
             <RecentWorkOrder
               data={dummyData}
               containerWidth="w-full"

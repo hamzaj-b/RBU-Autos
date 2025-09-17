@@ -11,8 +11,8 @@ const ServiceReport = () => {
     datasets: [
       {
         data: [47, 28, 18], // Corresponding to the values in the image
-        backgroundColor: ['#F9D84D', '#89C56B', '#0d1426'], // Yellow, Green, and Light Gray
-        borderColor: ['#F9D84D', '#89C56B', '#0d1426'],
+        backgroundColor: ['#F9D84D', '#3BB5FF', '#0d1426'], // Yellow, Green, and Light Gray
+        borderColor: ['#F9D84D', '#3BB5FF', '#0d1426'],
         borderWidth: 1,
       },
     ],
@@ -49,7 +49,7 @@ const ServiceReport = () => {
           <span className='text-xs text-gray-500'>Oil Change</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          <div style={{ width: '14px', height: '14px', backgroundColor: '#89C56B', marginRight: '5px',borderRadius:'100%' }}></div>
+          <div style={{ width: '14px', height: '14px', backgroundColor: '#3BB5FF', marginRight: '5px',borderRadius:'100%' }}></div>
           <span className='text-xs text-gray-500'>Tuning</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -58,7 +58,7 @@ const ServiceReport = () => {
         </div>
       </div>
 
-      <button style={{ width: '100%', padding: '10px', backgroundColor: '#89C56B', color: 'white', border: 'none', borderRadius: '5px', marginTop: '20px' }}>
+      <button style={{ width: '100%', padding: '10px', backgroundColor: '#3BB5FF', color: 'white', border: 'none', borderRadius: '5px', marginTop: '20px' }}>
         View More
       </button>
     </div>

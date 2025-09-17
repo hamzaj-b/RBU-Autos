@@ -106,7 +106,7 @@ const Home = () => {
   };
 
   return (
-    <div className="min-h-screen text-black bg-gray-50 p-6">
+    <div className="min-h-screen text-black p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
@@ -318,7 +318,7 @@ const Home = () => {
                 onClick={() => paginate(index + 1)}
                 className={`px-3 py-1 rounded text-sm ${
                   currentPage === index + 1
-                    ? "bg-black text-white"
+                    ? "bg-darkBlue text-white"
                     : "text-gray-700 hover:bg-gray-200"
                 }`}
               >

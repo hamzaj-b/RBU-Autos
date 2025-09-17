@@ -97,7 +97,7 @@ export default function RepairTracker() {
             <span
               className={`px-4 py-1 rounded-full items-center justify-center flex ${
                 item.status === "Completed"
-                  ? "bg-green-100 text-yellow-bold"
+                  ? "bg-green-100 text-green-700"
                   : "bg-yellow-100 text-yellow-600"
               }`}
             >

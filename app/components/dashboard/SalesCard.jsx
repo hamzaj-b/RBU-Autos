@@ -52,7 +52,7 @@ function CustomTooltip({
 
   return (
     <div className="rounded-2xl bg-white px-4 py-3 text-center shadow-[0_12px_30px_rgba(0,0,0,0.12)] ring-1 ring-black/5">
-      <div className="text-[13px] font-semibold text-[#9AA20C]">
+      <div className="text-[13px] font-semibold text-blue">
         {currency(net)}
       </div>
       <div className="text-[11px] text-gray-500 -mt-0.5">Net sales</div>
@@ -74,7 +74,7 @@ export default function OverallSalesCard() {
             <div className="text-[34px] font-extrabold leading-none tracking-tight text-[#0a1733]">
               £56,345.98
             </div>
-            <span className="inline-flex items-center gap-1 rounded-full bg-[#EAF8E9] px-2.5 py-1 text-xs font-semibold text-[#2F9D56]">
+            <span className="inline-flex items-center gap-1 rounded-full bg-[#dcf2fc] px-2.5 py-1 text-xs font-semibold text-blue">
               <TrendingUp className="h-3.5 w-3.5" /> 23.5%
             </span>
           </div>
@@ -83,15 +83,15 @@ export default function OverallSalesCard() {
         <div className="flex items-center gap-8">
           <div className="hidden md:flex items-center gap-8 text-[15px] font-medium text-[#74828f]">
             <span className="inline-flex items-center gap-2">
-              <LegendDot color="#D3DB16" /> Organic
+              <LegendDot color="#3bb5ff" /> Organic
             </span>
             <span className="inline-flex items-center gap-2">
-              <LegendDot color="#9EE240" /> Professional
+              <LegendDot color="#164a6a" /> Professional
             </span>
           </div>
           <button className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-[13px] font-medium text-[#2c3545] shadow-sm hover:bg-gray-50">
             Last 7 month
-            <Calendar className="h-4 w-4 text-[#B8BF25]" />
+            <Calendar className="h-4 w-4 text-blue" />
           </button>
         </div>
       </div>
@@ -113,8 +113,8 @@ export default function OverallSalesCard() {
                 // green-500 -> green-100 gradient on the hovered column
                 background:
                   hoverIndex === i
-                    ? "linear-gradient(180deg, rgba(187,232,33,1) 0%, rgba(243,253,233,1) 55%, rgba(240,253,244,0.00) 100%)"
-                    : "rgba(216,246,235,0.70)", // base mint column
+                    ? "linear-gradient(180deg, rgba(59, 181, 255,1) 0%, rgba(220, 242, 252,1) 55%, rgba(240,253,244,0.00) 100%)"
+                    : "rgba(220, 242, 252,1)", // base mint column
               }}
             />
           ))}
@@ -131,13 +131,13 @@ export default function OverallSalesCard() {
               <defs>
                 {/* Organic (yellow line) */}
                 <linearGradient id="organic" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#D3DB16" stopOpacity={0.28} />
-                  <stop offset="100%" stopColor="#D3DB16" stopOpacity={0} />
+                  <stop offset="0%" stopColor="#3bb5ff" stopOpacity={0.28} />
+                  <stop offset="100%" stopColor="#3bb5ff" stopOpacity={0} />
                 </linearGradient>
                 {/* Professional (green area) */}
                 <linearGradient id="pro" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#9EE240" stopOpacity={0.35} />
-                  <stop offset="100%" stopColor="#9EE240" stopOpacity={0} />
+                  <stop offset="0%" stopColor="#164a6a" stopOpacity={0.35} />
+                  <stop offset="100%" stopColor="#164a6a" stopOpacity={0} />
                 </linearGradient>
               </defs>
 
@@ -173,24 +173,24 @@ export default function OverallSalesCard() {
               <Area
                 type="monotone"
                 dataKey="professional"
-                stroke="#9EE240"
+                stroke="#164a6a"
                 fill="url(#pro)"
                 strokeWidth={3}
                 dot={false}
-                activeDot={{ r: 6, fill: "#9EE240" }}
+                activeDot={{ r: 6, fill: "#164a6a" }}
               />
 
               {/* Organic (yellow) */}
               <Line
                 type="monotone"
                 dataKey="organic"
-                stroke="#D3DB16"
+                stroke="#3bb5ff"
                 strokeWidth={3}
                 dot={{ r: 0 }}
                 activeDot={{
                   r: 6,
                   fill: "#fff",
-                  stroke: "#D3DB16",
+                  stroke: "#3bb5ff",
                   strokeWidth: 3,
                 }}
               />

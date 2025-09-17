@@ -16,7 +16,7 @@ function Avatars() {
         alt="u2"
         className="h-6 w-6 rounded-full ring-2 ring-white"
       />
-      <span className="inline-flex h-6 min-w-[24px] items-center justify-center rounded-full bg-[#B8BF25] px-1 text-[11px] font-semibold text-white ring-2 ring-white">
+      <span className="inline-flex h-6 min-w-[24px] items-center justify-center rounded-full bg-[#3BB5FF] px-1 text-[11px] font-semibold text-white ring-2 ring-white">
         25+
       </span>
     </div>
@@ -45,7 +45,7 @@ function MiniBars({ data = [78, 34, 96, 58], accentIndex = 0 }) {
         const barH = Math.round((v / max) * (h - 12));
         const y = h - barH;
         const isAccent = i === accentIndex;
-        const fill = isAccent ? "#B8BF25" : "#0D1426"; // lime accent, navy base
+        const fill = isAccent ? "#3BB5FF" : "#0D1426"; // lime accent, navy base
         return (
           <rect
             key={i}
@@ -97,7 +97,7 @@ export default function WorkCompletedCard({
           </div>
           <div className="mt-2 sm:mt-3 flex items-center gap-1 sm:gap-2 text-sm sm:text-[15px]">
             <img src="/previous.png" width={14} height={14} className="sm:w-[18px]" alt="up" />
-            <span className="text-[#2f9d56] font-semibold">{deltaPct}</span>
+            <span className="text-blue font-semibold">{deltaPct}</span>
             <span className="text-[#8f97a3]">from last week</span>
           </div>
         </div>

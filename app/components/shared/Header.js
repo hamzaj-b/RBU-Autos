@@ -5,7 +5,7 @@ import Link from "next/link";
 
 export default function Header({ toggleSidebar, className = "" }) {
   return (
-    <div className={`w-1/3 bg-white flex items-center px-6 py-4 ${className}`}>
+    <div className={`w-full bg-white flex items-center px-6 py-4 ${className}`}>
       <div>
       <button
             className="md:hidden text-black rounded"

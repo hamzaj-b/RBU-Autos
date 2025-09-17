@@ -43,7 +43,7 @@ export default function CalendarView() {
   return (
     <div className="p-8 bg-white text-black rounded-2xl shadow-md">
       <div className="text-2xl font-bold mb-4 flex items-center gap-2">
-        <div className="p-2 border border-gray-500 rounded-full">
+        <div className="p-2 border border-darkBlue rounded-full">
           <CalendarDays className="text-yellow-bold" />
         </div>
         <p className="text-yellow-bold">Calendar</p>

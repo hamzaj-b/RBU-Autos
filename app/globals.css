@@ -5,6 +5,10 @@
   --foreground: #171717;
   --color-yellow-primary: #3bb5ff;
   --color-yellow-bold: #3bb5ff;
+  --color-blue-theme: #3bb5ff;
+  --color-blue-bold: #164a6a;
+  --color-blue-light: #dcf2fc;
+
   /* Added the yellow-primary color */
 }
 
@@ -15,6 +19,9 @@
   --font-mono: var(--font-geist-mono);
   --color-yellow-primary: var(--color-yellow-primary);
   --color-yellow-bold: var(--color-yellow-bold);
+  --color-blue: var(--color-blue-theme);
+  --color-darkBlue: var(--color-blue-bold);
+  --color-lightBlue: var(--color-blue-light);
   /* Set the yellow-primary color */
 }
 
@@ -38,7 +45,7 @@ button:hover {
 
 /* 🔹 Style only the view switch button group */
 .fc .fc-toolbar-chunk .fc-button-group:first-of-type {
-  @apply flex gap-0 rounded-md overflow-hidden bg-gray-200 p-1;
+  @apply flex gap-0 rounded-md overflow-hidden bg-[#dcf2fc] p-1;
 }
 
 /* 🔹 Reset ALL buttons (remove outlines, borders, default dark flash) */
@@ -70,14 +77,14 @@ button:hover {
 .fc .fc-dayGridMonth-button:hover,
 .fc .fc-timeGridWeek-button:hover,
 .fc .fc-timeGridDay-button:hover {
-  @apply bg-gray-300;
+  @apply bg-[#c9e6f4];
   color: black !important;
 }
 
 .fc .fc-dayGridMonth-button.fc-button-active,
 .fc .fc-timeGridWeek-button.fc-button-active,
 .fc .fc-timeGridDay-button.fc-button-active {
-  background: #DEE33E !important;
+  background: #3bb5ff !important;
   /* Highlight color */
   color: black !important;
   box-shadow: none !important;
@@ -95,7 +102,7 @@ button:hover {
 
 .fc .fc-prev-button:hover,
 .fc .fc-next-button:hover {
-  background: #e5e7eb !important;
+  background: #c9e6f4 !important;
   /* Tailwind gray-200 */
   color: black !important;
   transform: scale(1.05);

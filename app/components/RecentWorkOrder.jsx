@@ -1,9 +1,17 @@
-import React from 'react';
+import React from "react";
 
-const RecentWorkOrder = ({ data, containerWidth = 'w-full', heading = 'Recent Work Order' }) => {
+const RecentWorkOrder = ({
+  data,
+  containerWidth = "w-full",
+  heading = "Recent Work Order",
+}) => {
   return (
-    <div className={`${containerWidth} p-4 sm:p-5 bg-white rounded-[18px] shadow-sm ring-1 ring-gray-200/70`}>
-      <h2 className="text-lg sm:text-[22px] px-3 sm:px-4 py-2 sm:py-3 text-gray-500 font-semibold mb-2 sm:mb-4">{heading}</h2>
+    <div
+      className={`${containerWidth} p-4 sm:p-5 bg-white rounded-[18px] shadow-sm ring-1 ring-gray-200/70`}
+    >
+      <h2 className="text-lg sm:text-[22px] px-3 sm:px-4 py-2 sm:py-3 text-gray-500 font-semibold mb-2 sm:mb-4">
+        {heading}
+      </h2>
       <div className="overflow-x-auto">
         <div className="min-w-[600px] grid grid-cols-5 gap-2 sm:gap-4 bg-gray-200 rounded-2xl py-2 sm:py-3 px-2 sm:px-4 mx-1 sm:mx-2 mb-1 sm:mb-2 font-medium text-sm sm:text-base text-gray-600">
           <span className="min-w-[60px]">No</span>
@@ -22,7 +30,12 @@ const RecentWorkOrder = ({ data, containerWidth = 'w-full', heading = 'Recent Wo
             </div>
             <div className="min-w-[120px] h-auto flex items-center">
               <p className="flex items-center gap-1 sm:gap-2 text-gray-500 text-sm sm:text-[15px]">
-                <img src={item.image} width={24} className="sm:w-[40px]" alt="" />
+                <img
+                  src={item.image}
+                  width={24}
+                  className="sm:w-[40px]"
+                  alt=""
+                />
                 {item.customer}
               </p>
             </div>
@@ -35,9 +48,9 @@ const RecentWorkOrder = ({ data, containerWidth = 'w-full', heading = 'Recent Wo
             <div className="min-w-[100px]">
               <p
                 className={`w-20 sm:w-24 h-5 sm:h-6 rounded-full flex items-center justify-center text-sm sm:text-[15px] ${
-                  item.status === 'Completed'
-                    ? 'bg-green-100 text-[#2f9d56]'
-                    : 'bg-yellow-100 text-[#9AA20C]'
+                  item.status === "Completed"
+                    ? "bg-green-100 text-[#2f9d56]"
+                    : "bg-yellow-100 text-[#9AA20C]"
                 }`}
               >
                 {item.status}
