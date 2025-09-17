@@ -29,7 +29,7 @@ export default function Sidebar() {
     <div className="flex flex-col items-center w-full h-full">
       <div className="flex flex-col items-center mb-10">
         <div className="flex items-center justify-center">
-          <img src="/logo.jpeg" width={100} alt="Logo" />
+          <img src="/rbu-logo.png" width={120} alt="Logo" />
         </div>
         <h2 className="text-xl font-extrabold text-yellow-primary mt-2">
           RBU <span className="text-black">AUTO INC</span>
