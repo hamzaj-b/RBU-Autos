@@ -1,27 +1,11 @@
 "use client";
 import React from "react";
-import { MoreVertical, ArrowDown } from "lucide-react";
-
-// Tiny stacked avatars (dummy)
-function Avatars() {
-  return (
-    <div className="flex -space-x-2">
-      <img
-        src="/profile.png"
-        alt="u1"
-        className="h-6 w-6 rounded-full ring-2 ring-white"
-      />
-      <img
-        src="user1.png"
-        alt="u2"
-        className="h-6 w-6 rounded-full ring-2 ring-white"
-      />
-      <span className="inline-flex h-6 min-w-[24px] items-center justify-center rounded-full bg-blue px-1 text-[11px] font-semibold text-white ring-2 ring-white">
-        25+
-      </span>
-    </div>
-  );
-}
+import {
+  MoreVertical,
+  ArrowDown,
+  CircleDollarSign,
+  ArrowUpDown,
+} from "lucide-react";
 
 // Improved SVG micro bar chart with even spacing
 function MiniBars({ data = [54, 22, 96, 44], accentIndex = 1 }) {
@@ -86,13 +70,13 @@ export default function NewNetIncomeCard({
       {/* top row */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-2 sm:gap-3">
-          <img src="/icon2.png" alt="" className="w-5 sm:w-auto" />
+          {/* <img src="/icon2.png" alt="" className="w-5 sm:w-auto" /> */}
+          <CircleDollarSign className="h- w- text-blue" />
           <div className="text-lg sm:text-[22px] font-bold tracking-tight text-[#0a1733]">
             {title}
           </div>
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
-          <Avatars />
           <button className="grid h-7 sm:h-8 w-7 sm:w-8 place-items-center rounded-full text-[#9AA3AF] hover:bg-gray-50">
             <MoreVertical className="h-4 sm:h-5 w-4 sm:w-5" />
           </button>
@@ -104,16 +88,6 @@ export default function NewNetIncomeCard({
         <div>
           <div className="text-xl sm:text-[32px] font-bold tracking-tight text-[#0a1733]">
             {currency(amount)}
-          </div>
-          <div className="mt-2 sm:mt-3 flex items-center gap-1 sm:gap-2 text-sm sm:text-[15px]">
-          <img 
-  src="/previous.png" 
-  width={14}
-  className="sm:w-[18px]"  
-  alt="" 
-/>
-            <span className="text-[#3BB5FF] font-semibold">{pctText}</span>
-            <span className="text-[#8f97a3]">from last week</span>
           </div>
         </div>
 
