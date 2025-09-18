@@ -12,7 +12,6 @@ const RecentWorkOrder = ({
         {heading}
       </h2>
 
-      {/* Redesigned */}
 
       <div className="space-y-2 sm:space-y-3 px-2 sm:px-3">
         {data.map((item) => (
