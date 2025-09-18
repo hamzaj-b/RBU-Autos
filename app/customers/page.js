@@ -110,7 +110,7 @@ const Home = () => {
       <div className=" mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
-          <select className="bg-white border border-gray-300 rounded-md px-4 py-2 text-sm">
+          <select className="bg-white border border-gray-300 rounded-md px-2 md:px-4 py-2 text-sm">
             <option>Show: All Orders</option>
             <option>Active Customers</option>
             <option>Inactive Customers</option>
@@ -123,221 +123,198 @@ const Home = () => {
             </button>
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center space-x-2 bg-white text-gray-500 rounded-md px-4 py-2 text-sm"
+              className="flex items-center space-x-2 bg-white text-gray-500 rounded-md px-2 py-1 md:px-4 md:py-2 text-sm"
             >
               <FileDownIcon className="w-5 h-5" />
-              <span>Export</span>
+              <span className="hidden md:flex">Export</span>
             </button>
           </div>
         </div>
 
-        {/* Search */}
-        <div className="bg-white p-4 rounded-lg mb-4">
-        <div className="flex space-x-4 mb-4">
-          <div className="relative w-full">
-            <input
-              type="text"
-              placeholder="Search vehicle"
-              className="w-full px-14 py-2 md:py-4 rounded-lg bg-gray-100 text-sm md:text-base"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <span className=" absolute left-3 top-2 md:top-4 text-gray-500">
-              <Search />{" "}
-            </span>
-          </div>
-          <button className=" md:py-2 px-2 md:px-4 rounded-lg bg-gray-100 flex items-center text-gray-500">
-            <SlidersHorizontal />
-            <span className="hidden md:block">Filters</span>
-          </button>
+        <div className="w-full overflow-x-auto bg-white p-4 rounded-lg mb-4">
+  <div className="flex space-x-4 mb-4 flex-wrap">
+    <div className="relative w-full sm:w-auto">
+      <input
+        type="text"
+        placeholder="Search vehicle"
+        className="w-full px-14 py-2 md:py-4 rounded-lg bg-gray-100 text-sm md:text-base"
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
+      <span className="absolute left-3 top-2 md:top-4 text-gray-500">
+        <Search />{" "}
+      </span>
+    </div>
+    <button className="md:py-2 px-2 md:px-4 rounded-lg bg-gray-100 flex items-center text-gray-500">
+      <SlidersHorizontal />
+      <span className="hidden md:block">Filters</span>
+    </button>
+  </div>
+
+  {showFilters && (
+    <div className="bg-gray-50 p-4 rounded-md shadow-lg">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div>
+          <label className="block text-sm">Status</label>
+          <select className="w-full border border-gray-300 rounded-md px-3 py-2">
+            <option>All Status</option>
+            <option>Active</option>
+            <option>Inactive</option>
+            <option>Pending</option>
+          </select>
         </div>
-
-        {/* Filters Dropdown */}
-        {showFilters && (
-          <div className="bg-gray-50 p-4 rounded-md shadow-lg">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm">Status</label>
-                <select className="w-full border border-gray-300 rounded-md px-3 py-2">
-                  <option>All Status</option>
-                  <option>Active</option>
-                  <option>Inactive</option>
-                  <option>Pending</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm">Order Count</label>
-                <select className="w-full border border-gray-300 rounded-md px-3 py-2">
-                  <option>All</option>
-                  <option>0-10</option>
-                  <option>11-50</option>
-                  <option>51-100</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm">Spent Amount</label>
-                <select className="w-full border border-gray-300 rounded-md px-3 py-2">
-                  <option>All Amounts</option>
-                  <option>$0-$100</option>
-                  <option>$100-$500</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Table */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <input
-                      type="checkbox"
-                      checked={
-                        selectedCustomers.length === filteredCustomers.length
-                      }
-                      onChange={handleMasterCheckboxChange}
-                      className="rounded border-gray-300"
-                    />
-                  </th>
-                  <th
-                    onClick={() => handleSort("name")}
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                  >
-                    Customer{" "}
-                    {sortBy === "name" && (
-                      <ArrowUpDown className="w-4 h-4 inline" />
-                    )}
-                  </th>
-                  <th
-                    onClick={() => handleSort("email")}
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                  >
-                    Email{" "}
-                    {sortBy === "email" && (
-                      <ArrowUpDown className="w-4 h-4 inline" />
-                    )}
-                  </th>
-                  <th
-                    onClick={() => handleSort("orders")}
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                  >
-                    Orders{" "}
-                    {sortBy === "orders" && (
-                      <ArrowUpDown className="w-4 h-4 inline" />
-                    )}
-                  </th>
-                  <th
-                    onClick={() => handleSort("sales")}
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                  >
-                    Sales{" "}
-                    {sortBy === "sales" && (
-                      <ArrowUpDown className="w-4 h-4 inline" />
-                    )}
-                  </th>
-                  <th
-                    onClick={() => handleSort("spent")}
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                  >
-                    Spent{" "}
-                    {sortBy === "spent" && (
-                      <ArrowUpDown className="w-4 h-4 inline" />
-                    )}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {currentCustomers.map((customer) => (
-                  <tr key={customer.id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <input
-                        type="checkbox"
-                        checked={selectedCustomers.includes(customer.id)}
-                        onChange={() => handleCheckboxChange(customer.id)}
-                        className="rounded border-gray-300"
-                      />
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {customer.name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {customer.email}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {customer.orders}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {customer.sales}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {customer.spent}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <div>
+          <label className="block text-sm">Order Count</label>
+          <select className="w-full border border-gray-300 rounded-md px-3 py-2">
+            <option>All</option>
+            <option>0-10</option>
+            <option>11-50</option>
+            <option>51-100</option>
+          </select>
         </div>
+        <div>
+          <label className="block text-sm">Spent Amount</label>
+          <select className="w-full border border-gray-300 rounded-md px-3 py-2">
+            <option>All Amounts</option>
+            <option>$0-$100</option>
+            <option>$100-$500</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  )}
 
-        {/* Pagination */}
-        <div className="bg-gray-50 px-6 py-4 flex items-center justify-between border-t border-gray-200">
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-700">Show results:</span>
-            <select
-              value={itemsPerPage}
-              onChange={handleItemsPerPageChange}
-              className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+  {/* Table container with scroll */}
+  <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+    <div className="overflow-x-auto">
+      <table className="min-w-full divide-y divide-gray-200">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <input
+                type="checkbox"
+                checked={selectedCustomers.length === filteredCustomers.length}
+                onChange={handleMasterCheckboxChange}
+                className="rounded border-gray-300"
+              />
+            </th>
+            <th
+              onClick={() => handleSort("name")}
+              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
             >
-              <option>6</option>
-              <option>10</option>
-              <option>20</option>
-              <option>50</option>
-            </select>
-          </div>
-          <div className="flex items-center space-x-1">
-            <button
-              onClick={() => paginate(currentPage - 1)}
-              disabled={currentPage === 1}
-              className={`p-1 rounded ${
-                currentPage === 1
-                  ? "text-gray-400 cursor-not-allowed"
-                  : "text-gray-700 hover:bg-gray-200"
-              }`}
+              Customer{" "}
+              {sortBy === "name" && <ArrowUpDown className="w-4 h-4 inline" />}
+            </th>
+            <th
+              onClick={() => handleSort("email")}
+              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
             >
-              <ChevronLeft className="text-gray-500" />
-            </button>
-
-            {[...Array(totalPages)].map((_, index) => (
-              <button
-                key={index + 1}
-                onClick={() => paginate(index + 1)}
-                className={`px-3 py-1 rounded text-sm ${
-                  currentPage === index + 1
-                    ? "bg-darkBlue text-white"
-                    : "text-gray-700 hover:bg-gray-200"
-                }`}
-              >
-                {index + 1}
-              </button>
-            ))}
-
-            <button
-              onClick={() => paginate(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              className={`p-1 rounded ${
-                currentPage === totalPages
-                  ? "text-gray-400 cursor-not-allowed"
-                  : "text-gray-700 hover:bg-gray-200"
-              }`}
+              Email{" "}
+              {sortBy === "email" && <ArrowUpDown className="w-4 h-4 inline" />}
+            </th>
+            <th
+              onClick={() => handleSort("orders")}
+              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
             >
-              <ChevronRight className="text-gray-500" />
-            </button>
-          </div>
-        </div>
-        </div>
+              Orders{" "}
+              {sortBy === "orders" && <ArrowUpDown className="w-4 h-4 inline" />}
+            </th>
+            <th
+              onClick={() => handleSort("sales")}
+              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+            >
+              Sales{" "}
+              {sortBy === "sales" && <ArrowUpDown className="w-4 h-4 inline" />}
+            </th>
+            <th
+              onClick={() => handleSort("spent")}
+              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+            >
+              Spent{" "}
+              {sortBy === "spent" && <ArrowUpDown className="w-4 h-4 inline" />}
+            </th>
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-200">
+          {currentCustomers.map((customer) => (
+            <tr key={customer.id}>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <input
+                  type="checkbox"
+                  checked={selectedCustomers.includes(customer.id)}
+                  onChange={() => handleCheckboxChange(customer.id)}
+                  className="rounded border-gray-300"
+                />
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">{customer.name}</td>
+              <td className="px-6 py-4 whitespace-nowrap">{customer.email}</td>
+              <td className="px-6 py-4 whitespace-nowrap">{customer.orders}</td>
+              <td className="px-6 py-4 whitespace-nowrap">{customer.sales}</td>
+              <td className="px-6 py-4 whitespace-nowrap">{customer.spent}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {/* Pagination */}
+  <div className="bg-gray-50 px-6 py-4 flex items-center justify-between border-t border-gray-200">
+    <div className="flex items-center space-x-2">
+      <span className="text-sm text-gray-700">Show results:</span>
+      <select
+        value={itemsPerPage}
+        onChange={handleItemsPerPageChange}
+        className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        <option>6</option>
+        <option>10</option>
+        <option>20</option>
+        <option>50</option>
+      </select>
+    </div>
+    <div className="flex items-center space-x-1">
+      <button
+        onClick={() => paginate(currentPage - 1)}
+        disabled={currentPage === 1}
+        className={`p-1 rounded ${
+          currentPage === 1
+            ? "text-gray-400 cursor-not-allowed"
+            : "text-gray-700 hover:bg-gray-200"
+        }`}
+      >
+        <ChevronLeft className="text-gray-500" />
+      </button>
+
+      {[...Array(totalPages)].map((_, index) => (
+        <button
+          key={index + 1}
+          onClick={() => paginate(index + 1)}
+          className={`px-3 py-1 rounded text-sm ${
+            currentPage === index + 1
+              ? "bg-darkBlue text-white"
+              : "text-gray-700 hover:bg-gray-200"
+          }`}
+        >
+          {index + 1}
+        </button>
+      ))}
+
+      <button
+        onClick={() => paginate(currentPage + 1)}
+        disabled={currentPage === totalPages}
+        className={`p-1 rounded ${
+          currentPage === totalPages
+            ? "text-gray-400 cursor-not-allowed"
+            : "text-gray-700 hover:bg-gray-200"
+        }`}
+      >
+        <ChevronRight className="text-gray-500" />
+      </button>
+    </div>
+  </div>
+</div>
+
       </div>
     </div>
   );

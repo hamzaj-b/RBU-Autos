@@ -48,9 +48,9 @@ export default function ClientLayout({ children }) {
       )}
 
       <div className="flex-1 flex flex-col">
-        {!isAuthRoute && (
+        {/* {!isAuthRoute && (
           <Header toggleSidebar={toggleSidebar} className={`md:pl-[270px] md:w-full ${isSidebarOpen ? "block" : "w-full"}`} />
-        )}
+        )} */}
         <main className="flex-1 overflow-y-auto md:pl-[260px] md:w-full ">{children}</main>
       </div>
     </div>
