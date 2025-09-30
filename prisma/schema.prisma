@@ -1,0 +1,196 @@
+// schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum UserType {
+  ADMIN
+  CUSTOMER
+  EMPLOYEE
+}
+
+enum BookingStatus {
+  PENDING
+  ACCEPTED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum WorkOrderStatus {
+  DRAFT
+  OPEN
+  ON_HOLD
+  DONE
+  CANCELLED
+}
+
+model User {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  email             String   @unique
+  phone             String?  @unique
+  passwordEncrypted String? // 👈 now optional (null until Customer sets password)
+  userType          UserType @default(ADMIN)
+  isActive          Boolean  @default(true)
+
+  // Profiles
+  employee EmployeeProfile? @relation(fields: [employeeProfileId], references: [id])
+  customer CustomerProfile? @relation(fields: [customerProfileId], references: [id])
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  employeeProfileId String?  @db.ObjectId
+  customerProfileId String?  @db.ObjectId
+
+  @@index([userType, isActive])
+}
+
+model EmployeeProfile {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String   @unique @db.ObjectId
+  fullName   String
+  title      String?
+  hourlyRate Float?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  User       User[]
+
+  @@index([fullName])
+}
+
+model CustomerProfile {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @unique @db.ObjectId
+  fullName    String
+  vehicleJson Json?
+  addressJson Json?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  User        User[]
+
+  @@index([fullName])
+}
+
+model Service {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  name            String
+  category        String?
+  description     String?
+  durationMinutes Int?
+  basePrice       Float?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([name, isActive])
+  @@index([category])
+}
+
+model Booking {
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  customerId      String        @db.ObjectId
+  createdByUserId String        @db.ObjectId
+  serviceId       String        @db.ObjectId
+  status          BookingStatus @default(PENDING)
+
+  // scheduling
+  date        DateTime
+  startAt     DateTime
+  endAt       DateTime
+  slotMinutes Int
+
+  // assignment
+  assignedEmployeeId String?   @db.ObjectId
+  acceptedAt         DateTime?
+  startedAt          DateTime?
+  completedAt        DateTime?
+
+  // meta
+  notes       String?
+  attachments Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workOrderId String? @unique @db.ObjectId
+
+  @@index([status, date])
+  @@index([assignedEmployeeId, date])
+  @@index([customerId, date])
+  @@index([serviceId, date])
+  @@index([startAt, endAt])
+}
+
+model WorkOrder {
+  id         String          @id @default(auto()) @map("_id") @db.ObjectId
+  bookingId  String          @unique @db.ObjectId
+  employeeId String          @db.ObjectId
+  status     WorkOrderStatus @default(DRAFT)
+
+  laborEntries Json?
+  partsUsed    Json?
+  photos       Json?
+
+  notes    String?
+  openedAt DateTime?
+  closedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([employeeId, status])
+  @@index([status, createdAt])
+}
+
+model DiagnosticReport {
+  id          String @id @default(auto()) @map("_id") @db.ObjectId
+  bookingId   String @db.ObjectId
+  customerId  String @db.ObjectId
+  serviceId   String @db.ObjectId
+  createdById String @db.ObjectId
+
+  complaint       String?
+  findings        String?
+  diagnosticJson  Json?
+  recommendations String?
+  attachments     Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([customerId, createdAt])
+  @@index([serviceId, createdAt])
+}
+
+model EmployeeSession {
+  id       String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId   String    @db.ObjectId
+  loginAt  DateTime
+  logoutAt DateTime?
+  source   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, loginAt])
+  @@index([logoutAt])
+}
+
+model BusinessSettings {
+  id                   String   @id @default(auto()) @map("_id") @db.ObjectId
+  timezone             String
+  openTime             String
+  closeTime            String
+  slotMinutes          Int
+  bufferMinutes        Int      @default(0)
+  allowCustomerBooking Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
