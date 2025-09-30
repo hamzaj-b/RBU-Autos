@@ -132,24 +132,24 @@ const Home = () => {
         </div>
 
         <div className="w-full overflow-x-auto bg-white p-4 rounded-lg mb-4">
-  <div className="flex space-x-4 mb-4 flex-wrap">
-    <div className="relative w-full sm:w-auto">
-      <input
-        type="text"
-        placeholder="Search vehicle"
-        className="w-full px-14 py-2 md:py-4 rounded-lg bg-gray-100 text-sm md:text-base"
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-      />
-      <span className="absolute left-3 top-2 md:top-4 text-gray-500">
-        <Search />{" "}
-      </span>
-    </div>
-    <button className="md:py-2 px-2 md:px-4 rounded-lg bg-gray-100 flex items-center text-gray-500">
-      <SlidersHorizontal />
-      <span className="hidden md:block">Filters</span>
-    </button>
-  </div>
+  <div className="flex space-x-4 mb-4">
+          <div className="relative w-full">
+            <input
+              type="text"
+              placeholder="Search vehicle"
+              className="w-full px-14 py-2 md:py-4 rounded-lg bg-gray-100 text-sm md:text-base focus:outline-none focus:border focus:border-gray-300"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <span className=" absolute left-3 top-2 md:top-4 text-gray-500">
+              <Search />{" "}
+            </span>
+          </div>
+          <button className=" md:py-2 px-2 md:px-4 rounded-lg bg-gray-100 flex items-center text-gray-500">
+            <SlidersHorizontal className="w-4" />
+            <span className="hidden md:block px-2">Filters</span>
+          </button>
+        </div>
 
   {showFilters && (
     <div className="bg-gray-50 p-4 rounded-md shadow-lg">

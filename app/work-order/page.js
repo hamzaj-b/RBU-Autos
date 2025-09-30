@@ -51,12 +51,12 @@ export default function RepairTracker() {
   return (
     <div className="container mx-auto p-6 text-black">
       <div className="bg-white p-4 rounded-lg mb-4">
-        <div className="flex space-x-4 mb-4">
+         <div className="flex space-x-4 mb-4">
           <div className="relative w-full">
             <input
               type="text"
               placeholder="Search vehicle"
-              className="w-full px-14 py-2 md:py-4 rounded-lg bg-gray-100 text-sm md:text-base"
+              className="w-full px-14 py-2 md:py-4 rounded-lg bg-gray-100 text-sm md:text-base focus:outline-none focus:border focus:border-gray-300"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -65,8 +65,8 @@ export default function RepairTracker() {
             </span>
           </div>
           <button className=" md:py-2 px-2 md:px-4 rounded-lg bg-gray-100 flex items-center text-gray-500">
-            <SlidersHorizontal />
-            <span className="hidden md:block">Filters</span>
+            <SlidersHorizontal className="w-4" />
+            <span className="hidden md:block px-2">Filters</span>
           </button>
         </div>
       </div>
