@@ -12,18 +12,18 @@ async function POST(req) {
     const { email, password } = body;
 
     // 1. Verify requester is Admin
-    // let decoded;
-    // try {
-    //   decoded = jwt.verify(token, SECRET_KEY);
-    //   if (decoded.userType !== "ADMIN") {
-    //     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    //   }
-    // } catch (err) {
-    //   return NextResponse.json(
-    //     { error: "Invalid or expired token" },
-    //     { status: 401 }
-    //   );
-    // }
+    let decoded;
+    try {
+      decoded = jwt.verify(token, SECRET_KEY);
+      if (decoded.userType !== "ADMIN") {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+      }
+    } catch (err) {
+      return NextResponse.json(
+        { error: "Invalid or expired token" },
+        { status: 401 }
+      );
+    }
 
     // 2. Check if user exists
     const existing = await prisma.user.findUnique({ where: { email } });

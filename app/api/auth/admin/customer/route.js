@@ -72,6 +72,7 @@ async function POST(req) {
     );
 
     const link = `https://garage-mechanic-crm.vercel.app/auth/newPassword?token=${setPassToken}`;
+    console.log("Toekn is:", setPassToken);
 
     // 7. send email
     await transporter.sendMail({

@@ -1,3 +1,4 @@
+"use client";
 import Image from "next/image";
 import React from "react";
 
@@ -11,7 +12,12 @@ import WeeklyTransactionsCard from "./components/dashboard/TransactionSummary";
 import NewNetIncomeCard from "./components/dashboard/NetIncomeCard";
 import TotalBookingsCard from "./components/dashboard/TotalBookings";
 import WorkCompletedCard from "./components/dashboard/WorkCompletedCard";
+import { useAuth } from "@/app/context/AuthContext";
 const page = () => {
+  const { user, token, logout, loading } = useAuth();
+
+  console.log("user token:", token);
+
   const dummyData = [
     {
       id: "01",
@@ -41,6 +47,7 @@ const page = () => {
   return (
     <>
       <div className="min-h-screen bg-gray-100">
+        {/* <h1 className="text-2xl font-bold">Welcome {user}</h1> */}
         <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <NewNetIncomeCard />
           <TotalBookingsCard />

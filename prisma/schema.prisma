@@ -17,25 +17,23 @@ enum UserType {
 enum BookingStatus {
   PENDING
   ACCEPTED
-  IN_PROGRESS
-  COMPLETED
   CANCELLED
-  NO_SHOW
 }
 
 enum WorkOrderStatus {
-  DRAFT
-  OPEN
-  ON_HOLD
-  DONE
-  CANCELLED
+  DRAFT // Admin prepared, not visible to employees yet
+  OPEN // Visible to all employees, unassigned
+  ASSIGNED // Directly assigned to an employee by Admin
+  IN_PROGRESS // Employee started work
+  DONE // Employee finished work
+  CANCELLED // Job cancelled (admin/employee)
 }
 
 model User {
   id                String   @id @default(auto()) @map("_id") @db.ObjectId
   email             String   @unique
   phone             String?  @unique
-  passwordEncrypted String? // 👈 now optional (null until Customer sets password)
+  passwordEncrypted String?
   userType          UserType @default(ADMIN)
   isActive          Boolean  @default(true)
 
@@ -52,42 +50,47 @@ model User {
 }
 
 model EmployeeProfile {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId     String   @unique @db.ObjectId
+  id         String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String      @unique @db.ObjectId
   fullName   String
   title      String?
   hourlyRate Float?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
   User       User[]
+  WorkOrder  WorkOrder[]
 
   @@index([fullName])
 }
 
 model CustomerProfile {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId      String   @unique @db.ObjectId
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String      @unique @db.ObjectId
   fullName    String
   vehicleJson Json?
   addressJson Json?
   notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
   User        User[]
+  Booking     Booking[]
+  WorkOrder   WorkOrder[]
 
   @@index([fullName])
 }
 
 model Service {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  id              String      @id @default(auto()) @map("_id") @db.ObjectId
   name            String
   category        String?
   description     String?
   durationMinutes Int?
   basePrice       Float?
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  isActive        Boolean     @default(true)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  Booking         Booking[]
+  WorkOrder       WorkOrder[]
 
   @@index([name, isActive])
   @@index([category])
@@ -106,23 +109,27 @@ model Booking {
   endAt       DateTime
   slotMinutes Int
 
-  // assignment
-  assignedEmployeeId String?   @db.ObjectId
-  acceptedAt         DateTime?
-  startedAt          DateTime?
-  completedAt        DateTime?
+  // assignment timestamps (optional)
+  acceptedAt  DateTime?
+  startedAt   DateTime?
+  completedAt DateTime?
 
   // meta
   notes       String?
   attachments Json?
 
+  // relations
+  service  Service         @relation(fields: [serviceId], references: [id])
+  customer CustomerProfile @relation(fields: [customerId], references: [id])
+
+  // 1:1 with WorkOrder (both sides linked; name relation to avoid ambiguity)
+  workOrderId String?    @unique @db.ObjectId
+  workOrder   WorkOrder? @relation("BookingToWorkOrder")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  workOrderId String? @unique @db.ObjectId
-
   @@index([status, date])
-  @@index([assignedEmployeeId, date])
   @@index([customerId, date])
   @@index([serviceId, date])
   @@index([startAt, endAt])
@@ -131,7 +138,9 @@ model Booking {
 model WorkOrder {
   id         String          @id @default(auto()) @map("_id") @db.ObjectId
   bookingId  String          @unique @db.ObjectId
-  employeeId String          @db.ObjectId
+  customerId String          @db.ObjectId
+  employeeId String?         @db.ObjectId
+  serviceId  String          @db.ObjectId
   status     WorkOrderStatus @default(DRAFT)
 
   laborEntries Json?
@@ -145,8 +154,15 @@ model WorkOrder {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // relations (owning sides)
+  booking  Booking          @relation("BookingToWorkOrder", fields: [bookingId], references: [id])
+  customer CustomerProfile  @relation(fields: [customerId], references: [id])
+  service  Service          @relation(fields: [serviceId], references: [id])
+  employee EmployeeProfile? @relation(fields: [employeeId], references: [id])
+
   @@index([employeeId, status])
   @@index([status, createdAt])
+  @@index([customerId])
 }
 
 model DiagnosticReport {
@@ -170,11 +186,13 @@ model DiagnosticReport {
 }
 
 model EmployeeSession {
-  id       String    @id @default(auto()) @map("_id") @db.ObjectId
-  userId   String    @db.ObjectId
-  loginAt  DateTime
-  logoutAt DateTime?
-  source   String?
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String    @db.ObjectId
+  employeeId String?   @db.ObjectId
+  loginAt    DateTime
+  logoutAt   DateTime?
+  source     String?
+  location   String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

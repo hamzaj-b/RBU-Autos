@@ -1,99 +1,96 @@
-import Link from "next/link";
-import React from "react";
+"use client";
 
-const SignInPage = () => {
+import React, { useState } from "react";
+import Link from "next/link";
+import { useAuth } from "@/app/context/AuthContext";
+
+export default function SignInPage() {
+  const { login } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    const res = await login(email, password);
+    setLoading(false);
+
+    if (!res.success) {
+      setError(res.message);
+      return;
+    }
+
+    window.location.href = "/"; // redirect to home or dashboard
+  };
+
   return (
-    <section className="bg-blue-theme">
-      <div className="flex flex-col items-center justify-center px-6 py-8 mx-auto md:h-screen lg:py-0">
-        <div className="flex flex-col items-center mb-10">
-          <div className="flex items-center justify-center">
-            <img src="/logoDark.png" width={100} alt="Logo" />
-          </div>
-          <h2 className="text-xl font-semibold text-black mt-2">LoremIpsum</h2>
+    <section className="bg-blue-theme min-h-screen text-gray-800 flex items-center justify-center">
+      <div className="w-full max-w-md bg-white rounded-lg shadow p-6">
+        <div className="text-center mb-4">
+          <img src="/logoDark.png" alt="Logo" width={100} className="mx-auto" />
+          <h2 className="text-xl font-semibold text-gray-800 mt-2">
+            RBU Autos CRM
+          </h2>
         </div>
-        <div className="w-full bg-white rounded-lg shadow md:mt-0 sm:max-w-md xl:p-0">
-          <div className="p-6 space-y-4 md:space-y-6 sm:p-8">
-            <h1 className="text-xl text-center font-bold leading-tight tracking-tight text-gray-900 md:text-2xl">
-              Login to your account
-            </h1>
-            <form className="space-y-4 md:space-y-6" action="#">
-              <div>
-                <label
-                  htmlFor="email"
-                  className="block mb-2 text-sm font-medium text-gray-900"
-                >
-                  Your email
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  id="email"
-                  className="bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5"
-                  placeholder="name@company.com"
-                  required
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="password"
-                  className="block mb-2 text-sm font-medium text-gray-900"
-                >
-                  Password
-                </label>
-                <input
-                  type="password"
-                  name="password"
-                  id="password"
-                  placeholder="••••••••"
-                  className="bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5"
-                  required
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-start">
-                  <div className="flex items-center h-5">
-                    <input
-                      id="remember"
-                      aria-describedby="remember"
-                      type="checkbox"
-                      className="w-4 h-4 border border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300"
-                      required
-                    />
-                  </div>
-                  <div className="ml-3 text-sm">
-                    <label htmlFor="remember" className="text-gray-500">
-                      Remember me
-                    </label>
-                  </div>
-                </div>
-                <a
-                  href="#"
-                  className="text-sm text-blue-bold font-bold hover:underline"
-                >
-                  Forgot password?
-                </a>
-              </div>
-              <button
-                type="submit"
-                className="w-full text-black bg-blue-theme hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-bold rounded-lg text-sm px-5 py-2.5 text-center"
-              >
-                Sign in with email
-              </button>
-              <p className="text-sm font-light text-center text-gray-500">
-                Don’t have an account?{" "}
-                <Link
-                  href={"/auth/signup"}
-                  className="font-bold hover:underline text-blue-bold"
-                >
-                  Get Started
-                </Link>
-              </p>
-            </form>
+
+        <h1 className="text-2xl font-bold  text-center mb-6">
+          Login to your account
+        </h1>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-700">
+              Email
+            </label>
+            <input
+              type="email"
+              className="w-full border border-gray-300 rounded-lg p-2.5"
+              placeholder="name@company.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
           </div>
-        </div>
+
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-700">
+              Password
+            </label>
+            <input
+              type="password"
+              className="w-full border border-gray-300 rounded-lg p-2.5"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+
+          {error && <p className="text-sm text-red-500">{error}</p>}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-theme text-black font-bold py-2.5 rounded-lg hover:bg-blue-600"
+          >
+            {loading ? "Signing in..." : "Sign in"}
+          </button>
+
+          <p className="text-sm text-center text-gray-500 mt-3">
+            Don’t have an account?{" "}
+            <Link
+              href="/auth/signup"
+              className="text-blue-600 font-semibold hover:underline"
+            >
+              Get Started
+            </Link>
+          </p>
+        </form>
       </div>
     </section>
   );
-};
-
-export default SignInPage;
+}
