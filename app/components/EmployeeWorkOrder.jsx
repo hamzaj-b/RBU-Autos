@@ -1,15 +1,5 @@
 import React from "react";
 
-/**
- * EmployeeWorkOrder
- * Props:
- * - data: Array<{ id, customer, image, orderDate, orderTime, status }>
- * - heading?: string
- * - containerWidth?: string (Tailwind width class)
- * - onAccept?: (item) => void
- * - onDecline?: (item) => void
- * - pendingIds?: Set<string|number>  // disable buttons for items being processed
- */
 const EmployeeWorkOrder = ({
   data,
   heading = "Recent Work Order",
@@ -128,7 +118,7 @@ const EmployeeWorkOrder = ({
               </div>
 
               {/* Divider */}
-              <div  />
+              <div />
 
               {/* Footer actions (mobile-first; desktop shows a tidy meta row) */}
               <div className="px-3 sm:px-4 py-2 ">
