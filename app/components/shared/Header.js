@@ -1,9 +1,15 @@
 "use client";
 
+import { useAuth } from "@/app/context/AuthContext";
 import { Bell, Mail, Search } from "lucide-react";
 import Link from "next/link";
 
 export default function Header({ toggleSidebar, className = "" }) {
+    const { user, token, logout, loading } = useAuth();
+  
+    console.log("user token:", token);
+   console.log ("user" , user);
+  
   return (
     <div className={`w-full bg-white flex items-center px-4 md:px-6 py-4 ${className}`}>
       <div>
@@ -66,7 +72,7 @@ export default function Header({ toggleSidebar, className = "" }) {
             />
           </Link>
           <div className="hidden md:flex flex-col">
-            <p className="text-sm font-medium text-gray-800">Cody Fisher</p>
+            <p className="text-sm font-medium text-gray-800">alice</p>
             <p className="text-xs text-gray-500">Owner</p>
           </div>
         </div>
