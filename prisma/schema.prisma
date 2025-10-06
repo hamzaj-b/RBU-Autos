@@ -50,15 +50,16 @@ model User {
 }
 
 model EmployeeProfile {
-  id         String      @id @default(auto()) @map("_id") @db.ObjectId
-  userId     String      @unique @db.ObjectId
+  id         String             @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String             @unique @db.ObjectId
   fullName   String
   title      String?
   hourlyRate Float?
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
   User       User[]
   WorkOrder  WorkOrder[]
+  Sessions   EmployeeSession[]  @relation("ProfileSessions") // ✅ added relation name
 
   @@index([fullName])
 }
@@ -186,16 +187,18 @@ model DiagnosticReport {
 }
 
 model EmployeeSession {
-  id         String    @id @default(auto()) @map("_id") @db.ObjectId
-  userId     String    @db.ObjectId
-  employeeId String?   @db.ObjectId
-  loginAt    DateTime
-  logoutAt   DateTime?
-  source     String?
-  location   String?
+  id          String           @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String           @db.ObjectId
+  employeeId  String?          @db.ObjectId
+  loginAt     DateTime
+  logoutAt    DateTime?
+  source      String?
+  location    String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  // ✅ Proper relation link
+  employee    EmployeeProfile? @relation("ProfileSessions", fields: [employeeId], references: [id])
 
   @@index([userId, loginAt])
   @@index([logoutAt])
