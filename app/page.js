@@ -17,6 +17,7 @@ const page = () => {
   const { user, token, logout, loading } = useAuth();
 
   console.log("user token:", token);
+ console.log ("user" , user);
 
   const dummyData = [
     {

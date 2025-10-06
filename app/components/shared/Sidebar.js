@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import {
   CalendarDays,
   LayoutDashboard,
@@ -10,23 +11,55 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/app/context/AuthContext";
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { user, loading } = useAuth();
 
-  const links = [
-    { href: "/", label: "Dashboard", icon: <LayoutDashboard /> },
-    { href: "/repair-tracker", label: "Repair tracker", icon: <Wrench /> },
-    { href: "/work-order", label: "Create Work Order", icon: <Users /> },
-    { href: "/customers", label: "Customers", icon: <Users /> },
-    { href: "/bookings", label: "Bookings", icon: <CalendarDays /> },
-    { href: "/diagnostics", label: "Diagnostics", icon: <Lightbulb /> },
-    { href: "/staff-management", label: "Staff Management", icon: <SquareUser /> },
-    { href: "/marketing", label: "Marketing", icon: <SquareUser /> },
-  ];
+  // 🌀 Show loader while context is loading
+  if (loading || !user) {
+    return (
+      <div className="flex justify-center items-center h-full text-gray-500">
+      
+      </div>
+    );
+  }
+
+  const userType = user?.userType; // e.g. "ADMIN", "CUSTOMER", "EMPLOYEE"
+  console.log("Sidebar userType:", userType);
+
+  // Define routes for each role
+  const linksByRole = {
+    ADMIN: [
+      { href: "/", label: "Dashboard", icon: <LayoutDashboard /> },
+      { href: "/repair-tracker", label: "Repair tracker", icon: <Wrench /> },
+      { href: "/work-order", label: "Create Work Order", icon: <Users /> },
+      { href: "/customers", label: "Customers", icon: <Users /> },
+      { href: "/bookings", label: "Bookings", icon: <CalendarDays /> },
+      { href: "/diagnostics", label: "Diagnostics", icon: <Lightbulb /> },
+      { href: "/staff-management", label: "Staff Management", icon: <SquareUser /> },
+      { href: "/marketing", label: "Marketing", icon: <SquareUser /> },
+    ],
+
+    CUSTOMER: [
+      { href: "/bookings", label: "Bookings", icon: <CalendarDays /> },
+      { href: "/diagnostics", label: "Diagnostics", icon: <Lightbulb /> },
+    ],
+
+    EMPLOYEE: [
+      { href: "/", label: "Dashboard", icon: <LayoutDashboard /> },
+      { href: "/repair-tracker", label: "Repair tracker", icon: <Wrench /> },
+      { href: "/work-order", label: "Create Work Order", icon: <Users /> },
+    ],
+  };
+
+  // Select correct links or empty array
+  const links = linksByRole[userType] || [];
 
   return (
     <div className="flex flex-col items-center w-full h-full">
+      {/* Logo & Branding */}
       <div className="flex flex-col items-center mb-10">
         <div className="flex items-center justify-center">
           <img src="/rbu-logo.png" width={120} alt="Logo" />
@@ -35,6 +68,8 @@ export default function Sidebar() {
           RBU <span className="text-black">AUTO INC</span>
         </h2>
       </div>
+
+      {/* Navigation */}
       <nav className="w-full">
         {links.map((link, index) => {
           const isActive = pathname === link.href;
@@ -55,7 +90,7 @@ export default function Sidebar() {
                 }`}
               >
                 {link.icon}
-              </span>{" "}
+              </span>
               {link.label}
             </Link>
           );

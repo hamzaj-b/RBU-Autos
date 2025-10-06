@@ -11,6 +11,7 @@ import {
   SlidersHorizontal,
   FileDownIcon,
 } from "lucide-react";
+import AdminAddCustomer from "../components/Modals/AdminAddCustomer";
 
 const Home = () => {
   const [customers, setCustomers] = useState([
@@ -43,6 +44,7 @@ const Home = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(6);
   const [selectedCustomers, setSelectedCustomers] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Filter and sort customers
   useEffect(() => {
@@ -117,7 +119,7 @@ const Home = () => {
           </select>
 
           <div className="flex space-x-4">
-            <button className="flex items-center space-x-2 bg-white text-gray-500 rounded-md px-4 py-2 text-sm">
+            <button className="flex items-center space-x-2 bg-white text-gray-500 rounded-md px-4 py-2 text-sm" onClick={() => setIsModalOpen(true)}>
               <Plus className="w-5 h-5" />
               <span>Add Customer</span>
             </button>
@@ -150,7 +152,10 @@ const Home = () => {
             <span className="hidden md:block px-2">Filters</span>
           </button>
         </div>
-
+<AdminAddCustomer
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
   {showFilters && (
     <div className="bg-gray-50 p-4 rounded-md shadow-lg">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

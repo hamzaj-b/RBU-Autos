@@ -1,58 +1,120 @@
-import Link from "next/link";
-import React from "react";
+"use client";
 
-const SignInPage = () => {
+import React, { useState, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+
+export default function NewPasswordPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const token = searchParams.get("token");
+
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!token) {
+      setMessage("Invalid or missing token.");
+    }
+  }, [token]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setMessage("");
+
+    if (password !== confirm) {
+      setMessage("❌ Passwords do not match");
+      return;
+    }
+
+    if (!token) {
+      setMessage("❌ Invalid or missing token.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/set-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, newPassword: password }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setMessage("✅ Password set successfully! Redirecting to login...");
+        setTimeout(() => router.push("/auth/login"), 2000);
+      } else {
+        setMessage(`❌ ${data.error || "Failed to set password"}`);
+      }
+    } catch (err) {
+      setMessage("❌ Network error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <section className="bg-blue-theme">
-      <div className="flex flex-col items-center justify-center px-6 py-8 mx-auto md:h-screen lg:py-0">
-        <div className="flex flex-col items-center mb-10">
-          <div className="flex items-center justify-center">
-            <img src="/logoDark.png" width={100} alt="Logo" />
-          </div>
-          <h2 className="text-xl font-semibold text-black mt-2">LoremIpsum</h2>
+    <section className="bg-blue-theme min-h-screen flex items-center justify-center text-gray-800">
+      <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-6">
+        <div className="text-center mb-4">
+          <img src="/logoDark.png" alt="Logo" width={100} className="mx-auto" />
+          <h2 className="text-xl font-semibold text-gray-800 mt-2">
+            RBU Autos CRM
+          </h2>
         </div>
-        <div className="w-full bg-white rounded-lg shadow md:mt-0 sm:max-w-md xl:p-0">
-          <div className="p-6 space-y-4 md:space-y-6 sm:p-8">
-            <h1 className="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl">
-              Create New Password
-            </h1>
-            <p className="text-gray-400">
-              Please enter a new password. Your new password must be different
-              from previous password.
+
+        <h1 className="text-2xl font-bold text-center mb-4">
+          Create New Password
+        </h1>
+        <p className="text-gray-500 text-center mb-6">
+          Please enter a new password different from your old one.
+        </p>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <input
+              type="password"
+              placeholder="New Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <input
+              type="password"
+              placeholder="Confirm New Password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              required
+              className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {message && (
+            <p
+              className={`text-center text-sm ${
+                message.startsWith("✅")
+                  ? "text-green-600"
+                  : "text-red-600 font-medium"
+              }`}
+            >
+              {message}
             </p>
-            <form className="space-y-4 md:space-y-6" action="#">
-              <div>
-                <input
-                  type="password"
-                  name="password"
-                  id="password"
-                  placeholder="New Password"
-                  className="bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5"
-                  required
-                />
-              </div>
-              <div>
-                <input
-                  type="password"
-                  name="password"
-                  id="password"
-                  placeholder="Confirm New Password"
-                  className="bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5"
-                  required
-                />
-              </div>
-              <button
-                type="submit"
-                className="w-full text-black bg-blue-theme hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-bold rounded-lg text-sm px-5 py-2.5 text-center"
-              >
-                Reset Password
-              </button>
-            </form>
-          </div>
-        </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-theme text-black font-bold py-2.5 rounded-lg hover:bg-blue-600 disabled:opacity-50"
+          >
+            {loading ? "Submitting..." : "Reset Password"}
+          </button>
+        </form>
       </div>
     </section>
   );
-};
-
-export default SignInPage;
+}
