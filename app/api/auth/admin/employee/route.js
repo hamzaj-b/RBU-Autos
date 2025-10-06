@@ -71,4 +71,37 @@ async function POST(req) {
   }
 }
 
-module.exports = { POST };
+async function GET(req) {
+  try {
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader)
+      return NextResponse.json({ error: "No token" }, { status: 401 });
+
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, SECRET_KEY);
+
+    if (decoded.userType !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
+    const employees = await prisma.employeeProfile.findMany({
+      include: {
+        Sessions: true,
+        User: {
+          select: { email: true, isActive: true, createdAt: true },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return NextResponse.json({ employees });
+  } catch (err) {
+    console.error("Fetch employees error:", err);
+    return NextResponse.json(
+      { error: "Failed to fetch employees" },
+      { status: 500 }
+    );
+  }
+}
+
+module.exports = { POST, GET };
