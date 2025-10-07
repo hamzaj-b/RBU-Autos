@@ -1,6 +1,7 @@
 "use client";
+
 import { Search, SlidersHorizontal } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import EmployeeWorkOrder from "../components/EmployeeWorkOrder";
 
 export default function RepairTracker() {
@@ -9,49 +10,53 @@ export default function RepairTracker() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
-  const dummyData = [
-    {
-      id: "01",
-      customer: "Shirt Creme",
-      image: "/user1.png",
-      orderDate: "March 24, 2022",
-      orderTime: "09:20 AM",
-      status: "Completed",
-    },
-    {
-      id: "02",
-      customer: "Shirt Creme",
-      image: "/user1.png",
-      orderDate: "March 24, 2022",
-      orderTime: "09:20 AM",
-      status: "Pending",
-    },
-    {
-      id: "03",
-      customer: "#A4064B",
-      image: "/user1.png",
-      orderDate: "March 24, 2022",
-      orderTime: "09:20 AM",
-      status: "Pending",
-    },
-  ];
+  const [workOrders, setWorkOrders] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const filteredData = dummyData.filter((item) => {
-    const matchesSearch = item.customer
+  // ✅ Fetch open work orders on component mount
+  useEffect(() => {
+    const fetchWorkOrders = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const res = await fetch("/api/workOrders/open"); // your API endpoint
+        const data = await res.json();
+
+        if (res.ok) {
+          setWorkOrders(data.workOrders); // pass API data
+        } else {
+          setError(data.error || "Failed to fetch work orders");
+        }
+      } catch (err) {
+        console.error("Fetch error:", err);
+        setError("Network error. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchWorkOrders();
+  }, []);
+
+  // Filter work orders based on search & status & date
+  const filteredData = workOrders.filter((item) => {
+    const matchesSearch = item.customerName
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      statusFilter === "all" || item.status === statusFilter;
+    const matchesStatus = statusFilter === "all" || item.status === statusFilter;
     const matchesDate =
-      (!dateFrom || new Date(item.orderDate) >= new Date(dateFrom)) &&
-      (!dateTo || new Date(item.orderDate) <= new Date(dateTo));
+      (!dateFrom || new Date(item.startAt) >= new Date(dateFrom)) &&
+      (!dateTo || new Date(item.startAt) <= new Date(dateTo));
+
     return matchesSearch && matchesStatus && matchesDate;
   });
 
   return (
     <div className="container mx-auto p-6 text-black">
       <div className="bg-white p-4 rounded-lg mb-4">
-         <div className="flex space-x-4 mb-4">
+        <div className="flex space-x-4 mb-4">
           <div className="relative w-full">
             <input
               type="text"
@@ -60,64 +65,28 @@ export default function RepairTracker() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-            <span className=" absolute left-3 top-2 md:top-4 text-gray-500">
+            <span className="absolute left-3 top-2 md:top-4 text-gray-500">
               <Search />{" "}
             </span>
           </div>
-          <button className=" md:py-2 px-2 md:px-4 rounded-lg bg-gray-100 flex items-center text-gray-500">
+          <button className="md:py-2 px-2 md:px-4 rounded-lg bg-gray-100 flex items-center text-gray-500">
             <SlidersHorizontal className="w-4" />
             <span className="hidden md:block px-2">Filters</span>
           </button>
         </div>
       </div>
-      <div className="p-2 bg-white">
-        <EmployeeWorkOrder data={dummyData}/>
+
+      <div className="p-2 bg-white rounded-lg">
+        {loading ? (
+          <p className="text-center text-gray-500 py-4">Loading work orders...</p>
+        ) : error ? (
+          <p className="text-center text-red-500 py-4">{error}</p>
+        ) : filteredData.length === 0 ? (
+          <p className="text-center text-gray-500 py-4">No open work orders found</p>
+        ) : (
+          <EmployeeWorkOrder data={filteredData} /> // pass API data here
+        )}
       </div>
-      {/* <div className="bg-white p-2 rounded-lg">
-        <h2 className="text-lg p-4 text-gray-500 font-semibold mb-4">
-          Recent Work Order
-        </h2>
-        <div className="grid grid-cols-5 gap-4 bg-gray-200 rounded-2xl py-4 px-4 mx-2 font-medium text-gray-600 mb-2">
-          <span>No</span>
-          <span>Customer</span>
-          <span>Order Date</span>
-          <span className="text-center">Status</span>
-          <span className="text-center">Action</span>
-        </div>
-        {filteredData.map((item) => (
-          <div
-            key={item.id}
-            className="grid grid-cols-5 gap-4 py-2 mx-6 border-b border-gray-200"
-          >
-            <span>{item.id}</span>
-            <span className="flex items-center gap-2">
-              <img src={item.image} width={50} alt="" />
-              {item.customer}
-            </span>
-            <span className="flex flex-col">
-              {item.orderDate}
-              <span className="text-gray-500">{item.orderTime}</span>
-            </span>
-            <span
-              className={`px-4 py-1 rounded-full items-center justify-center flex ${
-                item.status === "Completed"
-                  ? "bg-green-100 text-green-700"
-                  : "bg-yellow-100 text-yellow-600"
-              }`}
-            >
-              {item.status}
-            </span>
-            <div className="gap-4 flex justify-center">
-              <button className="px-6 py-2 rounded-lg bg-green-700 text-white font-medium shadow-md hover:bg-green-800 hover:shadow-lg transition-all duration-200">
-                Accept
-              </button>
-              <button className="px-6 py-2 rounded-lg bg-red-500 text-white font-medium shadow-md hover:bg-red-600 hover:shadow-lg transition-all duration-200">
-                Decline
-              </button>
-            </div>
-          </div>
-        ))}
-      </div> */}
     </div>
   );
 }

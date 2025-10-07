@@ -33,10 +33,9 @@ export default function Sidebar() {
     ADMIN: [
       { href: "/", label: "Dashboard", icon: <LayoutDashboard /> },
       { href: "/repair-tracker", label: "Repair tracker", icon: <Wrench /> },
-      { href: "/work-order", label: "Create Work Order", icon: <Users /> },
       { href: "/services", label: "Services", icon: <Settings2 /> },
       { href: "/customers", label: "Customers", icon: <Users /> },
-      { href: "/bookings", label: "Bookings", icon: <CalendarDays /> },
+      { href: "/bookings", label: "Create Booking", icon: <CalendarDays /> },
       { href: "/diagnostics", label: "Diagnostics", icon: <Lightbulb /> },
       {
         href: "/staff-management",
@@ -45,16 +44,18 @@ export default function Sidebar() {
       },
       { href: "/marketing", label: "Marketing", icon: <SquareUser /> },
     ],
-
+    
     CUSTOMER: [
-      { href: "/bookings", label: "Bookings", icon: <CalendarDays /> },
+      { href: "/", label: "Dashboard", icon: <LayoutDashboard /> },
+      { href: "/bookings", label: "Create Booking", icon: <CalendarDays /> },
       { href: "/diagnostics", label: "Diagnostics", icon: <Lightbulb /> },
     ],
-
+    
     EMPLOYEE: [
       { href: "/", label: "Dashboard", icon: <LayoutDashboard /> },
+      // { href: "/work-order", label: "Create Work Order", icon: <Users /> },
       { href: "/repair-tracker", label: "Repair tracker", icon: <Wrench /> },
-      { href: "/work-order", label: "Create Work Order", icon: <Users /> },
+      { href: "/work-order", label: "Work Orders", icon: <Users /> },
     ],
   };
 

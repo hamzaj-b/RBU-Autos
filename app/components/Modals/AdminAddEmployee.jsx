@@ -29,7 +29,7 @@ export default function AdminAddEmployee({ isOpen, onClose }) {
           password,
           fullName,
           title,
-          hourlyRate,
+          hourlyRate: Number(hourlyRate),
         }),
       });
 

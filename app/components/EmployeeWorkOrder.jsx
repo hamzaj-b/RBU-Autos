@@ -9,7 +9,26 @@ const EmployeeWorkOrder = ({
   pendingIds,
 }) => {
   const isPending = (id) => !!pendingIds?.has?.(id);
+console.log("Employee workorder", data);
 
+
+function formatDateRange(startISO, endISO) {
+  const start = new Date(startISO);
+  const end = new Date(endISO);
+
+  const sameDay = start.toDateString() === end.toDateString();
+
+  const optionsDate = { month: "short", day: "numeric", year: "numeric" };
+  const optionsTime = { hour: "2-digit", minute: "2-digit" };
+
+  if (sameDay) {
+    // Show date once + both times
+    return `${start.toLocaleDateString(undefined, optionsDate)} • ${start.toLocaleTimeString(undefined, optionsTime)} - ${end.toLocaleTimeString(undefined, optionsTime)}`;
+  } else {
+    // Show full start → end
+    return `${start.toLocaleDateString(undefined, optionsDate)}, ${start.toLocaleTimeString(undefined, optionsTime)} → ${end.toLocaleDateString(undefined, optionsDate)}, ${end.toLocaleTimeString(undefined, optionsTime)}`;
+  }
+}
   return (
     <div className={containerWidth}>
       <h2 className="text-lg sm:text-[22px] px-3 sm:px-4 py-2 sm:py-3 text-gray-500 font-semibold mb-2 sm:mb-4">
@@ -28,54 +47,43 @@ const EmployeeWorkOrder = ({
               <div className="p-3 sm:p-4">
                 <div className="flex flex-col gap-3 sm:gap-4 md:flex-row md:items-center md:justify-between">
                   {/* Left cluster: Order No + Customer + Date/Time */}
-                  <div className="flex items-start md:items-center gap-3 sm:gap-4 min-w-0">
                     {/* Order No */}
-                    {/* <div className="bg-gray-100 text-gray-700 rounded-xl px-2.5 py-1 text-xs sm:text-sm font-medium tabular-nums shrink-0">
-                      #{item.id}
-                    </div> */}
+                   
 
                     {/* Avatar + Name + Date/Time */}
                     <div className="flex items-center gap-3 min-w-0">
-                      <img
-                        src={item.image}
-                        alt={item.customer}
-                        className="w-9 h-9 sm:w-14 sm:h-14 rounded-full object-cover shrink-0"
-                      />
-                      <div className="min-w-0">
-                        <p className="text-gray-800 text-sm md:text-lg font-semibold truncate">
-                          {item.customer}
+                      <div className="w-11 h-11 flex items-center justify-center rounded-full bg-gradient-to-tl from-blue-bold to-blue-theme text-white font-semibold text-sm shadow-sm">
+                      {item?.customerName
+                        .split(" ")
+                        .map((n) => n[0]?.toUpperCase())
+                        .join("")
+                        .slice(0, 2)}
+                    </div>
+                      <div className="  min-w-0">
+                        <div>
+                        <p className="text-gray-800 text-sm md:text-lg font-semibold">
+                          {item.bookingTitle}
                         </p>
+                        <p className="text-gray-800 text-sm md:text-base font-semibold">
+                          {item.customerName}
+                        </p>
+                        </div>
                         <div className="flex flex-col md:flex-row flex-wrap items-start md:items-center gap-x-2 gap-y-0.5 text-xs sm:text-sm">
                           <span className="text-gray-700 truncate">
-                            {item.orderDate}
+                            {formatDateRange(item.startAt , item.endAt)}
                           </span>
                           <span className="hidden md:block text-gray-400">
                             •
                           </span>
                           <span className="text-gray-500 truncate">
-                            {item.orderTime}
+                            {item.estimatedTime} Min
                           </span>
                         </div>
                       </div>
                     </div>
-                  </div>
 
                   {/* Right cluster (desktop): Status + Actions */}
                   <div className="hidden md:flex items-center gap-3 sm:gap-4">
-                    {/* Status pill */}
-                    {/* <span
-                      className={`h-6 px-3 rounded-full inline-flex items-center justify-center text-xs sm:text-sm font-medium
-                        ${
-                          item.status === "Completed"
-                            ? "bg-green-100 text-green-600"
-                            : item.status === "Pending"
-                            ? "bg-yellow-100 text-yellow-700"
-                            : "bg-gray-100 text-gray-600"
-                        }`}
-                    >
-                      {item.status}
-                    </span> */}
-
                     {/* Actions */}
                     <div className="flex items-center gap-2">
                       <button
