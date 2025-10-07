@@ -60,9 +60,11 @@ async function GET(req) {
     const sortBy = searchParams.get("sortBy") || "createdAt";
     const order = searchParams.get("order") === "asc" ? "asc" : "desc";
     const skip = (page - 1) * limit;
+    const status = searchParams.get("status") || "all"; // 👈 NEW filter
 
+    // Build dynamic filter
     const where = {
-      isActive: true,
+      ...(status !== "all" && { isActive: status === "active" }),
       OR: [
         { name: { contains: search, mode: "insensitive" } },
         { category: { contains: search, mode: "insensitive" } },

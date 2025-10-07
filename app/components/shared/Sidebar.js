@@ -5,6 +5,7 @@ import {
   CalendarDays,
   LayoutDashboard,
   Lightbulb,
+  Settings2,
   SquareUser,
   Users,
   Wrench,
@@ -20,9 +21,7 @@ export default function Sidebar() {
   // 🌀 Show loader while context is loading
   if (loading || !user) {
     return (
-      <div className="flex justify-center items-center h-full text-gray-500">
-      
-      </div>
+      <div className="flex justify-center items-center h-full text-gray-500"></div>
     );
   }
 
@@ -35,10 +34,15 @@ export default function Sidebar() {
       { href: "/", label: "Dashboard", icon: <LayoutDashboard /> },
       { href: "/repair-tracker", label: "Repair tracker", icon: <Wrench /> },
       { href: "/work-order", label: "Create Work Order", icon: <Users /> },
+      { href: "/services", label: "Services", icon: <Settings2 /> },
       { href: "/customers", label: "Customers", icon: <Users /> },
       { href: "/bookings", label: "Bookings", icon: <CalendarDays /> },
       { href: "/diagnostics", label: "Diagnostics", icon: <Lightbulb /> },
-      { href: "/staff-management", label: "Staff Management", icon: <SquareUser /> },
+      {
+        href: "/staff-management",
+        label: "Staff Management",
+        icon: <SquareUser />,
+      },
       { href: "/marketing", label: "Marketing", icon: <SquareUser /> },
     ],
 

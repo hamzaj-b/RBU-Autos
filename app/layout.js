@@ -1,4 +1,5 @@
 import { Geist, Geist_Mono } from "next/font/google";
+import "antd/dist/reset.css";
 import "./globals.css";
 import ClientLayout from "./ClientLayout";
 import { AuthProvider } from "./context/AuthContext";

@@ -67,6 +67,8 @@ async function PUT(req, { params }) {
 async function DELETE(req, { params }) {
   try {
     const { id } = params;
+
+    // 🧩 1️⃣ Auth check
     const authHeader = req.headers.get("authorization");
     if (!authHeader)
       return NextResponse.json({ error: "No token provided" }, { status: 401 });
@@ -89,17 +91,23 @@ async function DELETE(req, { params }) {
       );
     }
 
-    const updated = await prisma.service.update({
+    // 🗑️ 2️⃣ Delete the record permanently
+    const deletedService = await prisma.service.delete({
       where: { id },
-      data: { isActive: false },
     });
 
     return NextResponse.json({
-      message: "Service deactivated",
-      service: updated,
+      message: `Service '${deletedService.name}' deleted successfully.`,
+      service: deletedService,
     });
   } catch (err) {
     console.error("DELETE /api/services/[id] error:", err);
+
+    // Prisma-specific error handling (e.g., not found)
+    if (err.code === "P2025") {
+      return NextResponse.json({ error: "Service not found" }, { status: 404 });
+    }
+
     return NextResponse.json(
       { error: "Failed to delete service" },
       { status: 500 }
