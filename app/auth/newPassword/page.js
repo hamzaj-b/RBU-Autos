@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
-export default function NewPasswordPage() {
+// ✅ Inner component that uses useSearchParams
+function NewPasswordForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const token = searchParams.get("token");
@@ -18,6 +19,7 @@ export default function NewPasswordPage() {
       setMessage("Invalid or missing token.");
     }
   }, [token]);
+  console.log("sajd", token);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -58,9 +60,9 @@ export default function NewPasswordPage() {
   return (
     <section className="bg-blue-theme min-h-screen flex items-center justify-center text-gray-800">
       <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-6">
-        <div className="text-center mb-4">
+        <div className="text-center mb-4 flex flex-col gap-4">
           <img src="/logoDark.png" alt="Logo" width={100} className="mx-auto" />
-          <h2 className="text-xl font-semibold text-gray-800 mt-2">
+          <h2 className="text-2xl font-bold text-gray-800 mt-2">
             RBU Autos CRM
           </h2>
         </div>
@@ -116,5 +118,14 @@ export default function NewPasswordPage() {
         </form>
       </div>
     </section>
+  );
+}
+
+// ✅ Outer wrapper with Suspense (fixes build error)
+export default function NewPasswordPage() {
+  return (
+    <Suspense fallback={<div className="text-center mt-20">Loading...</div>}>
+      <NewPasswordForm />
+    </Suspense>
   );
 }
