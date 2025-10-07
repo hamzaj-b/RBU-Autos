@@ -343,18 +343,6 @@ export default function ServicesPage() {
             />
           </div>
 
-          <div>
-            <label className="text-sm font-medium text-gray-600">
-              Category
-            </label>
-            <Input
-              value={formData.category}
-              onChange={(e) =>
-                setFormData((p) => ({ ...p, category: e.target.value }))
-              }
-              placeholder="e.g., Engine, Electrical"
-            />
-          </div>
 
           <div>
             <label className="text-sm font-medium text-gray-600">
