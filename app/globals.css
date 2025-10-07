@@ -4,7 +4,7 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --color-blue-theme: #3bb5ff;
+  --color-blue-theme: #2A7BAE;
   --color-blue-bold: #4089B7;
   --color-blue-light: #dcf2fc;
 

@@ -84,13 +84,13 @@ export default function Sidebar() {
               href={link.href}
               className={`flex items-center px-4 py-3 mx-6 ${
                 isActive
-                  ? "bg-blue-theme text-black font-semibold rounded-lg"
+                  ? "bg-blue-theme text-white font-semibold rounded-lg"
                   : "text-gray-600 hover:bg-gray-100 rounded"
               }`}
             >
               <span
                 className={`mr-2 ${
-                  isActive ? "text-black" : "text-blue-theme"
+                  isActive ? "text-white" : "text-blue-theme"
                 }`}
               >
                 {link.icon}

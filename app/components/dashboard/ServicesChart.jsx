@@ -11,8 +11,8 @@ const ServiceReport = () => {
     datasets: [
       {
         data: [47, 28, 18], // Corresponding to the values in the image
-        backgroundColor: ['#F9D84D', '#3BB5FF', '#0d1426'], // Yellow, Green, and Light Gray
-        borderColor: ['#F9D84D', '#3BB5FF', '#0d1426'],
+        backgroundColor: ['#F9D84D', '#2A7BAE', '#0d1426'], // Yellow, Green, and Light Gray
+        borderColor: ['#F9D84D', '#2A7BAE', '#0d1426'],
         borderWidth: 1,
       },
     ],
@@ -58,7 +58,7 @@ const ServiceReport = () => {
         </div>
       </div>
 
-      <button style={{ width: '100%', padding: '10px', backgroundColor: '#3BB5FF', color: 'white', border: 'none', borderRadius: '5px', marginTop: '20px' }}>
+      <button style={{ width: '100%', padding: '10px', backgroundColor: '#2A7BAE', color: 'white', border: 'none', borderRadius: '5px', marginTop: '20px' }}>
         View More
       </button>
     </div>
