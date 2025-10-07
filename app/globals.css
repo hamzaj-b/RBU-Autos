@@ -5,7 +5,7 @@
 
 :root {
   --color-blue-theme: #3bb5ff;
-  --color-blue-bold: #164a6a;
+  --color-blue-bold: #4089B7;
   --color-blue-light: #dcf2fc;
 
   /* Added the blue-theme color */
@@ -235,6 +235,7 @@ button:hover {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }

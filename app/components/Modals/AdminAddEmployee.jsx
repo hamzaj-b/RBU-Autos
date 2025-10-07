@@ -23,11 +23,18 @@ export default function AdminAddEmployee({ isOpen, onClose }) {
       const res = await fetch("/api/auth/admin/employee", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, email, password, fullName, title, hourlyRate }),
+        body: JSON.stringify({
+          token,
+          email,
+          password,
+          fullName,
+          title,
+          hourlyRate,
+        }),
       });
 
       const data = await res.json();
-      console.log("API Response:", data);  // Check API response
+      console.log("API Response:", data); // Check API response
 
       if (res.ok) {
         setMessage("✅ Employee created!");
@@ -65,7 +72,9 @@ export default function AdminAddEmployee({ isOpen, onClose }) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-gray-700 font-medium mb-1">Full Name</label>
+            <label className="block text-gray-700 font-medium mb-1">
+              Full Name
+            </label>
             <input
               type="text"
               value={fullName}
@@ -76,7 +85,9 @@ export default function AdminAddEmployee({ isOpen, onClose }) {
           </div>
 
           <div>
-            <label className="block text-gray-700 font-medium mb-1">Email</label>
+            <label className="block text-gray-700 font-medium mb-1">
+              Email
+            </label>
             <input
               type="email"
               value={email}
@@ -86,7 +97,9 @@ export default function AdminAddEmployee({ isOpen, onClose }) {
             />
           </div>
           <div>
-            <label className="block text-gray-700 font-medium mb-1">Password</label>
+            <label className="block text-gray-700 font-medium mb-1">
+              Password
+            </label>
             <input
               type="password"
               value={password}
@@ -96,7 +109,9 @@ export default function AdminAddEmployee({ isOpen, onClose }) {
             />
           </div>
           <div>
-            <label className="block text-gray-700 font-medium mb-1">Title</label>
+            <label className="block text-gray-700 font-medium mb-1">
+              Title
+            </label>
             <input
               type="text"
               value={title}
@@ -106,7 +121,9 @@ export default function AdminAddEmployee({ isOpen, onClose }) {
             />
           </div>
           <div>
-            <label className="block text-gray-700 font-medium mb-1">Hourly Rate</label>
+            <label className="block text-gray-700 font-medium mb-1">
+              Hourly Rate
+            </label>
             <input
               type="number"
               value={hourlyRate}
@@ -126,11 +143,11 @@ export default function AdminAddEmployee({ isOpen, onClose }) {
             </p>
           )}
 
-          <div className="flex justify-end space-x-3 mt-6">
+          <div className="flex justify-end gap-4 w-full mt-6">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+              className="px-4 py-2 w-1/2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
             >
               Cancel
             </button>
@@ -138,7 +155,7 @@ export default function AdminAddEmployee({ isOpen, onClose }) {
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition"
+              className="px-4 py-2 w-1/2 bg-blue-bold text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition"
             >
               {loading ? "Submitting..." : "Submit"}
             </button>

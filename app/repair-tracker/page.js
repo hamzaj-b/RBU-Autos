@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Search, SlidersHorizontal } from "lucide-react";
 import RecentWorkOrder from "../components/RecentWorkOrder";
 import { useAuth } from "@/app/context/AuthContext";
+import { Spin } from "antd";
 
 export default function RepairTracker() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -129,7 +130,9 @@ export default function RepairTracker() {
       {/* 📋 Work Order List */}
       <div className="bg-white p-2 rounded-lg">
         {loading ? (
-          <div className="text-center py-10 text-gray-500">Loading...</div>
+          <div className="text-center py-10 text-gray-500">
+            <Spin size="large" />
+          </div>
         ) : workOrders.length === 0 ? (
           <div className="text-center py-10 text-gray-400">
             No work orders found.
