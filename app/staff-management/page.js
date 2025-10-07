@@ -258,13 +258,13 @@ export default function StaffManagement() {
             </>
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-gray-400">
-              <Image
-                src="/profile.png"
-                alt="placeholder"
-                width={60}
-                height={60}
-                className="opacity-70 mb-4"
-              />
+              <div className="w-11 h-11 flex items-center justify-center rounded-full bg-gradient-to-tl from-blue-bold to-blue-theme text-white font-semibold text-sm shadow-sm">
+                {"Employee"
+                  .split(" ")
+                  .map((n) => n[0]?.toUpperCase())
+                  .join("")
+                  .slice(0, 2)}
+              </div>
               <p>Select an employee to view details</p>
             </div>
           )}
