@@ -1,328 +1,349 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { Table, Input, message, Popconfirm, Tooltip, Spin, Tag } from "antd";
+import { Button } from "@/components/ui/button";
 import {
-  ArrowUpDown,
-  ChevronLeft,
-  ChevronRight,
   Plus,
-  MoreVertical,
+  UserPlus,
+  Pencil,
+  Trash2,
+  RefreshCcw,
   Search,
-  SlidersHorizontal,
-  FileDownIcon,
+  Send,
 } from "lucide-react";
-import AdminAddCustomer from "../components/Modals/AdminAddCustomer";
+import { useAuth } from "@/app/context/AuthContext";
+import CustomerModal from "../components/app/CustomerModal";
+import InviteModal from "../components/app/InviteModal";
 
-const Home = () => {
-  const [customers, setCustomers] = useState([
-    {
-      id: 1,
-      name: "Devon Lane",
-      email: "chieko@mail.com",
-      orders: 125,
-      sales: 101345.0,
-      spent: 101345.0,
-      avatar: "https://randomuser.me/api/portraits/men/32.jpg",
-    },
-    {
-      id: 2,
-      name: "Kathryn Murphy",
-      email: "rohan_anna@mail.com",
-      orders: 11,
-      sales: 2400.98,
-      spent: 2400.98,
-      avatar: "https://randomuser.me/api/portraits/women/44.jpg",
-    },
-    // Add more customers...
-  ]);
+export default function CustomerManagement() {
+  const { token } = useAuth();
+  const [clientReady, setClientReady] = useState(false);
+  const [customers, setCustomers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [search, setSearch] = useState("");
+  const [modalOpen, setModalOpen] = useState(false);
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState(null);
+  const [formData, setFormData] = useState({
+    fullName: "",
+    email: "",
+    addressJson: "",
+    vehicleJson: { make: "", model: "", variant: "", info: "" },
+    notes: "",
+  });
 
-  const [filteredCustomers, setFilteredCustomers] = useState(customers);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState("name");
-  const [sortOrder, setSortOrder] = useState("asc");
-  const [showFilters, setShowFilters] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(6);
-  const [selectedCustomers, setSelectedCustomers] = useState([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  useEffect(() => setClientReady(true), []);
 
-  // Filter and sort customers
+  // ─── Fetch Customers ───────────────────────────────
+  const fetchCustomers = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(`/api/customers?search=${search}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (res.ok) setCustomers(data.customers || []);
+      else message.error(data.error || "Failed to load customers");
+    } catch (err) {
+      console.error(err);
+      message.error("Network error loading customers");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    let filtered = customers.filter(
-      (customer) =>
-        customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.email.toLowerCase().includes(searchTerm.toLowerCase())
+    if (token && clientReady) fetchCustomers();
+  }, [token, search, clientReady]);
+
+  // ─── Save or Update ───────────────────────────────
+  const handleSave = async () => {
+    const isEdit = !!editingCustomer;
+    if (!formData.fullName || !formData.email)
+      return message.warning("Full name and email are required");
+
+    try {
+      setLoading(true);
+      const url = isEdit
+        ? `/api/customers/${editingCustomer.id}`
+        : "/api/customers";
+      const method = isEdit ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        message.success(isEdit ? "Customer updated!" : "Customer created!");
+        setModalOpen(false);
+        setEditingCustomer(null);
+        fetchCustomers();
+      } else {
+        message.error(data.error || "Operation failed");
+      }
+    } catch (err) {
+      console.error("Save customer error:", err);
+      message.error("Unexpected error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ─── Delete ───────────────────────────────────────
+  const handleDelete = async (id) => {
+    try {
+      const res = await fetch(`/api/customers/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        message.success("Customer deleted");
+        fetchCustomers();
+      } else {
+        message.error(data.error || "Failed to delete");
+      }
+    } catch (err) {
+      message.error("Network error");
+    }
+  };
+
+  // ─── Invite ───────────────────────────────────────
+  const handleInvite = async () => {
+    if (!formData.fullName || !formData.email)
+      return message.warning("Full name and email required");
+
+    try {
+      setLoading(true);
+      const res = await fetch("/api/admin/customer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token,
+          email: formData.email,
+          fullName: formData.fullName,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        message.success("Invite sent successfully!");
+        setInviteModalOpen(false);
+        fetchCustomers();
+      } else {
+        message.error(data.error || "Failed to send invite");
+      }
+    } catch {
+      message.error("Unexpected error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ─── Table Columns ────────────────────────────────
+  const columns = [
+    {
+      title: "Customer",
+      dataIndex: "fullName",
+      render: (_, r) => (
+        <div className="flex items-center gap-2">
+          <div className="bg-blue-100 text-blue-700 w-9 h-9 rounded-full flex items-center justify-center font-semibold">
+            {r.fullName
+              ?.split(" ")
+              .map((n) => n[0])
+              .join("")
+              .slice(0, 2)
+              .toUpperCase()}
+          </div>
+          <div>
+            <p className="font-medium text-gray-800">{r.fullName}</p>
+            <p className="text-xs text-gray-500">
+              {r.User?.[0]?.email || "No Email"}
+            </p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "Vehicle",
+      dataIndex: "vehicleJson",
+      render: (v) =>
+        v?.make ? `${v.make} ${v.model || ""} (${v.variant || ""})` : "—",
+    },
+    {
+      title: "Address",
+      dataIndex: "addressJson",
+      render: (a) =>
+        a && typeof a === "object" && Object.keys(a).length
+          ? `${a.city || ""}, ${a.state || ""}`
+          : "—",
+    },
+    {
+      title: "Status",
+      dataIndex: "User",
+      render: (userArr) => {
+        const active = userArr?.[0]?.isActive;
+        return (
+          <Tag color={active ? "green" : "red"}>
+            {active ? "Active" : "Inactive"}
+          </Tag>
+        );
+      },
+    },
+    {
+      title: "Actions",
+      render: (_, record) => (
+        <div className="flex gap-2">
+          <Tooltip title="Edit Customer">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setEditingCustomer(record);
+                setFormData({
+                  fullName: record.fullName,
+                  email: record.User?.[0]?.email || "",
+                  addressJson: record.addressJson || "",
+                  vehicleJson: record.vehicleJson || {
+                    make: "",
+                    model: "",
+                    variant: "",
+                    info: "",
+                  },
+                  notes: record.notes || "",
+                });
+                setModalOpen(true);
+              }}
+              className="text-blue-600 hover:bg-blue-50"
+            >
+              <Pencil className="w-4 h-4" />
+            </Button>
+          </Tooltip>
+          <Popconfirm
+            title="Delete this customer?"
+            onConfirm={() => handleDelete(record.id)}
+            okText="Yes"
+            cancelText="No"
+          >
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-red-600 hover:bg-red-50"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </Popconfirm>
+        </div>
+      ),
+    },
+  ];
+
+  // ─── Render ───────────────────────────────────────
+  if (!clientReady)
+    return (
+      <div className="flex justify-center items-center h-screen bg-gray-50">
+        <Spin size="large" />
+      </div>
     );
 
-    filtered = filtered.sort((a, b) => {
-      let valA = a[sortBy],
-        valB = b[sortBy];
-      if (sortOrder === "desc") [valA, valB] = [valB, valA];
-      return valA > valB ? 1 : valA < valB ? -1 : 0;
-    });
-
-    setFilteredCustomers(filtered);
-  }, [searchTerm, customers, sortBy, sortOrder]);
-
-  // Pagination logic
-  const paginate = (page) => setCurrentPage(page);
-  const currentCustomers = filteredCustomers.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-  const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
-
-  // Handle sort
-  const handleSort = (column) => {
-    setSortBy(column);
-    setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-  };
-
-  // Handle search
-  const handleSearch = (e) => {
-    setSearchTerm(e.target.value);
-  };
-
-  // Handle result per page
-  const handleItemsPerPageChange = (e) => {
-    setItemsPerPage(Number(e.target.value));
-    setCurrentPage(1); // Reset to first page when changing results per page
-  };
-
-  // Handle selection of individual customer checkboxes
-  const handleCheckboxChange = (customerId) => {
-    if (selectedCustomers.includes(customerId)) {
-      setSelectedCustomers(selectedCustomers.filter((id) => id !== customerId));
-    } else {
-      setSelectedCustomers([...selectedCustomers, customerId]);
-    }
-  };
-
-  // Handle master checkbox for selecting all customers
-  const handleMasterCheckboxChange = () => {
-    if (selectedCustomers.length === filteredCustomers.length) {
-      setSelectedCustomers([]); // Deselect all
-    } else {
-      setSelectedCustomers(filteredCustomers.map((customer) => customer.id)); // Select all
-    }
-  };
-
   return (
-    <div className="container min-h-screen mx-auto text-black p-6">
-      <div className=" mx-auto">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <select className="bg-white border border-gray-300 rounded-md px-2 md:px-4 py-2 text-sm">
-            <option>Show: All Orders</option>
-            <option>Active Customers</option>
-            <option>Inactive Customers</option>
-          </select>
-
-          <div className="flex space-x-4">
-            <button className="flex items-center space-x-2 bg-white text-gray-500 rounded-md px-4 py-2 text-sm" onClick={() => setIsModalOpen(true)}>
-              <Plus className="w-5 h-5" />
-              <span>Add Customer</span>
-            </button>
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center space-x-2 bg-white text-gray-500 rounded-md px-2 py-1 md:px-4 md:py-2 text-sm"
-            >
-              <FileDownIcon className="w-5 h-5" />
-              <span className="hidden md:flex">Export</span>
-            </button>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-8">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-semibold text-gray-800">
+          Customer Management
+        </h1>
+        <div className="flex items-center gap-3">
+          <Button
+            onClick={fetchCustomers}
+            variant="outline"
+            className="flex items-center gap-2 text-gray-600"
+            disabled={loading}
+          >
+            <RefreshCcw
+              className={`w-4 h-4 ${loading ? "animate-spin" : ""} `}
+            />{" "}
+            Refresh
+          </Button>
+          <Button
+            onClick={() => {
+              setEditingCustomer(null);
+              setFormData({
+                fullName: "",
+                email: "",
+                addressJson: "",
+                vehicleJson: { make: "", model: "", variant: "", info: "" },
+                notes: "",
+              });
+              setModalOpen(true);
+            }}
+            className="bg-blue-theme hover:bg-blue-bold !text-white flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4 " /> Add Customer
+          </Button>
+          <Button
+            variant="default"
+            onClick={() => {
+              setFormData({ fullName: "", email: "" });
+              setInviteModalOpen(true);
+            }}
+            className="bg-amber-500 hover:bg-amber-600 text-white flex items-center gap-2"
+          >
+            <Send className="w-4 h-4" /> Invite Customer
+          </Button>
         </div>
+      </div>
 
-        <div className="w-full overflow-x-auto bg-white p-4 rounded-lg mb-4">
-  <div className="flex space-x-4 mb-4">
-          <div className="relative w-full">
-            <input
-              type="text"
-              placeholder="Search vehicle"
-              className="w-full px-14 py-2 md:py-4 rounded-lg bg-gray-100 text-sm md:text-base focus:outline-none focus:border focus:border-gray-300"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <span className=" absolute left-3 top-2 md:top-4 text-gray-500">
-              <Search />{" "}
-            </span>
-          </div>
-          <button className=" md:py-2 px-2 md:px-4 rounded-lg bg-gray-100 flex items-center text-gray-500">
-            <SlidersHorizontal className="w-4" />
-            <span className="hidden md:block px-2">Filters</span>
-          </button>
+      {/* Search Bar */}
+      <div className="mb-5 max-w-sm">
+        <Input
+          prefix={<Search className="w-4 h-4 text-gray-400" />}
+          placeholder="Search customers..."
+          allowClear
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+
+      {/* Table */}
+      <Spin spinning={loading}>
+        <div className="bg-white rounded-xl shadow-lg p-4">
+          <Table
+            columns={columns}
+            dataSource={customers}
+            rowKey="id"
+            pagination={{ pageSize: 8 }}
+            className="rounded-lg"
+          />
         </div>
-<AdminAddCustomer
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+      </Spin>
+
+      {/* Modals */}
+      <CustomerModal
+        open={modalOpen}
+        setOpen={setModalOpen}
+        formData={formData}
+        setFormData={setFormData}
+        loading={loading}
+        editingCustomer={editingCustomer}
+        handleSave={handleSave}
       />
-  {showFilters && (
-    <div className="bg-gray-50 p-4 rounded-md shadow-lg">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div>
-          <label className="block text-sm">Status</label>
-          <select className="w-full border border-gray-300 rounded-md px-3 py-2">
-            <option>All Status</option>
-            <option>Active</option>
-            <option>Inactive</option>
-            <option>Pending</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm">Order Count</label>
-          <select className="w-full border border-gray-300 rounded-md px-3 py-2">
-            <option>All</option>
-            <option>0-10</option>
-            <option>11-50</option>
-            <option>51-100</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm">Spent Amount</label>
-          <select className="w-full border border-gray-300 rounded-md px-3 py-2">
-            <option>All Amounts</option>
-            <option>$0-$100</option>
-            <option>$100-$500</option>
-          </select>
-        </div>
-      </div>
-    </div>
-  )}
 
-  {/* Table container with scroll */}
-  <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-    <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              <input
-                type="checkbox"
-                checked={selectedCustomers.length === filteredCustomers.length}
-                onChange={handleMasterCheckboxChange}
-                className="rounded border-gray-300"
-              />
-            </th>
-            <th
-              onClick={() => handleSort("name")}
-              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-            >
-              Customer{" "}
-              {sortBy === "name" && <ArrowUpDown className="w-4 h-4 inline" />}
-            </th>
-            <th
-              onClick={() => handleSort("email")}
-              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-            >
-              Email{" "}
-              {sortBy === "email" && <ArrowUpDown className="w-4 h-4 inline" />}
-            </th>
-            <th
-              onClick={() => handleSort("orders")}
-              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-            >
-              Orders{" "}
-              {sortBy === "orders" && <ArrowUpDown className="w-4 h-4 inline" />}
-            </th>
-            <th
-              onClick={() => handleSort("sales")}
-              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-            >
-              Sales{" "}
-              {sortBy === "sales" && <ArrowUpDown className="w-4 h-4 inline" />}
-            </th>
-            <th
-              onClick={() => handleSort("spent")}
-              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-            >
-              Spent{" "}
-              {sortBy === "spent" && <ArrowUpDown className="w-4 h-4 inline" />}
-            </th>
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {currentCustomers.map((customer) => (
-            <tr key={customer.id}>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <input
-                  type="checkbox"
-                  checked={selectedCustomers.includes(customer.id)}
-                  onChange={() => handleCheckboxChange(customer.id)}
-                  className="rounded border-gray-300"
-                />
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">{customer.name}</td>
-              <td className="px-6 py-4 whitespace-nowrap">{customer.email}</td>
-              <td className="px-6 py-4 whitespace-nowrap">{customer.orders}</td>
-              <td className="px-6 py-4 whitespace-nowrap">{customer.sales}</td>
-              <td className="px-6 py-4 whitespace-nowrap">{customer.spent}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  {/* Pagination */}
-  <div className="bg-gray-50 px-6 py-4 flex items-center justify-between border-t border-gray-200">
-    <div className="flex items-center space-x-2">
-      <span className="text-sm text-gray-700">Show results:</span>
-      <select
-        value={itemsPerPage}
-        onChange={handleItemsPerPageChange}
-        className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-      >
-        <option>6</option>
-        <option>10</option>
-        <option>20</option>
-        <option>50</option>
-      </select>
-    </div>
-    <div className="flex items-center space-x-1">
-      <button
-        onClick={() => paginate(currentPage - 1)}
-        disabled={currentPage === 1}
-        className={`p-1 rounded ${
-          currentPage === 1
-            ? "text-gray-400 cursor-not-allowed"
-            : "text-gray-700 hover:bg-gray-200"
-        }`}
-      >
-        <ChevronLeft className="text-gray-500" />
-      </button>
-
-      {[...Array(totalPages)].map((_, index) => (
-        <button
-          key={index + 1}
-          onClick={() => paginate(index + 1)}
-          className={`px-3 py-1 rounded text-sm ${
-            currentPage === index + 1
-              ? "bg-darkBlue text-white"
-              : "text-gray-700 hover:bg-gray-200"
-          }`}
-        >
-          {index + 1}
-        </button>
-      ))}
-
-      <button
-        onClick={() => paginate(currentPage + 1)}
-        disabled={currentPage === totalPages}
-        className={`p-1 rounded ${
-          currentPage === totalPages
-            ? "text-gray-400 cursor-not-allowed"
-            : "text-gray-700 hover:bg-gray-200"
-        }`}
-      >
-        <ChevronRight className="text-gray-500" />
-      </button>
-    </div>
-  </div>
-</div>
-
-      </div>
+      <InviteModal
+        open={inviteModalOpen}
+        setOpen={setInviteModalOpen}
+        formData={formData}
+        setFormData={setFormData}
+        loading={loading}
+        handleInvite={handleInvite}
+      />
     </div>
   );
-};
-
-export default Home;
+}

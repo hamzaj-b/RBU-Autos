@@ -2,40 +2,32 @@ const { NextResponse } = require("next/server");
 const { PrismaClient } = require("@prisma/client");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
+const crypto = require("crypto");
 const passwordSetupTemplate = require("@/lib/emailTemplates/newPassword");
 
 const prisma = new PrismaClient();
 const SECRET_KEY = process.env.JWT_SECRET || "supersecret";
+const APP_URL = process.env.APP_URL || "http://localhost:3000";
 
-// Gmail transporter using App Password
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.EMAIL_USER, // your gmail address
-    pass: process.env.EMAIL_PASS, // 16-char App Password
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
   },
 });
 
 async function POST(req) {
   try {
-    const body = await req.json();
-    const { token, email, fullName } = body;
+    const { token, email, fullName } = await req.json();
 
-    // 1. verify admin token
-    let decoded;
-    try {
-      decoded = jwt.verify(token, SECRET_KEY);
-      if (decoded.userType !== "ADMIN") {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-      }
-    } catch {
-      return NextResponse.json(
-        { error: "Invalid or expired token" },
-        { status: 401 }
-      );
+    // Verify admin token
+    const decoded = jwt.verify(token, SECRET_KEY);
+    if (decoded.userType !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    // 2. check if user already exists
+    // Check if user exists
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
       return NextResponse.json(
@@ -44,37 +36,42 @@ async function POST(req) {
       );
     }
 
-    // 3. create user (no password yet)
-    const user = await prisma.user.create({
-      data: {
-        email,
-        userType: "CUSTOMER",
-        passwordEncrypted: null,
-      },
+    const result = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          email,
+          userType: "CUSTOMER",
+          passwordEncrypted: null,
+          isActive: true,
+        },
+      });
+
+      const profile = await tx.customerProfile.create({
+        data: { userId: user.id, fullName },
+      });
+
+      await tx.user.update({
+        where: { id: user.id },
+        data: { customerProfileId: profile.id },
+      });
+
+      return { user, profile };
     });
 
-    // 4. create customer profile
-    const profile = await prisma.customerProfile.create({
-      data: { userId: user.id, fullName },
-    });
-
-    // 5. update user with profileId
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { customerProfileId: profile.id },
-    });
-
-    // 6. generate password setup token (15 min expiry)
+    // Generate unique password setup token
     const setPassToken = jwt.sign(
-      { id: user.id, email: user.email, purpose: "SET_PASSWORD" },
+      {
+        id: result.user.id,
+        email: result.user.email,
+        purpose: "SET_PASSWORD",
+        jti: crypto.randomUUID(),
+      },
       SECRET_KEY,
       { expiresIn: "15m" }
     );
 
-    const link = `https://garage-mechanic-crm.vercel.app/auth/newPassword?token=${setPassToken}`;
-    console.log("Toekn is:", setPassToken);
+    const link = `${APP_URL}/auth/newPassword?token=${setPassToken}`;
 
-    // 7. send email
     await transporter.sendMail({
       from: `"RBU Autos Garage CRM" <${process.env.EMAIL_USER}>`,
       to: email,
@@ -83,15 +80,15 @@ async function POST(req) {
     });
 
     return NextResponse.json({
-      message: "Customer created. Password setup email sent.",
-      link, // keep for debugging
-      user,
-      profile,
+      message: "✅ Customer invited successfully. Email sent.",
+      link,
+      user: result.user,
+      profile: result.profile,
     });
   } catch (err) {
-    console.error("Error creating customer:", err);
+    console.error("Invite customer error:", err);
     return NextResponse.json(
-      { error: "Failed to create customer" },
+      { error: "Failed to invite customer" },
       { status: 500 }
     );
   }

@@ -52,10 +52,21 @@ async function PUT(req, context) {
         where: { id },
         data: {
           fullName,
-          addressJson,
-          vehicleJson,
+          addressJson:
+            typeof addressJson === "string"
+              ? { raw: addressJson }
+              : addressJson,
+          vehicleJson:
+            typeof vehicleJson === "string"
+              ? { raw: vehicleJson }
+              : vehicleJson,
           notes,
-          User: { updateMany: { data: { isActive: isActive ?? true } } },
+          User: {
+            updateMany: {
+              where: { customerProfileId: id }, // 👈 added
+              data: { isActive: isActive ?? true },
+            },
+          },
         },
         include: { User: true },
       });

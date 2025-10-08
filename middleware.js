@@ -42,7 +42,7 @@ export async function middleware(req) {
     return NextResponse.next(); // ✅ Token valid → continue
   } catch (err) {
     console.error("Invalid or expired token:", err);
-    const response = NextResponse.redirect(new URL("/auth/signin", req.url));
+    const response = NextResponse.redirect(new URL("/auth/login", req.url));
     response.cookies.delete("authToken"); // clear bad token
     return response;
   }
