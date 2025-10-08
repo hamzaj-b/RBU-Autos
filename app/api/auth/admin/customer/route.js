@@ -7,7 +7,7 @@ const passwordSetupTemplate = require("@/lib/emailTemplates/newPassword");
 
 const prisma = new PrismaClient();
 const SECRET_KEY = process.env.JWT_SECRET || "supersecret";
-const APP_URL = process.env.APP_URL || "http://localhost:3000";
+const APP_URL = process.env.APP_URL || "https://garage-mechanic-crm.vercel.app";
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
