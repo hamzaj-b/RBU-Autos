@@ -5,6 +5,7 @@ import {
   CalendarDays,
   LayoutDashboard,
   Lightbulb,
+  Settings,
   Settings2,
   SquareUser,
   Users,
@@ -43,14 +44,15 @@ export default function Sidebar() {
         icon: <SquareUser />,
       },
       { href: "/marketing", label: "Marketing", icon: <SquareUser /> },
+      { href: "/settings", label: "Settings", icon: <Settings /> },
     ],
-    
+
     CUSTOMER: [
       { href: "/", label: "Dashboard", icon: <LayoutDashboard /> },
       { href: "/bookings", label: "Create Booking", icon: <CalendarDays /> },
       { href: "/diagnostics", label: "Diagnostics", icon: <Lightbulb /> },
     ],
-    
+
     EMPLOYEE: [
       { href: "/", label: "Dashboard", icon: <LayoutDashboard /> },
       // { href: "/work-order", label: "Create Work Order", icon: <Users /> },

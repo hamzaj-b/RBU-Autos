@@ -3,6 +3,7 @@ import "antd/dist/reset.css";
 import "./globals.css";
 import ClientLayout from "./ClientLayout";
 import { AuthProvider } from "./context/AuthContext";
+import { Toaster } from "react-hot-toast";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,6 +29,7 @@ export default function RootLayout({ children }) {
         <AuthProvider>
           <ClientLayout>{children}</ClientLayout>
         </AuthProvider>
+        <Toaster position="bottom-right" reverseOrder={false} />
       </body>
     </html>
   );
