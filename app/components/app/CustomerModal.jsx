@@ -116,7 +116,7 @@ export default function CustomerModal({
           className={`w-full font-medium py-2.5 rounded-lg shadow-md ${
             loading
               ? "bg-gray-300 text-gray-700"
-              : "bg-blue-600 hover:bg-blue-700 text-white"
+              : "bg-blue-theme hover:bg-blue-bold !text-white"
           }`}
         >
           {loading
