@@ -1,47 +1,82 @@
 "use client";
 
 import { FileDownIcon, Plus, RefreshCcw } from "lucide-react";
-import Image from "next/image";
 import React, { useEffect, useState } from "react";
+import { Input, Spin, Empty, message, Tooltip, Popconfirm } from "antd";
+import { Button } from "@/components/ui/button";
 import AdminAddEmployee from "../components/Modals/AdminAddEmployee";
 import { useAuth } from "../context/AuthContext";
-import { Input, Spin, Empty, message } from "antd";
-import { Button } from "@/components/ui/button";
+import { Pencil, Trash2 } from "lucide-react";
+import EditEmployeeModal from "../components/Modals/EditEmployeeModal";
 
 export default function StaffManagement() {
   const { token } = useAuth();
 
-  // UI state
-  const [clientReady, setClientReady] = useState(false); // ✅ Prevent SSR style flash
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  // UI State
+  const [clientReady, setClientReady] = useState(false);
   const [employees, setEmployees] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen , setIsEditModalOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Wait for client hydration before rendering layout
-  useEffect(() => {
-    setClientReady(true);
-  }, []);
+  // Hydration Guard
+  useEffect(() => setClientReady(true), []);
 
-  // ─── Fetch Employees ───────────────────────────────
+  //delete 
+ const handleDelete = async (employeeId) => {
+  if (!employeeId) return;
+
+  setLoading(true);
+  try {
+    const res = await fetch(`/api/auth/admin/employee/${employeeId}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      // ✅ Success toast
+      message.success("Employee deleted successfully!");
+
+      // Refresh the employee list
+      await fetchEmployees();
+
+      // Optional callback for parent component
+      onUpdated && onUpdated(employeeId, "delete");
+    } else {
+      // ❌ Error toast
+      message.error(data.error || "Failed to delete employee");
+    }
+  } catch (err) {
+    console.error(err);
+    message.error("Network error while deleting employee");
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+
+  // Fetch Employees
   const fetchEmployees = async () => {
     setLoading(true);
     try {
       const res = await fetch("/api/auth/admin/employee", {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
-
       const data = await res.json();
 
       if (res.ok) {
         setEmployees(data.employees || []);
         setFiltered(data.employees || []);
-        if (data.employees.length > 0) setSelectedEmployee(data.employees[0]);
+        if (data.employees?.length > 0) setSelectedEmployee(data.employees[0]);
       } else {
         message.error(data.error || "Failed to load employees");
       }
@@ -57,30 +92,23 @@ export default function StaffManagement() {
     if (token && clientReady) fetchEmployees();
   }, [token, clientReady]);
 
-  // ─── Search Filter ─────────────────────────────────
+  // Search Filter
   useEffect(() => {
-    if (!search.trim()) {
-      setFiltered(employees);
-    } else {
+    if (!search.trim()) setFiltered(employees);
+    else
       setFiltered(
         employees.filter((emp) =>
           emp.fullName.toLowerCase().includes(search.toLowerCase())
         )
       );
-    }
   }, [search, employees]);
 
-  // ─── Employee Selection ────────────────────────────
-  const handleEmployeeClick = (employee) => {
-    setSelectedEmployee(employee);
-  };
+  // Select employee
+  const handleEmployeeClick = (employee) => setSelectedEmployee(employee);
 
-  // ─── Export Placeholder ────────────────────────────
-  const handleExport = () => {
-    message.info("Export feature coming soon 📦");
-  };
+  // Export placeholder
+  const handleExport = () => message.info("Export coming soon 📦");
 
-  // ─── Hydration Guard ───────────────────────────────
   if (!clientReady)
     return (
       <div className="flex justify-center items-center h-screen bg-gray-50">
@@ -102,7 +130,7 @@ export default function StaffManagement() {
             variant="outline"
             className="flex items-center gap-2 text-gray-600"
           >
-            <RefreshCcw className="w-4 h-4" /> Refresh
+            <RefreshCcw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} /> Refresh
           </Button>
 
           <Button
@@ -110,16 +138,14 @@ export default function StaffManagement() {
             variant="outline"
             className="flex items-center gap-2 text-gray-600 hover:bg-gray-100"
           >
-            <FileDownIcon className="w-4 h-4" />
-            Export
+            <FileDownIcon className="w-4 h-4" /> Export
           </Button>
 
           <Button
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 bg-white border shadow-xs hover:bg-gray-100 text-white"
+            className="flex items-center gap-2 bg-blue-theme !text-white hover:bg-blue-bold"
           >
-            <Plus className="w-4 h-4" />
-            Add Employee
+            <Plus className="w-4 h-4" /> Add Employee
           </Button>
         </div>
       </div>
@@ -129,7 +155,7 @@ export default function StaffManagement() {
         onClose={() => setIsModalOpen(false)}
       />
 
-      {/* Search Bar */}
+      {/* Search */}
       <div className="max-w-md mb-6">
         <Input.Search
           placeholder="Search employees by name..."
@@ -143,13 +169,7 @@ export default function StaffManagement() {
       {/* Main Layout */}
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Left Section */}
-        <div className="w-full lg:w-3/4 bg-white rounded-xl shadow-lg p-6 transition-all">
-          <div className="grid grid-cols-3 text-sm font-semibold text-gray-600 border-b pb-2 mb-3">
-            <span>Employee</span>
-            <span>Date Joined</span>
-            <span className="text-right">Hourly Rate</span>
-          </div>
-
+        <div className="w-full lg:w-3/4 bg-white rounded-xl shadow-lg p-6">
           {loading ? (
             <div className="flex justify-center py-12">
               <Spin size="large" />
@@ -166,7 +186,7 @@ export default function StaffManagement() {
                       : "border-transparent hover:bg-gray-50"
                   }`}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="w-[250px] flex items-center gap-3">
                     <div className="w-11 h-11 flex items-center justify-center rounded-full bg-gradient-to-tl from-blue-bold to-blue-theme text-white font-semibold text-sm shadow-sm">
                       {employee.fullName
                         .split(" ")
@@ -175,9 +195,7 @@ export default function StaffManagement() {
                         .slice(0, 2)}
                     </div>
                     <div>
-                      <p className="font-medium text-gray-800">
-                        {employee.fullName}
-                      </p>
+                      <p className="font-medium text-gray-800">{employee.fullName}</p>
                       <p className="text-xs text-gray-500">{employee.title}</p>
                     </div>
                   </div>
@@ -193,10 +211,35 @@ export default function StaffManagement() {
                         : "bg-gray-50 text-gray-400"
                     }`}
                   >
-                    {employee.hourlyRate
-                      ? `₨ ${employee.hourlyRate}/hr`
-                      : "N/A"}
+                    {employee.hourlyRate ? `₨ ${employee.hourlyRate}/hr` : "N/A"}
                   </span>
+
+                  <div className="flex gap-2">
+                    <Tooltip title="Edit Employee">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setIsEditModalOpen(true)}
+                        className="text-blue-600 hover:bg-blue-50"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                    </Tooltip>
+                    <Popconfirm
+                      title="Delete this employee?"
+                      onConfirm={() => handleDelete(employee.id)}
+                      okText="Yes"
+                      cancelText="No"
+                    >
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-red-600 hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </Popconfirm>
+                  </div>
                 </div>
               ))}
             </div>
@@ -205,8 +248,20 @@ export default function StaffManagement() {
           )}
         </div>
 
+<EditEmployeeModal
+  isOpen={isEditModalOpen}
+  onClose={() => setIsEditModalOpen(false)}
+  employeeId={selectedEmployee?.id}
+  onUpdated={(updated) => {
+    setEmployees((prev) =>
+      prev.map((emp) => (emp.id === updated.id ? updated : emp))
+    );
+    setSelectedEmployee(updated);
+  }}
+/>
+
         {/* Right Section */}
-        <div className="w-full lg:w-1/4 bg-white rounded-xl shadow-lg p-6 flex flex-col items-center justify-start text-center transition-all">
+        <div className="w-full lg:w-1/4 bg-white rounded-xl shadow-lg p-6 flex flex-col items-center justify-start text-center">
           {selectedEmployee ? (
             <>
               <div className="w-15 h-15 flex items-center justify-center rounded-full bg-gradient-to-tl from-blue-bold to-blue-theme text-white font-semibold text-sm shadow-sm">
@@ -216,12 +271,8 @@ export default function StaffManagement() {
                   .join("")
                   .slice(0, 2)}
               </div>
-              <h3 className="text-lg font-semibold text-gray-800">
-                {selectedEmployee.fullName}
-              </h3>
-              <p className="text-sm text-gray-500 mb-4">
-                {selectedEmployee.title || "No title assigned"}
-              </p>
+              <h3 className="text-lg font-semibold text-gray-800 mt-2">{selectedEmployee.fullName}</h3>
+              <p className="text-sm text-gray-500 mb-4">{selectedEmployee.title || "No title assigned"}</p>
 
               <div className="w-full text-left text-sm text-gray-700 space-y-2 border-t pt-4">
                 <p>
@@ -229,12 +280,8 @@ export default function StaffManagement() {
                   {new Date(selectedEmployee.createdAt).toLocaleDateString()}
                 </p>
                 <p>
-                  <span className="font-medium text-gray-600">
-                    Hourly Rate:
-                  </span>{" "}
-                  {selectedEmployee.hourlyRate
-                    ? `₨ ${selectedEmployee.hourlyRate}/hr`
-                    : "N/A"}
+                  <span className="font-medium text-gray-600">Hourly Rate:</span>{" "}
+                  {selectedEmployee.hourlyRate ? `₨ ${selectedEmployee.hourlyRate}/hr` : "N/A"}
                 </p>
                 <p>
                   <span className="font-medium text-gray-600">Email:</span>{" "}
@@ -249,9 +296,7 @@ export default function StaffManagement() {
                         : "bg-red-100 text-red-600"
                     }`}
                   >
-                    {selectedEmployee.User?.[0]?.isActive
-                      ? "Active"
-                      : "Inactive"}
+                    {selectedEmployee.User?.[0]?.isActive ? "Active" : "Inactive"}
                   </span>
                 </p>
               </div>
@@ -259,11 +304,7 @@ export default function StaffManagement() {
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-gray-400">
               <div className="w-11 h-11 flex items-center justify-center rounded-full bg-gradient-to-tl from-blue-bold to-blue-theme text-white font-semibold text-sm shadow-sm">
-                {"Employee"
-                  .split(" ")
-                  .map((n) => n[0]?.toUpperCase())
-                  .join("")
-                  .slice(0, 2)}
+                {"Employee".split(" ").map((n) => n[0]?.toUpperCase()).join("").slice(0, 2)}
               </div>
               <p>Select an employee to view details</p>
             </div>

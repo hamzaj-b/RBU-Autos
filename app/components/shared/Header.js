@@ -2,19 +2,29 @@
 
 import { useAuth } from "@/app/context/AuthContext";
 import { showNotification } from "@/lib/showNotification";
-import { Bell, Mail, Search } from "lucide-react";
+import { Bell, User, LogOut } from "lucide-react";
+import { useState } from "react";
 import Link from "next/link";
 
 export default function Header({ toggleSidebar, className = "" }) {
-  const { user, token, logout, loading } = useAuth();
+  const { user, logout, token } = useAuth();
+  const [open, setOpen] = useState(false);
 
-  console.log("user token:", token);
-  console.log("header user", user);
+  const handleProfile = () => {
+    // Navigate to profile page
+    window.location.href = "/profile"; // or use Next.js router
+  };
+
+  const handleLogout = () => {
+    logout(); // Clear token, session, etc.
+    window.location.href = "/auth/signin";
+  };
 
   return (
     <div
-      className={`w-full bg-white flex items-center px-4 md:px-6 py-4 ${className}`}
+      className={`w-full bg-white flex items-center px-4 md:px-6 py-4 ${className} relative`}
     >
+      {/* Sidebar Toggle */}
       <div>
         <button
           className="md:hidden text-black rounded"
@@ -25,7 +35,6 @@ export default function Header({ toggleSidebar, className = "" }) {
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
           >
             <path
               strokeLinecap="round"
@@ -36,64 +45,65 @@ export default function Header({ toggleSidebar, className = "" }) {
           </svg>
         </button>
       </div>
-      <div className="hidden md:block md:flex-1">
-        <h2 className="text-xl font-semibold text-gray-800">Hi, User</h2>
+
+      {/* Greeting */}
+      <div className="hidden md:flex md:flex-1 flex-col ml-4">
+        <h2 className="text-xl font-semibold text-gray-800">
+          Hi, {user?.fullName || "User"}
+        </h2>
         <p className="text-sm text-gray-500">Let's check your Garage today</p>
       </div>
-      {/* <div className="hidden md:block md:flex-1">
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Search..."
-            className="w-full px-10 py-2 bg-gray-100 text-gray-800 rounded-md focus:outline-none focus:border focus:border-gray-300"
-          />
-          <span className="absolute left-3 top-2 text-gray-500">
-            <Search />
-          </span>
-          <span className="absolute right-3 top-2 text-gray-500">⌘K</span>
-        </div>
-      </div> */}
-      <div className="flex-1 flex items-center space-x-4 justify-end">
-        {/* <button className="relative text-gray-600 hover:text-gray-800">
-          <span className="text-xl">
-            <Mail />
-          </span>
-          <span className="absolute w-2 h-2 bg-red-500 rounded-full top-1 right-[-6px]"></span>
-        </button> */}
+
+      {/* Right Section */}
+      <div className="flex-1 flex items-center justify-end space-x-4 relative">
+        {/* Notifications */}
         <button
           className="relative text-gray-600 hover:text-gray-800"
           onClick={() =>
             showNotification({
               title: "New Booking!",
-              message: "You Have Recievd a New Booking 🎉",
+              message: "You have received a new booking 🎉",
               type: "order",
             })
           }
         >
-          <span className="text-xl">
-            <Bell />
-          </span>
+          <Bell className="text-xl" />
           <span className="absolute w-2 h-2 bg-red-500 rounded-full top-0 left-4"></span>
         </button>
-        <div className="flex items-center space-x-2 ml-4">
-          {/* <Link href="/auth/login">
-            <img
-              src="/profile.png"
-              alt="Profile"
-              className="w-10 h-10 rounded-full"
-            />
-          </Link> */}
-          <div className="w-11 h-11 flex items-center justify-center rounded-full bg-gradient-to-tl from-blue-bold to-blue-theme text-white font-semibold text-sm shadow-sm">
+
+        {/* Profile Avatar */}
+        <div
+          className="relative"
+          onMouseEnter={() => setOpen(true)}
+          onMouseLeave={() => setOpen(false)}
+        >
+          <div className="w-11 h-11 flex items-center justify-center rounded-full bg-gradient-to-tl from-blue-bold to-blue-theme text-white font-semibold text-sm shadow-sm cursor-pointer">
             {user?.userType
-              .split(" ")
+              ?.split(" ")
               .map((n) => n[0]?.toUpperCase())
               .join("")
               .slice(0, 2)}
           </div>
-          {/* <div className="hidden md:flex flex-col">
-            <p className="text-sm font-medium text-gray-800">alice</p>
-            <p className="text-xs text-gray-500">Owner</p>
-          </div> */}
+
+          {/* Dropdown */}
+          {open && (
+            <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-200 rounded-md shadow-lg z-50">
+              <button
+                onClick={handleProfile}
+                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
+              >
+                <User className="w-4 h-4 mr-2" />
+                Profile
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
