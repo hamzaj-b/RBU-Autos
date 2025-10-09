@@ -18,51 +18,49 @@ export default function StaffManagement() {
   const [filtered, setFiltered] = useState([]);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isEditModalOpen , setIsEditModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
 
   // Hydration Guard
   useEffect(() => setClientReady(true), []);
 
-  //delete 
- const handleDelete = async (employeeId) => {
-  if (!employeeId) return;
+  //delete
+  const handleDelete = async (employeeId) => {
+    if (!employeeId) return;
 
-  setLoading(true);
-  try {
-    const res = await fetch(`/api/auth/admin/employee/${employeeId}`, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/auth/admin/employee/${employeeId}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (res.ok) {
-      // ✅ Success toast
-      message.success("Employee deleted successfully!");
+      if (res.ok) {
+        // ✅ Success toast
+        message.success("Employee deleted successfully!");
 
-      // Refresh the employee list
-      await fetchEmployees();
+        // Refresh the employee list
+        await fetchEmployees();
 
-      // Optional callback for parent component
-      onUpdated && onUpdated(employeeId, "delete");
-    } else {
-      // ❌ Error toast
-      message.error(data.error || "Failed to delete employee");
+        // Optional callback for parent component
+        onUpdated && onUpdated(employeeId, "delete");
+      } else {
+        // ❌ Error toast
+        message.error(data.error || "Failed to delete employee");
+      }
+    } catch (err) {
+      console.error(err);
+      message.error("Network error while deleting employee");
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    console.error(err);
-    message.error("Network error while deleting employee");
-  } finally {
-    setLoading(false);
-  }
-};
-
-
+  };
 
   // Fetch Employees
   const fetchEmployees = async () => {
@@ -74,15 +72,21 @@ export default function StaffManagement() {
       const data = await res.json();
 
       if (res.ok) {
-        setEmployees(data.employees || []);
-        setFiltered(data.employees || []);
-        if (data.employees?.length > 0) setSelectedEmployee(data.employees[0]);
+        // ✅ Success toast
+        message.success("Employee deleted successfully!");
+
+        // Refresh the employee list
+        await fetchEmployees();
+
+        // Optional callback for parent component
+        onUpdated && onUpdated(employeeId, "delete");
       } else {
-        message.error(data.error || "Failed to load employees");
+        // ❌ Error toast
+        message.error(data.error || "Failed to delete employee");
       }
     } catch (err) {
       console.error(err);
-      message.error("Network error while loading employees");
+      message.error("Network error while deleting employee");
     } finally {
       setLoading(false);
     }
@@ -130,7 +134,14 @@ export default function StaffManagement() {
             variant="outline"
             className="flex items-center gap-2 text-gray-600"
           >
-            <RefreshCcw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} /> Refresh
+            <RefreshCcw
+              className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
+            />{" "}
+            Refresh
+            <RefreshCcw
+              className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
+            />{" "}
+            Refresh
           </Button>
 
           <Button
@@ -195,7 +206,9 @@ export default function StaffManagement() {
                         .slice(0, 2)}
                     </div>
                     <div>
-                      <p className="font-medium text-gray-800">{employee.fullName}</p>
+                      <p className="font-medium text-gray-800">
+                        {employee.fullName}
+                      </p>
                       <p className="text-xs text-gray-500">{employee.title}</p>
                     </div>
                   </div>
@@ -211,7 +224,9 @@ export default function StaffManagement() {
                         : "bg-gray-50 text-gray-400"
                     }`}
                   >
-                    {employee.hourlyRate ? `₨ ${employee.hourlyRate}/hr` : "N/A"}
+                    {employee.hourlyRate
+                      ? `₨ ${employee.hourlyRate}/hr`
+                      : "N/A"}
                   </span>
 
                   <div className="flex gap-2">
@@ -248,17 +263,17 @@ export default function StaffManagement() {
           )}
         </div>
 
-<EditEmployeeModal
-  isOpen={isEditModalOpen}
-  onClose={() => setIsEditModalOpen(false)}
-  employeeId={selectedEmployee?.id}
-  onUpdated={(updated) => {
-    setEmployees((prev) =>
-      prev.map((emp) => (emp.id === updated.id ? updated : emp))
-    );
-    setSelectedEmployee(updated);
-  }}
-/>
+        <EditEmployeeModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          employeeId={selectedEmployee?.id}
+          onUpdated={(updated) => {
+            setEmployees((prev) =>
+              prev.map((emp) => (emp.id === updated.id ? updated : emp))
+            );
+            setSelectedEmployee(updated);
+          }}
+        />
 
         {/* Right Section */}
         <div className="w-full lg:w-1/4 bg-white rounded-xl shadow-lg p-6 flex flex-col items-center justify-start text-center">
@@ -271,8 +286,12 @@ export default function StaffManagement() {
                   .join("")
                   .slice(0, 2)}
               </div>
-              <h3 className="text-lg font-semibold text-gray-800 mt-2">{selectedEmployee.fullName}</h3>
-              <p className="text-sm text-gray-500 mb-4">{selectedEmployee.title || "No title assigned"}</p>
+              <h3 className="text-lg font-semibold text-gray-800 mt-2">
+                {selectedEmployee.fullName}
+              </h3>
+              <p className="text-sm text-gray-500 mb-4">
+                {selectedEmployee.title || "No title assigned"}
+              </p>
 
               <div className="w-full text-left text-sm text-gray-700 space-y-2 border-t pt-4">
                 <p>
@@ -280,8 +299,12 @@ export default function StaffManagement() {
                   {new Date(selectedEmployee.createdAt).toLocaleDateString()}
                 </p>
                 <p>
-                  <span className="font-medium text-gray-600">Hourly Rate:</span>{" "}
-                  {selectedEmployee.hourlyRate ? `₨ ${selectedEmployee.hourlyRate}/hr` : "N/A"}
+                  <span className="font-medium text-gray-600">
+                    Hourly Rate:
+                  </span>{" "}
+                  {selectedEmployee.hourlyRate
+                    ? `₨ ${selectedEmployee.hourlyRate}/hr`
+                    : "N/A"}
                 </p>
                 <p>
                   <span className="font-medium text-gray-600">Email:</span>{" "}
@@ -296,7 +319,9 @@ export default function StaffManagement() {
                         : "bg-red-100 text-red-600"
                     }`}
                   >
-                    {selectedEmployee.User?.[0]?.isActive ? "Active" : "Inactive"}
+                    {selectedEmployee.User?.[0]?.isActive
+                      ? "Active"
+                      : "Inactive"}
                   </span>
                 </p>
               </div>
@@ -304,7 +329,11 @@ export default function StaffManagement() {
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-gray-400">
               <div className="w-11 h-11 flex items-center justify-center rounded-full bg-gradient-to-tl from-blue-bold to-blue-theme text-white font-semibold text-sm shadow-sm">
-                {"Employee".split(" ").map((n) => n[0]?.toUpperCase()).join("").slice(0, 2)}
+                {"Employee"
+                  .split(" ")
+                  .map((n) => n[0]?.toUpperCase())
+                  .join("")
+                  .slice(0, 2)}
               </div>
               <p>Select an employee to view details</p>
             </div>

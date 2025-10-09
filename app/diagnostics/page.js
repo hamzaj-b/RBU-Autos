@@ -55,7 +55,7 @@ const CustomerInteraction = () => {
                 onClick={() => setActiveTab("interaction")}
                 className={`w-full px-4 py-3 text-left font-semibold transition-colors rounded-md focus:outline-none focus:ring-2 focus:ring-blue-bold focus:ring-opacity-50 ${
                   activeTab === "interaction"
-                    ? "text-black bg-blue-theme"
+                    ? "!text-white bg-blue-theme"
                     : "text-gray-800 bg-white hover:bg-gray-100 border border-gray-300"
                 }`}
               >
@@ -101,7 +101,7 @@ const CustomerInteraction = () => {
                           Summary: {interaction.summary}
                         </p>
                       </div>
-                      <button className="px-4 py-2 bg-blue-theme hover:bg-blue-bold text-black font-medium rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-bold focus:ring-opacity-50">
+                      <button className="px-4 py-2 bg-blue-theme hover:bg-blue-bold !text-white font-medium rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-bold focus:ring-opacity-50">
                         View Details
                       </button>
                     </div>
