@@ -72,21 +72,15 @@ export default function StaffManagement() {
       const data = await res.json();
 
       if (res.ok) {
-        // ✅ Success toast
-        message.success("Employee deleted successfully!");
-
-        // Refresh the employee list
-        await fetchEmployees();
-
-        // Optional callback for parent component
-        onUpdated && onUpdated(employeeId, "delete");
+        setEmployees(data.employees || []);
+        setFiltered(data.employees || []);
+        if (data.employees?.length > 0) setSelectedEmployee(data.employees[0]);
       } else {
-        // ❌ Error toast
-        message.error(data.error || "Failed to delete employee");
+        message.error(data.error || "Failed to load employees");
       }
     } catch (err) {
       console.error(err);
-      message.error("Network error while deleting employee");
+      message.error("Network error while loading employees");
     } finally {
       setLoading(false);
     }
@@ -133,7 +127,6 @@ export default function StaffManagement() {
             onClick={fetchEmployees}
             variant="outline"
             className="flex items-center gap-2 text-gray-600"
-            disabled={loading}
           >
             <RefreshCcw
               className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
