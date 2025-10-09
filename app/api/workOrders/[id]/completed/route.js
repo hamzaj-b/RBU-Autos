@@ -128,7 +128,7 @@ async function PATCH(req, { params }) {
         const updatedBk = await tx.booking.update({
           where: { id: workOrder.bookingId },
           data: {
-            status: BookingStatus.COMPLETED,
+            status: BookingStatus.DONE,
             completedAt: new Date(),
           },
         });

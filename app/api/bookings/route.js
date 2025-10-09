@@ -12,27 +12,23 @@ const SECRET_KEY = process.env.JWT_SECRET || "supersecret";
 
 async function POST(req) {
   try {
-    // -------------------------
-    // 🔑 1. Verify JWT Token
-    // -------------------------
+    // 🔑 Auth check
     const authHeader = req.headers.get("authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authHeader)
+      return NextResponse.json({ error: "No token provided" }, { status: 401 });
 
+    const token = authHeader.split(" ")[1];
     let decoded;
     try {
-      decoded = jwt.verify(authHeader.split(" ")[1], SECRET_KEY);
-    } catch (error) {
+      decoded = jwt.verify(token, SECRET_KEY);
+    } catch {
       return NextResponse.json(
         { error: "Invalid or expired token" },
         { status: 401 }
       );
     }
 
-    // -------------------------
-    // 📦 2. Parse and Validate Body
-    // -------------------------
+    // 📦 Request body
     const body = await req.json();
     const {
       customerId,
@@ -50,50 +46,36 @@ async function POST(req) {
       );
     }
 
-    // -------------------------
-    // 🕑 3. Validate Slot Availability
-    // -------------------------
-    const bookingStart = new Date(startAt);
-    const bookingEnd = new Date(endAt);
+    // 🕑 Step 1: Validate slot availability
+    const date = startAt.split("T")[0]; // extract YYYY-MM-DD
+    const { slots } = await getSlots(date);
 
-    // normalize date to midnight (for day grouping)
-    const bookingDate = new Date(bookingStart);
-    bookingDate.setHours(0, 0, 0, 0);
+    const targetSlot = slots.find(
+      (s) =>
+        new Date(s.start).getTime() === new Date(startAt).getTime() &&
+        new Date(s.end).getTime() === new Date(endAt).getTime()
+    );
 
-    // fetch slot settings
-    const settings = await prisma.businessSettings.findFirst();
-    const slotMinutes = settings?.slotMinutes ?? 60;
+    if (!targetSlot) {
+      return NextResponse.json({ error: "Invalid time slot" }, { status: 400 });
+    }
 
-    // check for overlapping bookings (basic validation)
-    const conflict = await prisma.booking.findFirst({
-      where: {
-        date: bookingDate,
-        startAt: { lt: bookingEnd },
-        endAt: { gt: bookingStart },
-        status: { in: [BookingStatus.PENDING, BookingStatus.ACCEPTED] },
-      },
-    });
-
-    if (conflict) {
+    if (targetSlot.capacity <= 0) {
       return NextResponse.json(
-        { error: "This time slot is already booked." },
+        { error: "Slot fully booked. Please choose another time." },
         { status: 409 }
       );
     }
 
-    // -------------------------
-    // 👷 4. If employee assigned → check employee availability
-    // -------------------------
+    // 👷 Step 2: If employee directly assigned → check availability
     if (directAssignEmployeeId) {
       const overlapping = await prisma.workOrder.findFirst({
         where: {
           employeeId: directAssignEmployeeId,
-          status: {
-            in: [WorkOrderStatus.ASSIGNED, WorkOrderStatus.IN_PROGRESS],
-          },
+          status: { in: ["ASSIGNED", "IN_PROGRESS"] },
           booking: {
-            startAt: { lt: bookingEnd },
-            endAt: { gt: bookingStart },
+            startAt: { lt: new Date(endAt) },
+            endAt: { gt: new Date(startAt) },
           },
         },
       });
@@ -101,7 +83,7 @@ async function POST(req) {
       if (overlapping) {
         return NextResponse.json(
           {
-            error: "Selected employee is already booked during this slot.",
+            error: "Selected employee is already booked in this time slot.",
             conflictBookingId: overlapping.bookingId,
           },
           { status: 409 }
@@ -109,48 +91,40 @@ async function POST(req) {
       }
     }
 
-    // -------------------------
-    // 🧾 5. Create Booking + WorkOrder (transactional)
-    // -------------------------
-    const [booking, workOrder] = await prisma.$transaction(async (tx) => {
-      const booking = await tx.booking.create({
-        data: {
-          customerId,
-          createdByUserId: decoded.id,
-          serviceId,
-          date: bookingDate,
-          startAt: bookingStart,
-          endAt: bookingEnd,
-          slotMinutes,
-          notes: notes || null,
-          status: BookingStatus.ACCEPTED, // Admin-created bookings are always accepted
-        },
-      });
-
-      const workOrder = await tx.workOrder.create({
-        data: {
-          bookingId: booking.id,
-          customerId,
-          serviceId,
-          employeeId: directAssignEmployeeId || null,
-          status: directAssignEmployeeId
-            ? WorkOrderStatus.ASSIGNED
-            : WorkOrderStatus.OPEN,
-        },
-      });
-
-      // link workOrder back to booking
-      await tx.booking.update({
-        where: { id: booking.id },
-        data: { workOrderId: workOrder.id },
-      });
-
-      return [booking, workOrder];
+    // 📝 Step 3: Create booking
+    const booking = await prisma.booking.create({
+      data: {
+        customerId,
+        createdByUserId: decoded.id,
+        serviceId,
+        date: new Date(startAt),
+        startAt: new Date(startAt),
+        endAt: new Date(endAt),
+        slotMinutes: 60,
+        notes: notes || null,
+        status: BookingStatus.ACCEPTED,
+      },
     });
 
-    // -------------------------
-    // ✅ 6. Return Success
-    // -------------------------
+    // 🛠 Step 4: Create workOrder
+    const workOrder = await prisma.workOrder.create({
+      data: {
+        bookingId: booking.id,
+        customerId,
+        serviceId,
+        employeeId: directAssignEmployeeId || null,
+        status: directAssignEmployeeId
+          ? WorkOrderStatus.ASSIGNED
+          : WorkOrderStatus.OPEN,
+      },
+    });
+
+    // 🔗 Step 5: Link workOrder back to booking
+    await prisma.booking.update({
+      where: { id: booking.id },
+      data: { workOrderId: workOrder.id },
+    });
+
     const message = directAssignEmployeeId
       ? "Booking created and assigned to employee successfully."
       : "Booking created successfully and added to Open Work Orders queue.";

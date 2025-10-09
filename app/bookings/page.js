@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import { Calendar, momentLocalizer } from "react-big-calendar";
 import moment from "moment";
@@ -18,42 +19,59 @@ export default function BookingPage() {
   const [slots, setSlots] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [services, setServices] = useState([]);
-  const [selectedSlot, setSelectedSlot] = useState(null);
+  const [employees, setEmployees] = useState([]);
+  const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     customer: null,
     service: null,
+    employee: null,
     slot: null,
     notes: "",
   });
 
-  const { user, token, logout } = useAuth();
+  // ✅ using token directly from context
+  const { token } = useAuth();
 
   // ─── Fetch Customers ──────────────────────────────
   const fetchCustomers = async () => {
-    const res = await fetch("/api/customers");
+    if (!token) return;
+    const res = await fetch("/api/customers", {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    if (!res.ok) return;
     const data = await res.json();
     setCustomers(
-      data.customers?.map((c) => ({
-        label: c.fullName,
-        value: c.id,
-      })) || []
+      data.customers?.map((c) => ({ label: c.fullName, value: c.id })) || []
     );
   };
 
   // ─── Fetch Services ───────────────────────────────
   const fetchServices = async () => {
-    const res = await fetch("/api/services");
+    if (!token) return;
+    const res = await fetch("/api/services", {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    if (!res.ok) return;
     const data = await res.json();
-    setServices(
-      data.data?.map((s) => ({
-        label: s.name,
-        value: s.id,
-      })) || []
-    );
+    setServices(data.data?.map((s) => ({ label: s.name, value: s.id })) || []);
   };
 
-  console.log("Services are:", services);
+  // ─── Fetch Employees ──────────────────────────────
+  const fetchEmployees = async () => {
+    if (!token) return;
+    const res = await fetch("/api/auth/admin/employee", {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    setEmployees(
+      data.employees?.map((e) => ({ label: e.fullName, value: e.id })) || []
+    );
+  };
 
   // ─── Fetch Slots ─────────────────────────────────
   const fetchSlots = async (date) => {
@@ -73,9 +91,38 @@ export default function BookingPage() {
     }
   };
 
+  // ─── Fetch Bookings to show on calendar ──────────
+  const fetchBookings = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch("/api/bookings", {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+
+      const mapped =
+        data.bookings?.map((b) => ({
+          title: `${b.serviceName} (${b.customerName})`,
+          start: new Date(b.startAt),
+          end: new Date(b.endAt),
+          status: b.workOrder?.status || b.status, // prefer WorkOrder status
+        })) || [];
+      setEvents(mapped);
+    } catch (err) {
+      console.error("Fetch bookings error:", err);
+    }
+  };
+
   // ─── On Calendar Date Click ──────────────────────
   const handleSelectDate = (slotInfo) => {
     const date = moment(slotInfo.start).format("YYYY-MM-DD");
+    if (moment(date).isBefore(moment().format("YYYY-MM-DD"))) {
+      message.warning("Cannot create booking in the past.");
+      return;
+    }
+
     setSelectedDate(date);
     setModalOpen(true);
     fetchSlots(date);
@@ -83,6 +130,11 @@ export default function BookingPage() {
 
   // ─── Create Booking ───────────────────────────────
   const handleCreateBooking = async () => {
+    if (!token) {
+      message.error("Not authenticated. Please sign in again.");
+      return;
+    }
+
     if (!formData.customer || !formData.service || !formData.slot) {
       return message.warning("Please select all required fields.");
     }
@@ -98,6 +150,10 @@ export default function BookingPage() {
         notes: formData.notes,
       };
 
+      if (formData.employee?.value) {
+        payload.directAssignEmployeeId = formData.employee.value;
+      }
+
       const res = await fetch("/api/bookings", {
         method: "POST",
         headers: {
@@ -108,11 +164,23 @@ export default function BookingPage() {
       });
 
       const data = await res.json();
-
       if (res.ok) {
-        message.success("✅ Booking successfully created!");
+        message.success(
+          formData.employee
+            ? "✅ Booking created and assigned successfully!"
+            : "✅ Booking successfully created!"
+        );
         setModalOpen(false);
-        setFormData({ customer: null, service: null, slot: null, notes: "" });
+        setFormData({
+          customer: null,
+          service: null,
+          employee: null,
+          slot: null,
+          notes: "",
+        });
+
+        // ✅ Refresh calendar after creation
+        fetchBookings();
       } else {
         message.error(data.error || "Failed to create booking.");
       }
@@ -125,7 +193,7 @@ export default function BookingPage() {
   };
 
   const formatTime = (isoString) => {
-    // Remove “Z” so browser doesn’t convert UTC → local
+    if (!isoString) return "—";
     const raw = isoString.replace("Z", "");
     const [hour, minute] = raw.slice(11, 16).split(":");
     const h = parseInt(hour, 10);
@@ -133,20 +201,14 @@ export default function BookingPage() {
     const formattedHour = ((h + 11) % 12) + 1;
     return `${formattedHour}:${minute} ${ampm}`;
   };
-  const slotOptions = slots.map((s) => ({
-    value: s.start,
-    label: `${formatTime(s.start)} - ${formatTime(s.end)} (${
-      s.capacity
-    } available)`,
-    isDisabled: s.capacity <= 0,
-  }));
 
   useEffect(() => {
+    if (!token) return;
     fetchCustomers();
     fetchServices();
-  }, []);
-
-  console.log("slots", slots);
+    fetchEmployees();
+    fetchBookings();
+  }, [token]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
@@ -158,26 +220,43 @@ export default function BookingPage() {
         </h1>
       </div>
 
-      {/* Calendar Container */}
+      {/* Calendar */}
       <div className="bg-white rounded-2xl shadow-lg p-4 border border-gray-100">
         <Calendar
           localizer={localizer}
-          onSelectSlot={handleSelectDate}
           selectable
+          onSelectSlot={handleSelectDate}
+          events={events}
           style={{ height: 650 }}
           popup
           views={["month", "week", "day"]}
-          eventPropGetter={() => ({
+          eventPropGetter={(event) => ({
+            // ✅ color by WorkOrder status: DONE / CANCELLED / else
             style: {
-              backgroundColor: "#2563eb",
+              backgroundColor:
+                event.status === "CANCELLED"
+                  ? "#f87171" // red
+                  : event.status === "DONE"
+                  ? "#10b981" // green
+                  : "#2563eb", // blue
               color: "#fff",
               borderRadius: "8px",
+            },
+          })}
+          // ✅ Hover Styling
+          dayPropGetter={() => ({
+            style: { transition: "background-color 0.2s" },
+            onMouseEnter: (e) => {
+              e.currentTarget.style.backgroundColor = "#f3f4f6";
+            },
+            onMouseLeave: (e) => {
+              e.currentTarget.style.backgroundColor = "";
             },
           })}
         />
       </div>
 
-      {/* Modal for Booking Form */}
+      {/* Booking Modal */}
       <Modal
         open={modalOpen}
         title={
@@ -197,7 +276,7 @@ export default function BookingPage() {
           </div>
         ) : (
           <div className="space-y-6 p-2">
-            {/* Slot Dropdown */}
+            {/* Time Slot */}
             <div>
               <label className="block text-gray-700 font-medium mb-2">
                 Select Time Slot
@@ -206,7 +285,7 @@ export default function BookingPage() {
                 isLoading={loading}
                 placeholder="Choose a time slot"
                 options={slots.map((s) => ({
-                  value: s, // ✅ store full slot object
+                  value: s,
                   label: `${formatTime(s.start)} - ${formatTime(s.end)} (${
                     s.capacity
                   } available)`,
@@ -215,25 +294,10 @@ export default function BookingPage() {
                 onChange={(option) =>
                   setFormData((prev) => ({ ...prev, slot: option.value }))
                 }
-                styles={{
-                  control: (base) => ({
-                    ...base,
-                    borderColor: "#E5E7EB",
-                    borderRadius: "0.5rem",
-                    minHeight: "42px",
-                    boxShadow: "none",
-                  }),
-                  option: (base, { isDisabled }) => ({
-                    ...base,
-                    backgroundColor: isDisabled ? "#F9FAFB" : "white",
-                    color: isDisabled ? "#9CA3AF" : "#111827",
-                    cursor: isDisabled ? "not-allowed" : "pointer",
-                  }),
-                }}
               />
               {formData.slot && (
                 <p className="text-sm text-gray-500 mt-2">
-                  You selected:{" "}
+                  Selected:{" "}
                   <strong>
                     {formatTime(formData.slot.start)} -{" "}
                     {formatTime(formData.slot.end)}
@@ -242,11 +306,11 @@ export default function BookingPage() {
               )}
             </div>
 
-            {/* Customer & Service Dropdowns */}
-            <div className="w-full flex gap-2">
-              <div className="w-1/2">
+            {/* Customer + Service + Employee */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
                 <label className="block text-gray-700 font-medium mb-2">
-                  Select Customer
+                  Customer
                 </label>
                 <Select
                   options={customers}
@@ -254,15 +318,14 @@ export default function BookingPage() {
                   onChange={(val) =>
                     setFormData((p) => ({ ...p, customer: val }))
                   }
-                  placeholder="Search or select customer..."
-                  className="text-sm"
+                  placeholder="Select customer..."
                   isSearchable
                 />
               </div>
 
-              <div className="w-1/2">
+              <div>
                 <label className="block text-gray-700 font-medium mb-2">
-                  Select Service
+                  Service
                 </label>
                 <Select
                   options={services}
@@ -270,20 +333,34 @@ export default function BookingPage() {
                   onChange={(val) =>
                     setFormData((p) => ({ ...p, service: val }))
                   }
-                  placeholder="Search or select service..."
-                  className="text-sm"
+                  placeholder="Select service..."
                   isSearchable
+                />
+              </div>
+
+              <div>
+                <label className="block text-gray-700 font-medium mb-2">
+                  Assign Employee (optional)
+                </label>
+                <Select
+                  options={employees}
+                  value={formData.employee}
+                  onChange={(val) =>
+                    setFormData((p) => ({ ...p, employee: val }))
+                  }
+                  placeholder="Select employee..."
+                  isClearable
                 />
               </div>
             </div>
 
-            {/* Notes Field */}
+            {/* Notes */}
             <div>
               <label className="block text-gray-700 font-medium mb-2">
                 Notes (optional)
               </label>
               <Textarea
-                placeholder="Add additional notes for this booking..."
+                placeholder="Add notes..."
                 value={formData.notes}
                 onChange={(e) =>
                   setFormData((p) => ({ ...p, notes: e.target.value }))
@@ -292,7 +369,7 @@ export default function BookingPage() {
               />
             </div>
 
-            {/* Submit Button */}
+            {/* Submit */}
             <div className="pt-2">
               <Button
                 onClick={handleCreateBooking}
