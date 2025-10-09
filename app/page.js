@@ -40,9 +40,8 @@ const page = () => {
  
        const data = await res.json();
        if (!res.ok) throw new Error(data.error || "Failed to fetch work orders");
- 
+      console.log("work order data", data);
        setWorkOrders(data.workOrders || []);
-       setTotalPages(data.totalPages || 1);
      } catch (err) {
        console.error("Error fetching work orders:", err);
      } finally {

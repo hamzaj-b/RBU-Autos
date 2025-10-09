@@ -70,7 +70,10 @@ export default function EditEmployeeModal({ isOpen, onClose, employeeId, onUpdat
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          hourlyRate: Number(formData.hourlyRate), // force number before sending
+        }),        
       });
       const data = await res.json();
 
