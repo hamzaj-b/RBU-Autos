@@ -74,6 +74,36 @@ export default function StaffManagement() {
       const data = await res.json();
 
       if (res.ok) {
+        // ✅ Success toast
+        message.success("Employee deleted successfully!");
+
+        // Refresh the employee list
+        await fetchEmployees();
+
+        // Optional callback for parent component
+        onUpdated && onUpdated(employeeId, "delete");
+      } else {
+        // ❌ Error toast
+        message.error(data.error || "Failed to delete employee");
+      }
+    } catch (err) {
+      console.error(err);
+      message.error("Network error while deleting employee");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch Employees
+  const fetchEmployees = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/admin/employee", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+
+      if (res.ok) {
         setEmployees(data.employees || []);
         setFiltered(data.employees || []);
         if (data.employees?.length > 0) setSelectedEmployee(data.employees[0]);
@@ -130,6 +160,10 @@ export default function StaffManagement() {
             variant="outline"
             className="flex items-center gap-2 text-gray-600"
           >
+            <RefreshCcw
+              className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
+            />{" "}
+            Refresh
             <RefreshCcw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} /> Refresh
           </Button>
 

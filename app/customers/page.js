@@ -15,6 +15,7 @@ import {
 import { useAuth } from "@/app/context/AuthContext";
 import CustomerModal from "../components/app/CustomerModal";
 import InviteModal from "../components/app/InviteModal";
+import toast from "react-hot-toast";
 
 export default function CustomerManagement() {
   const { token } = useAuth();
@@ -43,8 +44,10 @@ export default function CustomerManagement() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      if (res.ok) setCustomers(data.customers || []);
-      else message.error(data.error || "Failed to load customers");
+      if (res.ok) {
+        setCustomers(data.customers || []);
+        toast.success("Customers fetched!");
+      } else message.error(data.error || "Failed to load customers");
     } catch (err) {
       console.error(err);
       message.error("Network error loading customers");
