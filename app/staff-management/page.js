@@ -133,11 +133,8 @@ export default function StaffManagement() {
             onClick={fetchEmployees}
             variant="outline"
             className="flex items-center gap-2 text-gray-600"
+            disabled={loading}
           >
-            <RefreshCcw
-              className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
-            />{" "}
-            Refresh
             <RefreshCcw
               className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
             />{" "}
