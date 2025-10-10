@@ -125,7 +125,7 @@ export default function CustomerManagement() {
 
     try {
       setLoading(true);
-      const res = await fetch("/api/admin/customer", {
+      const res = await fetch("/api/auth/admin/customer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
