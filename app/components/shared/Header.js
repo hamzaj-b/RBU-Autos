@@ -17,7 +17,7 @@ export default function Header({ toggleSidebar, className = "" }) {
 
   const handleLogout = () => {
     logout(); // Clear token, session, etc.
-    window.location.href = "/auth/signin";
+    window.location.href = "/auth/login";
   };
 
   return (
