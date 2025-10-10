@@ -9,6 +9,7 @@ async function POST(req) {
     const body = await req.json();
     const {
       timezone,
+      utc,
       openTime,
       closeTime,
       slotMinutes,
@@ -16,6 +17,7 @@ async function POST(req) {
       allowCustomerBooking,
     } = body;
 
+    // ✅ validation
     if (!timezone || !openTime || !closeTime || !slotMinutes) {
       return NextResponse.json(
         { error: "Missing required fields" },
@@ -23,9 +25,11 @@ async function POST(req) {
       );
     }
 
+    // ✅ create record with UTC
     const settings = await prisma.businessSettings.create({
       data: {
         timezone,
+        utc: utc || "(UTC+00:00)", // default if missing
         openTime,
         closeTime,
         slotMinutes,
@@ -43,7 +47,6 @@ async function POST(req) {
     );
   }
 }
-
 // Get all Business Settings
 async function GET() {
   try {

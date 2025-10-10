@@ -208,6 +208,7 @@ model EmployeeSession {
 model BusinessSettings {
   id                   String   @id @default(auto()) @map("_id") @db.ObjectId
   timezone             String
+  utc                  String   @default("(UTC+00:00)") // ✅ new field
   openTime             String
   closeTime            String
   slotMinutes          Int

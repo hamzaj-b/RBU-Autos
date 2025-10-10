@@ -2,27 +2,37 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import Cookies from "js-cookie";
+import toast from "react-hot-toast";
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
+  const [sessionId, setSessionId] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Load cookies when app starts
+  // 🔄 Load cookies and localStorage when app starts
   useEffect(() => {
     const savedToken = Cookies.get("authToken");
     const savedUser = Cookies.get("authUser");
+    const savedSessionId = localStorage.getItem("sessionId");
+
     if (savedToken && savedUser) {
       setToken(savedToken);
-      setUser(JSON.parse(savedUser));
+      const userData = JSON.parse(savedUser);
+      setUser(userData);
+      if (userData.userType === "EMPLOYEE" && savedSessionId) {
+        setSessionId(savedSessionId);
+      }
     }
     setLoading(false);
   }, []);
 
-  // Login via your backend API
+  // 🔑 Login via backend API
   async function login(email, password) {
+    toast.loading("Logging in...", { id: "login" });
+
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
@@ -30,34 +40,97 @@ export function AuthProvider({ children }) {
         body: JSON.stringify({ email, password }),
       });
 
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Login failed");
-      }
-
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Login failed");
 
       Cookies.set("authToken", data.token, { expires: 1 });
       Cookies.set("authUser", JSON.stringify(data.user), { expires: 1 });
 
       setToken(data.token);
       setUser(data.user);
+
+      toast.success("Logged in successfully!", { id: "login" });
+
+      // 🧠 If Employee → Start session
+      if (data.user.userType === "EMPLOYEE") {
+        toast.loading("Starting employee session...", { id: "session" });
+
+        try {
+          const sessionRes = await fetch("/api/employeeSession/start", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${data.token}`,
+            },
+            body: JSON.stringify({ source: "web", location: "unknown" }),
+          });
+
+          const sessionData = await sessionRes.json();
+
+          if (sessionRes.ok) {
+            setSessionId(sessionData.session.id);
+            localStorage.setItem("sessionId", sessionData.session.id);
+            toast.success("🕒 Session started successfully!", {
+              id: "session",
+            });
+          } else {
+            toast.error(sessionData.error || "Failed to start session", {
+              id: "session",
+            });
+          }
+        } catch (err) {
+          console.error("Error starting session:", err);
+          toast.error("Error starting session", { id: "session" });
+        }
+      } else {
+        // Non-employee user → clear any session data
+        setSessionId(null);
+        localStorage.removeItem("sessionId");
+      }
+
       return { success: true };
     } catch (error) {
       console.error("Login error:", error.message);
+      toast.error(error.message || "Login failed", { id: "login" });
       return { success: false, message: error.message };
     }
   }
 
-  function logout() {
-    Cookies.remove("authToken");
-    Cookies.remove("authUser");
-    setUser(null);
-    setToken(null);
+  // 🚪 Logout
+  async function logout() {
+    toast.loading("Logging out...", { id: "logout" });
+
+    try {
+      if (token) {
+        const res = await fetch("/api/auth/logout", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Logout failed");
+      }
+    } catch (error) {
+      console.error("Logout API error:", error.message);
+      // Still proceed with local cleanup even if API fails
+    } finally {
+      // Clear local state regardless of API success
+      Cookies.remove("authToken");
+      Cookies.remove("authUser");
+      localStorage.removeItem("sessionId");
+      setUser(null);
+      setToken(null);
+      setSessionId(null);
+      toast.success("👋 Logged out successfully!", { id: "logout" });
+    }
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, loading }}>
+    <AuthContext.Provider
+      value={{ user, token, sessionId, login, logout, loading }}
+    >
       {children}
     </AuthContext.Provider>
   );

@@ -32,6 +32,7 @@ async function PUT(req, { params }) {
     const body = await req.json();
     const {
       timezone,
+      utc,
       openTime,
       closeTime,
       slotMinutes,
@@ -39,10 +40,12 @@ async function PUT(req, { params }) {
       allowCustomerBooking,
     } = body;
 
+    // ✅ update all provided fields (including utc)
     const updated = await prisma.businessSettings.update({
       where: { id },
       data: {
         ...(timezone && { timezone }),
+        ...(utc && { utc }), // ✅ new utc field
         ...(openTime && { openTime }),
         ...(closeTime && { closeTime }),
         ...(slotMinutes && { slotMinutes }),

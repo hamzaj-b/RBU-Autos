@@ -11,6 +11,7 @@ async function POST(req) {
     const body = await req.json();
     const { email, password } = body;
 
+    // 🔍 1. Find user
     const user = await prisma.user.findUnique({
       where: { email },
       include: {
@@ -26,6 +27,7 @@ async function POST(req) {
       );
     }
 
+    // 🔐 2. Verify password
     const decrypted = decryptPassword(user.passwordEncrypted);
     if (decrypted !== password) {
       return NextResponse.json(
@@ -34,7 +36,7 @@ async function POST(req) {
       );
     }
 
-    // ✅ Build token payload
+    // 🧱 3. Build token payload
     const tokenPayload = {
       id: user.id,
       email: user.email,
@@ -48,36 +50,10 @@ async function POST(req) {
       tokenPayload.customerId = user.customerProfileId;
     }
 
-    // ✅ Generate token
+    // 🪙 4. Generate token
     const token = jwt.sign(tokenPayload, SECRET_KEY, { expiresIn: "24h" });
 
-    // ✅ If Employee → log session with backend-detected data
-    if (user.userType === "EMPLOYEE") {
-      const ip =
-        req.headers.get("x-forwarded-for") ||
-        req.headers.get("x-real-ip") ||
-        "unknown";
-
-      const userAgent = req.headers.get("user-agent") || "unknown";
-
-      // 🔹 Detect platform (simple parse)
-      let source = "web";
-      if (/mobile/i.test(userAgent)) source = "mobile";
-      else if (/postman/i.test(userAgent)) source = "postman";
-
-      const location = ip !== "unknown" ? `IP:${ip}` : null;
-
-      await prisma.employeeSession.create({
-        data: {
-          userId: user.id,
-          employeeId: user.employeeProfileId || null,
-          loginAt: new Date(),
-          source,
-          location,
-        },
-      });
-    }
-
+    // ✅ 5. Return success (no employeeSession logging)
     return NextResponse.json({
       token,
       user: {

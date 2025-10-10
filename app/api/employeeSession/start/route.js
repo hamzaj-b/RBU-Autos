@@ -31,8 +31,21 @@ async function POST(req) {
     try {
       decoded = jwt.verify(authHeader.split(" ")[1], SECRET_KEY);
     } catch {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Invalid or expired token" },
+        { status: 401 }
+      );
     }
+
+    if (decoded.userType !== "EMPLOYEE") {
+      return NextResponse.json(
+        { error: "Only employees can start sessions" },
+        { status: 403 }
+      );
+    }
+
+    const body = await req.json().catch(() => ({}));
+    const { source = "web", location = "unknown" } = body;
 
     const settings = await prisma.businessSettings.findFirst();
     if (!settings) throw new Error("Business settings not configured");
@@ -43,45 +56,63 @@ async function POST(req) {
 
     const offsetMs = getUtcOffsetMs(utc);
 
+    const now = new Date();
     const formatter = new Intl.DateTimeFormat("en-CA", { timeZone: timezone });
+    const todayLocal = formatter.format(now);
 
-    // Only close session if user is EMPLOYEE
-    if (decoded.userType === "EMPLOYEE") {
-      // Find open session
-      const existingSession = await prisma.employeeSession.findFirst({
-        where: {
-          employeeId: decoded.employeeId,
-          OR: [{ logoutAt: { isSet: false } }, { logoutAt: null }],
-        },
-        orderBy: { loginAt: "desc" },
-      });
+    const existingSession = await prisma.employeeSession.findFirst({
+      where: {
+        employeeId: decoded.employeeId,
+        OR: [{ logoutAt: { isSet: false } }, { logoutAt: null }],
+      },
+      orderBy: { loginAt: "desc" },
+    });
 
-      if (existingSession) {
-        const loginDate = new Date(existingSession.loginAt);
-        const loginLocalDay = formatter.format(loginDate);
+    if (existingSession) {
+      const loginDate = new Date(existingSession.loginAt);
+      const loginLocalDay = formatter.format(loginDate);
 
+      let logoutAt;
+
+      if (loginLocalDay === todayLocal) {
+        logoutAt = now;
+      } else {
         const localIso = `${loginLocalDay}T${closeTime}:00Z`;
         const pretendUTC = new Date(localIso);
         const utcTimestamp = pretendUTC.getTime() - offsetMs;
-        const closeTimeDate = new Date(utcTimestamp);
-
-        const now = new Date();
-        const logoutAt = now > closeTimeDate ? closeTimeDate : now;
-
-        await prisma.employeeSession.update({
-          where: { id: existingSession.id },
-          data: { logoutAt },
-        });
+        logoutAt = new Date(utcTimestamp);
       }
+
+      await prisma.employeeSession.update({
+        where: { id: existingSession.id },
+        data: { logoutAt },
+      });
     }
 
+    const session = await prisma.employeeSession.create({
+      data: {
+        userId: decoded.id,
+        employeeId: decoded.employeeId,
+        loginAt: now,
+        source,
+        location,
+      },
+    });
+
     return NextResponse.json({
-      message: "Logout successful",
+      message: "Employee session started successfully",
+      session: {
+        id: session.id,
+        employeeId: session.employeeId,
+        loginAt: session.loginAt,
+        source: session.source,
+        location: session.location,
+      },
     });
   } catch (err) {
-    console.error("Logout error:", err);
+    console.error("Session start error:", err);
     return NextResponse.json(
-      { error: err.message || "Failed to logout" },
+      { error: err.message || "Failed to start session" },
       { status: 500 }
     );
   }

@@ -13,27 +13,31 @@ import {
 import { Button } from "@/components/ui/button";
 import { RefreshCcw, Settings2, Clock, Globe2 } from "lucide-react";
 import dayjs from "dayjs";
-import timezoneData from "moment-timezone/data/meta/latest.json";
-
-const timezones = Object.keys(timezoneData.zones);
+import timeZones from "@/timeZones.json"; // ✅ imported from root
 
 export default function BusinessSettingsPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState(null);
 
+  // ───────────────────────────────
+  // Fetch settings from API
+  // ───────────────────────────────
   const fetchSettings = async () => {
     setLoading(true);
     try {
       const res = await fetch("/api/business-settings");
       const data = await res.json();
 
-      if (res.ok && data.settings.length > 0) {
+      if (res.ok && data.settings?.length > 0) {
         setSettings(data.settings[0]);
       } else {
         // no settings exist yet — initialize defaults
+        const defaultZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const matchZone = timeZones.find((t) => t.zone === defaultZone);
         setSettings({
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          timezone: defaultZone,
+          utc: matchZone?.utc || "(UTC+00:00)",
           openTime: "09:00",
           closeTime: "18:00",
           slotMinutes: 30,
@@ -49,6 +53,9 @@ export default function BusinessSettingsPage() {
     }
   };
 
+  // ───────────────────────────────
+  // Save settings (POST/PUT)
+  // ───────────────────────────────
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -60,7 +67,10 @@ export default function BusinessSettingsPage() {
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(settings),
+        body: JSON.stringify({
+          ...settings,
+          utc: settings.utc || "",
+        }),
       });
 
       const data = await res.json();
@@ -92,6 +102,7 @@ export default function BusinessSettingsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-8 text-gray-800 transition-all">
+      {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
           <Settings2 className="w-8 h-8 text-blue-theme" />
@@ -118,6 +129,7 @@ export default function BusinessSettingsPage() {
         </div>
       </div>
 
+      {/* Main Card */}
       <Card className="p-8 rounded-2xl shadow-xl border border-gray-200 bg-white mx-auto">
         <div className="space-y-8">
           {/* ─── Timezone ─────────────────────────────── */}
@@ -126,15 +138,29 @@ export default function BusinessSettingsPage() {
               <Globe2 className="w-5 h-5 text-blue-theme" />
               <h2 className="text-lg font-semibold text-gray-800">Timezone</h2>
             </div>
+
             <Select
               showSearch
               value={settings.timezone}
-              onChange={(val) =>
-                setSettings((prev) => ({ ...prev, timezone: val }))
-              }
-              options={timezones.map((tz) => ({ value: tz, label: tz }))}
+              onChange={(val) => {
+                const selected = timeZones.find((t) => t.zone === val);
+                setSettings((prev) => ({
+                  ...prev,
+                  timezone: val,
+                  utc: selected?.utc || "",
+                }));
+              }}
+              options={timeZones.map((t) => ({
+                value: t.zone,
+                label: `${t.utc} - ${t.name}`,
+              }))}
               className="w-full"
             />
+
+            <p className="text-sm text-gray-500 mt-2">
+              Current offset:{" "}
+              <span className="font-medium">{settings.utc}</span>
+            </p>
           </section>
 
           {/* ─── Business Hours ───────────────────────── */}
