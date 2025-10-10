@@ -1,53 +1,79 @@
 const { NextResponse } = require("next/server");
-const { PrismaClient } = require("@prisma/client");
-const { encryptPassword } = require("@/lib/encryption");
+const { PrismaClient, UserType } = require("@prisma/client");
 const jwt = require("jsonwebtoken");
+const { encryptPassword } = require("@/lib/encryption");
 
 const prisma = new PrismaClient();
 const SECRET_KEY = process.env.JWT_SECRET || "supersecret";
 
+// ✅ Get all admins
+async function GET(req) {
+  try {
+    const admins = await prisma.user.findMany({
+      where: { userType: UserType.ADMIN },
+      select: {
+        id: true,
+        email: true,
+        phone: true,
+        isActive: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return NextResponse.json({ admins });
+  } catch (err) {
+    console.error("Fetch admins error:", err);
+    return NextResponse.json(
+      { error: "Failed to fetch admins" },
+      { status: 500 }
+    );
+  }
+}
+
+// ✅ Create new admin
 async function POST(req) {
   try {
     const body = await req.json();
-    const { email, password } = body;
+    const { email, phone, password } = body;
 
-    // 1. Verify requester is Admin
-    let decoded;
-    try {
-      decoded = jwt.verify(token, SECRET_KEY);
-      if (decoded.userType !== "ADMIN") {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-      }
-    } catch (err) {
+    if (!email || !password)
       return NextResponse.json(
-        { error: "Invalid or expired token" },
-        { status: 401 }
-      );
-    }
-
-    // 2. Check if user exists
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) {
-      return NextResponse.json(
-        { error: "User already exists" },
+        { error: "Email and password are required" },
         { status: 400 }
       );
-    }
 
-    // 3. Encrypt password and create Admin
-    const encrypted = encryptPassword(password);
-    const user = await prisma.user.create({
+    const passwordEncrypted = encryptPassword(password);
+
+    const admin = await prisma.user.create({
       data: {
         email,
-        passwordEncrypted: encrypted,
-        userType: "ADMIN",
+        phone,
+        passwordEncrypted,
+        userType: UserType.ADMIN,
         isActive: true,
+      },
+      select: {
+        id: true,
+        email: true,
+        phone: true,
+        userType: true,
+        createdAt: true,
       },
     });
 
-    return NextResponse.json({ message: "Admin created successfully", user });
+    return NextResponse.json(
+      { message: "Admin created successfully", admin },
+      { status: 201 }
+    );
   } catch (err) {
-    console.error(err);
+    console.error("Create admin error:", err);
+    if (err.code === "P2002") {
+      return NextResponse.json(
+        { error: "Email or phone already exists" },
+        { status: 409 }
+      );
+    }
     return NextResponse.json(
       { error: "Failed to create admin" },
       { status: 500 }
@@ -55,4 +81,4 @@ async function POST(req) {
   }
 }
 
-module.exports = { POST };
+module.exports = { GET, POST };
