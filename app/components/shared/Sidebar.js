@@ -56,7 +56,7 @@ export default function Sidebar() {
     EMPLOYEE: [
       { href: "/", label: "Dashboard", icon: <LayoutDashboard /> },
       // { href: "/work-order", label: "Create Work Order", icon: <Users /> },
-      { href: "/repair-tracker", label: "Repair tracker", icon: <Wrench /> },
+      { href: "/employee/repair-tracker", label: "Repair tracker", icon: <Wrench /> },
       { href: "/work-order", label: "Work Orders", icon: <Users /> },
     ],
   };
