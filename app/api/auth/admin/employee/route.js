@@ -72,7 +72,7 @@ async function POST(req) {
 }
 async function GET(req) {
   try {
-    // 🔐 1️⃣ Authenticate Admin
+    // 🔐 1️⃣ Authenticate User
     const authHeader = req.headers.get("authorization");
     if (!authHeader)
       return NextResponse.json({ error: "No token provided" }, { status: 401 });
@@ -88,9 +88,62 @@ async function GET(req) {
       );
     }
 
-    if (decoded.userType !== "ADMIN") {
+    // 🧩 Role Handling
+    const userType = decoded.userType;
+
+    // ===================================================
+    // 👷 If EMPLOYEE → fetch own profile only
+    // ===================================================
+    if (userType === "EMPLOYEE") {
+      if (!decoded.employeeId) {
+        return NextResponse.json(
+          { error: "Employee ID missing in token" },
+          { status: 403 }
+        );
+      }
+
+      const employee = await prisma.employeeProfile.findUnique({
+        where: { id: decoded.employeeId },
+        include: {
+          User: {
+            select: {
+              email: true,
+              isActive: true,
+              createdAt: true,
+            },
+          },
+          Sessions: {
+            select: {
+              id: true,
+              loginAt: true,
+              logoutAt: true,
+              source: true,
+              location: true,
+            },
+            orderBy: { loginAt: "desc" },
+          },
+        },
+      });
+
+      if (!employee) {
+        return NextResponse.json(
+          { error: "Employee profile not found" },
+          { status: 404 }
+        );
+      }
+
+      return NextResponse.json({
+        employee,
+        message: "Employee profile fetched successfully",
+      });
+    }
+
+    // ===================================================
+    // 👑 If ADMIN → list all employees with pagination
+    // ===================================================
+    if (userType !== "ADMIN") {
       return NextResponse.json(
-        { error: "Only Admin can access this resource" },
+        { error: "Access denied. Only Admin or Employee allowed." },
         { status: 403 }
       );
     }
@@ -105,19 +158,21 @@ async function GET(req) {
     const skip = (page - 1) * limit;
 
     // 🧠 3️⃣ Filter + Search Logic
-    const where = {
-      OR: [
-        { fullName: { contains: search, mode: "insensitive" } },
-        { title: { contains: search, mode: "insensitive" } },
-        {
-          User: {
-            some: {
-              email: { contains: search, mode: "insensitive" },
+    const where = search
+      ? {
+          OR: [
+            { fullName: { contains: search, mode: "insensitive" } },
+            { title: { contains: search, mode: "insensitive" } },
+            {
+              User: {
+                some: {
+                  email: { contains: search, mode: "insensitive" },
+                },
+              },
             },
-          },
-        },
-      ],
-    };
+          ],
+        }
+      : {};
 
     // ⚡ 4️⃣ Fetch Data + Count in Parallel
     const [employees, total] = await Promise.all([
@@ -162,7 +217,7 @@ async function GET(req) {
   } catch (err) {
     console.error("❌ GET /api/auth/admin/employee error:", err);
     return NextResponse.json(
-      { error: "Failed to fetch employees" },
+      { error: err.message || "Failed to fetch employees" },
       { status: 500 }
     );
   }
