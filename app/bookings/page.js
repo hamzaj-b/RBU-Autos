@@ -211,7 +211,7 @@ export default function BookingPage() {
         </h1>
         <Button
           onClick={() => fetchBookings()}
-          className="bg-blue-600 text-white"
+          className="bg-blue-theme hover:bg-blue-bold !text-white"
         >
           Refresh
         </Button>
@@ -324,11 +324,16 @@ export default function BookingPage() {
                     notes: selectedBooking.notes || "",
                   });
                 }}
-                className="bg-blue-600 text-white"
+                className="bg-blue-theme !text-white hover:bg-blue-bold"
               >
                 Edit
               </Button>
-              <Button onClick={() => setModalOpen(false)}>Close</Button>
+              <Button
+                className="bg-rose-600 hover:bg-red-600 !text-white"
+                onClick={() => setModalOpen(false)}
+              >
+                Close
+              </Button>
             </div>
           </div>
         ) : (
@@ -393,7 +398,7 @@ export default function BookingPage() {
 
             <Button
               onClick={handleCreateOrUpdateBooking}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+              className="w-full bg-blue-theme hover:bg-blue-bold !text-white"
             >
               {editMode ? "Update Booking" : "Create Booking"}
             </Button>
