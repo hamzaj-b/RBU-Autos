@@ -12,7 +12,7 @@ const SECRET_KEY = process.env.JWT_SECRET || "supersecret";
 async function PATCH(req, { params }) {
   try {
     // -------------------------
-    // 🔑 1. Auth check
+    // 🔑 1️⃣ Auth check
     // -------------------------
     const authHeader = req.headers.get("authorization");
     if (!authHeader)
@@ -46,11 +46,21 @@ async function PATCH(req, { params }) {
     }
 
     // -------------------------
-    // 🔍 2. Find WorkOrder + Booking
+    // 🔍 2️⃣ Find WorkOrder + Booking
     // -------------------------
     const workOrder = await prisma.workOrder.findUnique({
       where: { id: workOrderId },
-      include: { booking: true },
+      include: {
+        booking: {
+          include: {
+            bookingServices: { include: { service: true } },
+            customer: true,
+          },
+        },
+        workOrderServices: { include: { service: true } },
+        employee: true,
+        customer: true,
+      },
     });
 
     if (!workOrder)
@@ -74,7 +84,7 @@ async function PATCH(req, { params }) {
       );
 
     // -------------------------
-    // ⏰ 3. Employee availability check
+    // ⏰ 3️⃣ Employee availability check
     // -------------------------
     const conflict = await prisma.workOrder.findFirst({
       where: {
@@ -96,7 +106,9 @@ async function PATCH(req, { params }) {
             id: conflict.id,
             startAt: conflict.booking.startAt,
             endAt: conflict.booking.endAt,
-            service: conflict.booking.serviceId,
+            services: conflict.booking?.bookingServices?.map(
+              (bs) => bs.service.name
+            ),
           },
         },
         { status: 400 }
@@ -104,7 +116,7 @@ async function PATCH(req, { params }) {
     }
 
     // -------------------------
-    // 💾 4. Accept job (transactional)
+    // 💾 4️⃣ Accept job (transactional)
     // -------------------------
     const [updatedWorkOrder, updatedBooking] = await prisma.$transaction(
       async (tx) => {
@@ -116,8 +128,15 @@ async function PATCH(req, { params }) {
             openedAt: new Date(),
           },
           include: {
-            booking: { include: { service: true, customer: true } },
+            booking: {
+              include: {
+                bookingServices: { include: { service: true } },
+                customer: true,
+              },
+            },
+            workOrderServices: { include: { service: true } },
             employee: true,
+            customer: true,
           },
         });
 
@@ -134,7 +153,7 @@ async function PATCH(req, { params }) {
     );
 
     // -------------------------
-    // ✅ 5. Success response
+    // ✅ 5️⃣ Success response
     // -------------------------
     return NextResponse.json(
       {

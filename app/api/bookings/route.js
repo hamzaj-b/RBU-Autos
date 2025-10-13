@@ -10,9 +10,12 @@ const { getSlots } = require("@/lib/slot");
 const prisma = new PrismaClient();
 const SECRET_KEY = process.env.JWT_SECRET || "supersecret";
 
+// -------------------------------------------
+// 📦 POST — Create Booking
+// -------------------------------------------
 async function POST(req) {
   try {
-    // 🔑 Auth check
+    // 🔑 1️⃣ Auth Check
     const authHeader = req.headers.get("authorization");
     if (!authHeader)
       return NextResponse.json({ error: "No token provided" }, { status: 401 });
@@ -28,26 +31,32 @@ async function POST(req) {
       );
     }
 
-    // 📦 Request body
+    // 📦 2️⃣ Parse Request Body
     const body = await req.json();
     const {
       customerId,
-      serviceId,
+      serviceIds, // array of service IDs
       startAt,
       endAt,
       directAssignEmployeeId,
       notes,
     } = body;
 
-    if (!customerId || !serviceId || !startAt || !endAt) {
+    if (
+      !customerId ||
+      !Array.isArray(serviceIds) ||
+      serviceIds.length === 0 ||
+      !startAt ||
+      !endAt
+    ) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { error: "Missing or invalid required fields" },
         { status: 400 }
       );
     }
 
-    // 🕑 Step 1: Validate slot availability
-    const date = startAt.split("T")[0]; // extract YYYY-MM-DD
+    // 🕑 3️⃣ Validate slot availability
+    const date = startAt.split("T")[0];
     const { slots } = await getSlots(date);
 
     const targetSlot = slots.find(
@@ -56,18 +65,16 @@ async function POST(req) {
         new Date(s.end).getTime() === new Date(endAt).getTime()
     );
 
-    if (!targetSlot) {
+    if (!targetSlot)
       return NextResponse.json({ error: "Invalid time slot" }, { status: 400 });
-    }
 
-    if (targetSlot.capacity <= 0) {
+    if (targetSlot.capacity <= 0)
       return NextResponse.json(
         { error: "Slot fully booked. Please choose another time." },
         { status: 409 }
       );
-    }
 
-    // 👷 Step 2: If employee directly assigned → check availability
+    // 👷 4️⃣ Check employee overlap BEFORE inserting anything
     if (directAssignEmployeeId) {
       const overlapping = await prisma.workOrder.findFirst({
         where: {
@@ -91,40 +98,64 @@ async function POST(req) {
       }
     }
 
-    // 📝 Step 3: Create booking
-    const booking = await prisma.booking.create({
-      data: {
-        customerId,
-        createdByUserId: decoded.id,
-        serviceId,
-        date: new Date(startAt),
-        startAt: new Date(startAt),
-        endAt: new Date(endAt),
-        slotMinutes: 60,
-        notes: notes || null,
-        status: BookingStatus.ACCEPTED,
-      },
+    // 🔒 5️⃣ Use a transaction to create booking + workOrder atomically
+    const [booking, workOrder] = await prisma.$transaction(async (tx) => {
+      // ➕ Create booking
+      const booking = await tx.booking.create({
+        data: {
+          customerId,
+          createdByUserId: decoded.id,
+          date: new Date(startAt),
+          startAt: new Date(startAt),
+          endAt: new Date(endAt),
+          slotMinutes: 60,
+          notes: notes || null,
+          status: BookingStatus.ACCEPTED,
+        },
+      });
+
+      // ➕ Link booking to multiple services
+      await tx.bookingService.createMany({
+        data: serviceIds.map((serviceId) => ({
+          bookingId: booking.id,
+          serviceId,
+        })),
+      });
+
+      // ➕ Create workOrder
+      const workOrder = await tx.workOrder.create({
+        data: {
+          bookingId: booking.id,
+          customerId,
+          employeeId: directAssignEmployeeId || null,
+          status: directAssignEmployeeId
+            ? WorkOrderStatus.ASSIGNED
+            : WorkOrderStatus.OPEN,
+        },
+      });
+
+      // ➕ Link workOrder to same services
+      await tx.workOrderService.createMany({
+        data: serviceIds.map((serviceId) => ({
+          workOrderId: workOrder.id,
+          serviceId,
+        })),
+      });
+
+      // 🔗 Link booking → workOrder
+      await tx.booking.update({
+        where: { id: booking.id },
+        data: {
+          workOrder: {
+            connect: { id: workOrder.id },
+          },
+        },
+      });
+
+      return [booking, workOrder];
     });
 
-    // 🛠 Step 4: Create workOrder
-    const workOrder = await prisma.workOrder.create({
-      data: {
-        bookingId: booking.id,
-        customerId,
-        serviceId,
-        employeeId: directAssignEmployeeId || null,
-        status: directAssignEmployeeId
-          ? WorkOrderStatus.ASSIGNED
-          : WorkOrderStatus.OPEN,
-      },
-    });
-
-    // 🔗 Step 5: Link workOrder back to booking
-    await prisma.booking.update({
-      where: { id: booking.id },
-      data: { workOrderId: workOrder.id },
-    });
-
+    // ✅ 6️⃣ Respond Success
     const message = directAssignEmployeeId
       ? "Booking created and assigned to employee successfully."
       : "Booking created successfully and added to Open Work Orders queue.";
@@ -139,13 +170,14 @@ async function POST(req) {
   }
 }
 
+// -------------------------------------------
+// 📜 GET — Fetch All Bookings
+// -------------------------------------------
 async function GET(req) {
   try {
-    // 🔐 Token validation
     const authHeader = req.headers.get("authorization");
-    if (!authHeader) {
+    if (!authHeader)
       return NextResponse.json({ error: "No token provided" }, { status: 401 });
-    }
 
     const token = authHeader.split(" ")[1];
     let decoded;
@@ -158,62 +190,41 @@ async function GET(req) {
       );
     }
 
-    // 📜 Parse query params
+    // Query params
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
     const skip = (page - 1) * limit;
 
-    const status = searchParams.get("status"); // ACCEPTED, CANCELLED, etc.
+    const status = searchParams.get("status");
     const search = searchParams.get("search")?.trim();
     const dateFrom = searchParams.get("dateFrom");
     const dateTo = searchParams.get("dateTo");
     const sortOrder = searchParams.get("sortOrder") === "asc" ? "asc" : "desc";
 
-    // 🧩 Build where condition dynamically
     const where = {};
 
-    // Filter by userType
-    if (decoded.userType === "CUSTOMER" && decoded.customerId) {
+    if (decoded.userType === "CUSTOMER" && decoded.customerId)
       where.customerId = decoded.customerId;
-    } else if (decoded.userType === "EMPLOYEE" && decoded.employeeId) {
-      // Employee → only bookings linked to their work orders
+    else if (decoded.userType === "EMPLOYEE" && decoded.employeeId)
       where.workOrder = { employeeId: decoded.employeeId };
-    }
 
-    // Filter by status
-    if (status && status !== "all") {
-      where.status = status;
-    }
+    if (status && status !== "all") where.status = status;
 
-    // Search by customer name or service name
-    if (search) {
-      where.OR = [
-        { customer: { fullName: { contains: search, mode: "insensitive" } } },
-        { service: { name: { contains: search, mode: "insensitive" } } },
-      ];
-    }
-
-    // Date filters
     if (dateFrom || dateTo) {
       where.date = {};
       if (dateFrom) where.date.gte = new Date(dateFrom);
       if (dateTo) where.date.lte = new Date(dateTo);
     }
 
-    // 🧠 Query bookings
     const [total, bookings] = await Promise.all([
       prisma.booking.count({ where }),
       prisma.booking.findMany({
         where,
         include: {
-          service: true,
+          bookingServices: { include: { service: true } },
           customer: true,
-          workOrder: {
-            include: {
-              employee: true,
-            },
-          },
+          workOrder: { include: { employee: true } },
         },
         orderBy: { createdAt: sortOrder },
         skip,
@@ -221,19 +232,18 @@ async function GET(req) {
       }),
     ]);
 
-    // ✅ Build formatted response
     const results = bookings.map((b) => ({
       id: b.id,
-      serviceName: b.service?.name || "N/A",
+      services: b.bookingServices.map((bs) => bs.service.name),
       customerName: b.customer?.fullName || "N/A",
+      employeeName: b.workOrder?.employee?.fullName || "Unassigned",
       status: b.status,
       notes: b.notes,
       startAt: b.startAt,
       endAt: b.endAt,
-      employeeName: b.workOrder?.employee?.fullName || "Unassigned",
       createdAt: b.createdAt,
       updatedAt: b.updatedAt,
-      raw: b, // full details if needed
+      raw: b,
     }));
 
     return NextResponse.json({

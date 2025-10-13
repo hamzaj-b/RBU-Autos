@@ -8,7 +8,7 @@ const SECRET_KEY = process.env.JWT_SECRET || "supersecret";
 async function GET(req) {
   try {
     // -------------------------
-    // 🔑 1. Verify JWT (Employee Only)
+    // 🔑 1️⃣ Verify JWT (Employee Only)
     // -------------------------
     const authHeader = req.headers.get("authorization");
     if (!authHeader?.startsWith("Bearer ")) {
@@ -33,7 +33,7 @@ async function GET(req) {
     }
 
     // -------------------------
-    // 📦 2. Parse Query Params
+    // 📦 2️⃣ Parse Query Params
     // -------------------------
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get("page")) || 1;
@@ -45,7 +45,7 @@ async function GET(req) {
     const skip = (page - 1) * limit;
 
     // -------------------------
-    // 🔍 3. Build Query
+    // 🔍 3️⃣ Build Query
     // -------------------------
     const whereClause = {
       status: WorkOrderStatus.OPEN,
@@ -54,26 +54,32 @@ async function GET(req) {
     if (search) {
       whereClause.OR = [
         { notes: { contains: search, mode: "insensitive" } },
-        { service: { name: { contains: search, mode: "insensitive" } } },
+        {
+          workOrderServices: {
+            some: {
+              service: { name: { contains: search, mode: "insensitive" } },
+            },
+          },
+        },
         { customer: { fullName: { contains: search, mode: "insensitive" } } },
       ];
     }
 
     // -------------------------
-    // 📊 4. Fetch Data
+    // 📊 4️⃣ Fetch Data
     // -------------------------
     const total = await prisma.workOrder.count({ where: whereClause });
 
     const workOrders = await prisma.workOrder.findMany({
       where: whereClause,
       include: {
-        service: true,
         customer: true,
         employee: true,
+        workOrderServices: { include: { service: true } },
         booking: {
           include: {
-            service: true,
             customer: true,
+            bookingServices: { include: { service: true } },
           },
         },
       },
@@ -83,16 +89,24 @@ async function GET(req) {
     });
 
     // -------------------------
-    // 🧮 5. Summary of Open Jobs
+    // 🧮 5️⃣ Summary Calculations
     // -------------------------
-    const totalSlots = workOrders.length;
+    const totalOpen = workOrders.length;
+
     const avgDuration =
-      totalSlots > 0
+      totalOpen > 0
         ? Math.round(
-            workOrders.reduce(
-              (sum, wo) => sum + (wo.booking?.service?.durationMinutes || 60),
-              0
-            ) / totalSlots
+            workOrders.reduce((sum, wo) => {
+              const durations =
+                wo.workOrderServices?.map(
+                  (ws) => ws.service.durationMinutes || 60
+                ) || [];
+              const avg =
+                durations.length > 0
+                  ? durations.reduce((a, b) => a + b, 0) / durations.length
+                  : 60;
+              return sum + avg;
+            }, 0) / totalOpen
           )
         : 0;
 
@@ -102,53 +116,66 @@ async function GET(req) {
       .sort((a, b) => new Date(a) - new Date(b))[0];
 
     const summary = {
-      totalOpen: totalSlots,
+      totalOpen,
       averageDuration: avgDuration,
       nextStartingAt: earliestBooking || null,
     };
 
     // -------------------------
-    // 🧩 6. Format WorkOrders (Summary List)
+    // 🧩 6️⃣ Format WorkOrders
     // -------------------------
-    const formatted = workOrders.map((wo) => ({
-      id: wo.id,
-      status: wo.status,
-      startAt: wo.booking?.startAt,
-      endAt: wo.booking?.endAt,
-      bookingTitle: wo.booking?.service?.name || "Service",
-      customerName: wo.booking?.customer?.fullName || "Unknown Customer",
-      estimatedTime: wo.booking?.service?.durationMinutes || 60,
-      notes: wo.booking?.notes || null,
-      // NEW — attach full details (for expanded views)
-      details: {
-        workOrder: {
-          id: wo.id,
-          status: wo.status,
-          notes: wo.notes,
-          openedAt: wo.openedAt,
-          createdAt: wo.createdAt,
-          updatedAt: wo.updatedAt,
-          service: wo.service,
-          customer: wo.customer,
-          employee: wo.employee,
+    const formatted = workOrders.map((wo) => {
+      const services =
+        wo.workOrderServices?.map((ws) => ws.service.name) ||
+        wo.booking?.bookingServices?.map((bs) => bs.service.name) ||
+        [];
+
+      return {
+        id: wo.id,
+        status: wo.status,
+        startAt: wo.booking?.startAt || null,
+        endAt: wo.booking?.endAt || null,
+        customerName: wo.customer?.fullName || "Unknown Customer",
+        employeeName: wo.employee?.fullName || "Unassigned",
+        services,
+        estimatedTime:
+          Math.round(
+            (services.length > 0
+              ? services.length * 60
+              : wo.booking?.slotMinutes || 60) / 60
+          ) * 60,
+        notes: wo.notes || wo.booking?.notes || null,
+        details: {
+          workOrder: {
+            id: wo.id,
+            status: wo.status,
+            notes: wo.notes,
+            openedAt: wo.openedAt,
+            createdAt: wo.createdAt,
+            updatedAt: wo.updatedAt,
+            services: wo.workOrderServices.map((ws) => ws.service),
+            customer: wo.customer,
+            employee: wo.employee,
+          },
+          booking: {
+            id: wo.booking?.id,
+            status: wo.booking?.status,
+            notes: wo.booking?.notes,
+            date: wo.booking?.date,
+            startAt: wo.booking?.startAt,
+            endAt: wo.booking?.endAt,
+            slotMinutes: wo.booking?.slotMinutes,
+            attachments: wo.booking?.attachments,
+            services:
+              wo.booking?.bookingServices?.map((bs) => bs.service) || [],
+            customer: wo.booking?.customer,
+          },
         },
-        booking: {
-          id: wo.booking?.id,
-          status: wo.booking?.status,
-          notes: wo.booking?.notes,
-          date: wo.booking?.date,
-          startAt: wo.booking?.startAt,
-          endAt: wo.booking?.endAt,
-          service: wo.booking?.service,
-          customer: wo.booking?.customer,
-          slotMinutes: wo.booking?.slotMinutes,
-          attachments: wo.booking?.attachments,
-        },
-      },
-    }));
+      };
+    });
 
     // -------------------------
-    // ✅ 7. Return Response
+    // ✅ 7️⃣ Return Response
     // -------------------------
     return NextResponse.json({
       message: "Open work orders fetched successfully",

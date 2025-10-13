@@ -51,7 +51,12 @@ async function PATCH(req, { params }) {
     // -------------------------
     const workOrder = await prisma.workOrder.findUnique({
       where: { id: workOrderId },
-      include: { booking: true },
+      include: {
+        booking: {
+          include: { bookingServices: { include: { service: true } } },
+        },
+        workOrderServices: { include: { service: true } },
+      },
     });
 
     if (!workOrder) {

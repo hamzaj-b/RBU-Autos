@@ -5,7 +5,7 @@ import { Calendar, momentLocalizer } from "react-big-calendar";
 import moment from "moment";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import Select from "react-select";
-import { Modal, Spin, message } from "antd";
+import { Modal, Spin, message, Tag, Divider } from "antd";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { CalendarDays } from "lucide-react";
@@ -14,31 +14,33 @@ import { useAuth } from "@/app/context/AuthContext";
 const localizer = momentLocalizer(moment);
 
 export default function BookingPage() {
+  // ─── State ────────────────────────────────────────
   const [modalOpen, setModalOpen] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [viewMode, setViewMode] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedBooking, setSelectedBooking] = useState(null);
   const [slots, setSlots] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [services, setServices] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(false);
+
   const [formData, setFormData] = useState({
     customer: null,
-    service: null,
+    services: [],
     employee: null,
     slot: null,
     notes: "",
   });
 
-  // ✅ using token directly from context
   const { token } = useAuth();
 
-  // ─── Fetch Customers ──────────────────────────────
+  // ─── Fetch Helpers ────────────────────────────────
   const fetchCustomers = async () => {
-    if (!token) return;
     const res = await fetch("/api/customers", {
       headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
     });
     if (!res.ok) return;
     const data = await res.json();
@@ -47,24 +49,18 @@ export default function BookingPage() {
     );
   };
 
-  // ─── Fetch Services ───────────────────────────────
   const fetchServices = async () => {
-    if (!token) return;
     const res = await fetch("/api/services", {
       headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
     });
     if (!res.ok) return;
     const data = await res.json();
     setServices(data.data?.map((s) => ({ label: s.name, value: s.id })) || []);
   };
 
-  // ─── Fetch Employees ──────────────────────────────
   const fetchEmployees = async () => {
-    if (!token) return;
     const res = await fetch("/api/auth/admin/employee", {
       headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
     });
     if (!res.ok) return;
     const data = await res.json();
@@ -73,10 +69,9 @@ export default function BookingPage() {
     );
   };
 
-  // ─── Fetch Slots ─────────────────────────────────
   const fetchSlots = async (date) => {
-    setLoading(true);
     try {
+      setLoading(true);
       const res = await fetch("/api/slots", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -91,71 +86,72 @@ export default function BookingPage() {
     }
   };
 
-  // ─── Fetch Bookings to show on calendar ──────────
   const fetchBookings = async () => {
-    if (!token) return;
-    try {
-      const res = await fetch("/api/bookings", {
-        headers: { Authorization: `Bearer ${token}` },
-        cache: "no-store",
-      });
-      if (!res.ok) return;
-      const data = await res.json();
-
-      const mapped =
-        data.bookings?.map((b) => ({
-          title: `${b.serviceName} (${b.customerName})`,
-          start: new Date(b.startAt),
-          end: new Date(b.endAt),
-          status: b.workOrder?.status || b.status, // prefer WorkOrder status
-        })) || [];
-      setEvents(mapped);
-    } catch (err) {
-      console.error("Fetch bookings error:", err);
-    }
+    const res = await fetch("/api/bookings", {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    const mapped =
+      data.bookings?.map((b) => ({
+        id: b.id,
+        title: `${b.customerName} — ${b.services.join(", ")}`,
+        start: new Date(b.startAt),
+        end: new Date(b.endAt),
+        status: b.status,
+        raw: b,
+      })) || [];
+    setEvents(mapped);
   };
 
-  // ─── On Calendar Date Click ──────────────────────
-  const handleSelectDate = (slotInfo) => {
+  // ─── Calendar Handlers ────────────────────────────
+  const handleSelectDate = async (slotInfo) => {
     const date = moment(slotInfo.start).format("YYYY-MM-DD");
     if (moment(date).isBefore(moment().format("YYYY-MM-DD"))) {
       message.warning("Cannot create booking in the past.");
       return;
     }
-
     setSelectedDate(date);
+    setEditMode(false);
+    setViewMode(false);
+    await fetchSlots(date);
     setModalOpen(true);
-    fetchSlots(date);
   };
 
-  // ─── Create Booking ───────────────────────────────
-  const handleCreateBooking = async () => {
-    if (!token) {
-      message.error("Not authenticated. Please sign in again.");
+  const handleEventClick = async (event) => {
+    setSelectedBooking(event.raw);
+    setViewMode(true);
+    setEditMode(false);
+    setModalOpen(true);
+  };
+
+  // ─── Booking CRUD ────────────────────────────────
+  const handleCreateOrUpdateBooking = async () => {
+    if (!formData.customer || !formData.services.length || !formData.slot) {
+      message.warning("Please select customer, services and time slot.");
       return;
     }
 
-    if (!formData.customer || !formData.service || !formData.slot) {
-      return message.warning("Please select all required fields.");
-    }
+    const payload = {
+      customerId: formData.customer.value,
+      serviceIds: formData.services.map((s) => s.value),
+      startAt: formData.slot.start,
+      endAt: formData.slot.end,
+      notes: formData.notes,
+    };
+    if (formData.employee?.value)
+      payload.directAssignEmployeeId = formData.employee.value;
+
+    const url = editMode
+      ? `/api/bookings/${selectedBooking.id}`
+      : "/api/bookings";
+    const method = editMode ? "PUT" : "POST";
 
     try {
       setLoading(true);
-
-      const payload = {
-        customerId: formData.customer.value,
-        serviceId: formData.service.value,
-        startAt: formData.slot.start,
-        endAt: formData.slot.end,
-        notes: formData.notes,
-      };
-
-      if (formData.employee?.value) {
-        payload.directAssignEmployeeId = formData.employee.value;
-      }
-
-      const res = await fetch("/api/bookings", {
-        method: "POST",
+      const res = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -166,34 +162,25 @@ export default function BookingPage() {
       const data = await res.json();
       if (res.ok) {
         message.success(
-          formData.employee
-            ? "✅ Booking created and assigned successfully!"
-            : "✅ Booking successfully created!"
+          editMode
+            ? "✅ Booking updated successfully!"
+            : "✅ Booking created successfully!"
         );
         setModalOpen(false);
-        setFormData({
-          customer: null,
-          service: null,
-          employee: null,
-          slot: null,
-          notes: "",
-        });
-
-        // ✅ Refresh calendar after creation
         fetchBookings();
       } else {
-        message.error(data.error || "Failed to create booking.");
+        message.error(data.error || "Failed to save booking.");
       }
     } catch (err) {
-      console.error("Booking creation failed:", err);
-      message.error("Something went wrong while creating booking.");
+      console.error("Booking save error:", err);
+      message.error("Something went wrong.");
     } finally {
       setLoading(false);
     }
   };
 
+  // ─── Helpers ─────────────────────────────────────
   const formatTime = (isoString) => {
-    if (!isoString) return "—";
     const raw = isoString.replace("Z", "");
     const [hour, minute] = raw.slice(11, 16).split(":");
     const h = parseInt(hour, 10);
@@ -202,6 +189,7 @@ export default function BookingPage() {
     return `${formattedHour}:${minute} ${ampm}`;
   };
 
+  // ─── Mount ───────────────────────────────────────
   useEffect(() => {
     if (!token) return;
     fetchCustomers();
@@ -210,80 +198,143 @@ export default function BookingPage() {
     fetchBookings();
   }, [token]);
 
+  // ─── UI ──────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-semibold text-blue-bold flex items-center gap-3">
-          <CalendarDays className="w-8 h-8 text-blue-bold" />
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-semibold flex items-center gap-2">
+          <CalendarDays className="w-8 h-8 text-blue-600" />
           Booking Calendar
         </h1>
+        <Button
+          onClick={() => fetchBookings()}
+          className="bg-blue-600 text-white"
+        >
+          Refresh
+        </Button>
       </div>
 
-      {/* Calendar */}
-      <div className="bg-white rounded-2xl shadow-lg p-4 border border-gray-100">
+      <div className="bg-white rounded-2xl shadow p-4 border">
         <Calendar
           localizer={localizer}
           selectable
           onSelectSlot={handleSelectDate}
+          onSelectEvent={handleEventClick}
           events={events}
           style={{ height: 650 }}
           popup
           views={["month", "week", "day"]}
           eventPropGetter={(event) => ({
-            // ✅ color by WorkOrder status: DONE / CANCELLED / else
             style: {
               backgroundColor:
                 event.status === "CANCELLED"
-                  ? "#f87171" // red
+                  ? "#f87171"
                   : event.status === "DONE"
-                  ? "#10b981" // green
-                  : "#2563eb", // blue
+                  ? "#10b981"
+                  : "#2563eb",
               color: "#fff",
               borderRadius: "8px",
-            },
-          })}
-          // ✅ Hover Styling
-          dayPropGetter={() => ({
-            style: { transition: "background-color 0.2s" },
-            onMouseEnter: (e) => {
-              e.currentTarget.style.backgroundColor = "#f3f4f6";
-            },
-            onMouseLeave: (e) => {
-              e.currentTarget.style.backgroundColor = "";
             },
           })}
         />
       </div>
 
-      {/* Booking Modal */}
+      {/* ─── Modal ───────────────────────────────────── */}
       <Modal
         open={modalOpen}
-        title={
-          <div className="text-xl font-semibold text-gray-800">
-            Create Booking —{" "}
-            <span className="text-blue-600">{selectedDate}</span>
-          </div>
-        }
         onCancel={() => setModalOpen(false)}
         footer={null}
-        width={650}
+        width={700}
         className="rounded-xl"
+        destroyOnClose
+        title={
+          viewMode
+            ? `Booking Details`
+            : editMode
+            ? "Edit Booking"
+            : `Create Booking — ${selectedDate}`
+        }
       >
         {loading ? (
           <div className="flex justify-center py-10">
             <Spin size="large" />
           </div>
+        ) : viewMode && selectedBooking ? (
+          <div className="space-y-3">
+            <p>
+              <strong>Customer:</strong> {selectedBooking.customerName}
+            </p>
+            <p>
+              <strong>Services:</strong>{" "}
+              {selectedBooking.services?.join(", ") || "N/A"}
+            </p>
+            <p>
+              <strong>Employee:</strong>{" "}
+              {selectedBooking.employeeName || "Unassigned"}
+            </p>
+            <p>
+              <strong>Time:</strong> {formatTime(selectedBooking.startAt)} -{" "}
+              {formatTime(selectedBooking.endAt)}
+            </p>
+            <p>
+              <strong>Status:</strong>{" "}
+              <Tag
+                color={
+                  selectedBooking.status === "CANCELLED"
+                    ? "red"
+                    : selectedBooking.status === "DONE"
+                    ? "green"
+                    : "blue"
+                }
+              >
+                {selectedBooking.status}
+              </Tag>
+            </p>
+            <p>
+              <strong>Notes:</strong> {selectedBooking.notes || "—"}
+            </p>
+            <Divider />
+            <div className="flex justify-end gap-2">
+              <Button
+                onClick={() => {
+                  setEditMode(true);
+                  setViewMode(false);
+                  setModalOpen(true);
+                  setFormData({
+                    customer: customers.find(
+                      (c) => c.value === selectedBooking.raw.customerId
+                    ),
+                    services: services.filter((s) =>
+                      selectedBooking.raw.bookingServices?.some(
+                        (bs) => bs.service.id === s.value
+                      )
+                    ),
+                    employee: employees.find(
+                      (e) =>
+                        e.label === selectedBooking.employeeName ||
+                        e.value === selectedBooking.raw.workOrder?.employeeId
+                    ),
+                    slot: {
+                      start: selectedBooking.startAt,
+                      end: selectedBooking.endAt,
+                    },
+                    notes: selectedBooking.notes || "",
+                  });
+                }}
+                className="bg-blue-600 text-white"
+              >
+                Edit
+              </Button>
+              <Button onClick={() => setModalOpen(false)}>Close</Button>
+            </div>
+          </div>
         ) : (
-          <div className="space-y-6 p-2">
-            {/* Time Slot */}
+          // ─── Create/Edit Form ───────────────────────────
+          <div className="space-y-5">
             <div>
-              <label className="block text-gray-700 font-medium mb-2">
-                Select Time Slot
-              </label>
+              <label className="font-medium">Time Slot</label>
               <Select
-                isLoading={loading}
-                placeholder="Choose a time slot"
+                placeholder="Select time slot"
                 options={slots.map((s) => ({
                   value: s,
                   label: `${formatTime(s.start)} - ${formatTime(s.end)} (${
@@ -291,94 +342,58 @@ export default function BookingPage() {
                   } available)`,
                   isDisabled: s.capacity <= 0,
                 }))}
-                onChange={(option) =>
-                  setFormData((prev) => ({ ...prev, slot: option.value }))
+                onChange={(opt) =>
+                  setFormData((p) => ({ ...p, slot: opt.value }))
                 }
               />
-              {formData.slot && (
-                <p className="text-sm text-gray-500 mt-2">
-                  Selected:{" "}
-                  <strong>
-                    {formatTime(formData.slot.start)} -{" "}
-                    {formatTime(formData.slot.end)}
-                  </strong>
-                </p>
-              )}
             </div>
 
-            {/* Customer + Service + Employee */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <label className="block text-gray-700 font-medium mb-2">
-                  Customer
-                </label>
+                <label className="font-medium">Customer</label>
                 <Select
                   options={customers}
                   value={formData.customer}
-                  onChange={(val) =>
-                    setFormData((p) => ({ ...p, customer: val }))
-                  }
-                  placeholder="Select customer..."
-                  isSearchable
+                  onChange={(v) => setFormData((p) => ({ ...p, customer: v }))}
                 />
               </div>
 
               <div>
-                <label className="block text-gray-700 font-medium mb-2">
-                  Service
-                </label>
-                <Select
-                  options={services}
-                  value={formData.service}
-                  onChange={(val) =>
-                    setFormData((p) => ({ ...p, service: val }))
-                  }
-                  placeholder="Select service..."
-                  isSearchable
-                />
-              </div>
-
-              <div>
-                <label className="block text-gray-700 font-medium mb-2">
-                  Assign Employee (optional)
-                </label>
+                <label className="font-medium">Employee (optional)</label>
                 <Select
                   options={employees}
                   value={formData.employee}
-                  onChange={(val) =>
-                    setFormData((p) => ({ ...p, employee: val }))
-                  }
-                  placeholder="Select employee..."
+                  onChange={(v) => setFormData((p) => ({ ...p, employee: v }))}
                   isClearable
                 />
               </div>
             </div>
-
-            {/* Notes */}
             <div>
-              <label className="block text-gray-700 font-medium mb-2">
-                Notes (optional)
-              </label>
+              <label className="font-medium">Services</label>
+              <Select
+                isMulti
+                options={services}
+                value={formData.services}
+                onChange={(v) => setFormData((p) => ({ ...p, services: v }))}
+              />
+            </div>
+
+            <div>
+              <label className="font-medium">Notes</label>
               <Textarea
-                placeholder="Add notes..."
                 value={formData.notes}
                 onChange={(e) =>
                   setFormData((p) => ({ ...p, notes: e.target.value }))
                 }
-                className="text-sm min-h-[90px]"
               />
             </div>
 
-            {/* Submit */}
-            <div className="pt-2">
-              <Button
-                onClick={handleCreateBooking}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 text-sm rounded-lg shadow-md transition-all"
-                disabled={loading}
-              >
-                {loading ? "Creating..." : "Create Booking"}
-              </Button>
-            </div>
+            <Button
+              onClick={handleCreateOrUpdateBooking}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              {editMode ? "Update Booking" : "Create Booking"}
+            </Button>
           </div>
         )}
       </Modal>
