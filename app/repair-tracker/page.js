@@ -159,11 +159,11 @@ export default function RepairTracker() {
   // 🏷️ Status Tag
   const getStatusTag = (status) => {
     const colorMap = {
-      OPEN: "bg-blue-100 text-blue-700",
-      ASSIGNED: "bg-amber-100 text-amber-700",
-      IN_PROGRESS: "bg-indigo-100 text-indigo-700",
-      DONE: "bg-emerald-100 text-emerald-700",
-      CANCELLED: "bg-rose-100 text-rose-700",
+      OPEN: "!bg-blue-100 !text-blue-700 !border-blue-400",
+      ASSIGNED: "!bg-amber-100 !text-amber-700 !border-amber-400",
+      IN_PROGRESS: "!bg-indigo-100 !text-indigo-700 !border-indigo-400",
+      DONE: "!bg-emerald-100 !text-emerald-700 !border-emerald-400",
+      CANCELLED: "!bg-rose-100 !text-rose-700 !border-rose-400",
     };
     return (
       <Tag className={`${colorMap[status]} px-2 py-0.5 text-xs font-semibold`}>
@@ -202,7 +202,7 @@ export default function RepairTracker() {
                 onClick={() => setStatusFilter(status)}
                 className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${
                   statusFilter === status
-                    ? "bg-blue-600 text-white"
+                    ? "bg-blue-theme !text-white"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
               >
@@ -258,7 +258,7 @@ export default function RepairTracker() {
                       setSelectedWO(wo);
                       setAssignModal(true);
                     }}
-                    className="px-3 py-1 text-xs rounded-md bg-blue-600 text-white hover:bg-blue-700 font-medium"
+                    className="px-3 py-1 text-xs rounded-md bg-blue-600 !text-white hover:bg-blue-700 font-medium"
                   >
                     <UserPlus className="inline w-4 h-4 mr-1" /> Assign
                   </button>
@@ -267,7 +267,7 @@ export default function RepairTracker() {
                 {wo.status === "ASSIGNED" && (
                   <button
                     onClick={() => handleMarkDone(wo.id)}
-                    className="px-3 py-1 text-xs rounded-md bg-emerald-600 text-white hover:bg-emerald-700 font-medium"
+                    className="px-3 py-1 text-xs rounded-md bg-emerald-600 !text-white hover:bg-emerald-700 font-medium"
                   >
                     <CheckCircle className="inline w-4 h-4 mr-1" /> Complete
                   </button>
@@ -276,7 +276,7 @@ export default function RepairTracker() {
                 {wo.status !== "DONE" && wo.status !== "CANCELLED" && (
                   <button
                     onClick={() => handleCancel(wo.id)}
-                    className="px-3 py-1 text-xs rounded-md bg-rose-600 text-white hover:bg-rose-700 font-medium"
+                    className="px-3 py-1 text-xs rounded-md bg-rose-600 !text-white hover:bg-rose-700 font-medium"
                   >
                     <XCircle className="inline w-4 h-4 mr-1" /> Cancel
                   </button>

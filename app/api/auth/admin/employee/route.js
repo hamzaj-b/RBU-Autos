@@ -72,7 +72,7 @@ async function POST(req) {
 }
 async function GET(req) {
   try {
-    // 🔐 1️⃣ Authenticate User
+    // 🔐 1️⃣ Authenticate
     const authHeader = req.headers.get("authorization");
     if (!authHeader)
       return NextResponse.json({ error: "No token provided" }, { status: 401 });
@@ -88,13 +88,10 @@ async function GET(req) {
       );
     }
 
-    // 🧩 Role Handling
-    const userType = decoded.userType;
-
-    // ===================================================
-    // 👷 If EMPLOYEE → fetch own profile only
-    // ===================================================
-    if (userType === "EMPLOYEE") {
+    // ======================================================
+    // 👷 If EMPLOYEE → Fetch Own Profile + Logged Hours
+    // ======================================================
+    if (decoded.userType === "EMPLOYEE") {
       if (!decoded.employeeId) {
         return NextResponse.json(
           { error: "Employee ID missing in token" },
@@ -105,13 +102,7 @@ async function GET(req) {
       const employee = await prisma.employeeProfile.findUnique({
         where: { id: decoded.employeeId },
         include: {
-          User: {
-            select: {
-              email: true,
-              isActive: true,
-              createdAt: true,
-            },
-          },
+          User: { select: { email: true, isActive: true, createdAt: true } },
           Sessions: {
             select: {
               id: true,
@@ -132,23 +123,36 @@ async function GET(req) {
         );
       }
 
+      // 🕒 Calculate total logged hours
+      const totalMs = employee.Sessions.filter(
+        (s) => s.loginAt && s.logoutAt
+      ).reduce(
+        (sum, s) => sum + (new Date(s.logoutAt) - new Date(s.loginAt)),
+        0
+      );
+
+      const totalHours = +(totalMs / (1000 * 60 * 60)).toFixed(2);
+
       return NextResponse.json({
-        employee,
+        employee: {
+          ...employee,
+          totalLoggedHours: totalHours,
+        },
         message: "Employee profile fetched successfully",
       });
     }
 
-    // ===================================================
-    // 👑 If ADMIN → list all employees with pagination
-    // ===================================================
-    if (userType !== "ADMIN") {
+    // ======================================================
+    // 👑 If ADMIN → List all employees with total logged hours
+    // ======================================================
+    if (decoded.userType !== "ADMIN") {
       return NextResponse.json(
         { error: "Access denied. Only Admin or Employee allowed." },
         { status: 403 }
       );
     }
 
-    // 📄 2️⃣ Handle Search, Pagination, and Sorting
+    // 📄 Handle query params
     const { searchParams } = new URL(req.url);
     const search = searchParams.get("search") || "";
     const page = parseInt(searchParams.get("page") || "1");
@@ -157,7 +161,6 @@ async function GET(req) {
     const order = searchParams.get("order") === "asc" ? "asc" : "desc";
     const skip = (page - 1) * limit;
 
-    // 🧠 3️⃣ Filter + Search Logic
     const where = search
       ? {
           OR: [
@@ -174,7 +177,7 @@ async function GET(req) {
         }
       : {};
 
-    // ⚡ 4️⃣ Fetch Data + Count in Parallel
+    // ⚡ Fetch employees with sessions
     const [employees, total] = await Promise.all([
       prisma.employeeProfile.findMany({
         where,
@@ -186,10 +189,7 @@ async function GET(req) {
               id: true,
               loginAt: true,
               logoutAt: true,
-              source: true,
-              location: true,
             },
-            orderBy: { loginAt: "desc" },
           },
           User: {
             select: {
@@ -204,9 +204,20 @@ async function GET(req) {
       prisma.employeeProfile.count({ where }),
     ]);
 
-    // 🧾 5️⃣ Response
+    // 🕒 Compute total hours for each employee
+    const enriched = employees.map((emp) => {
+      const totalMs = emp.Sessions.filter(
+        (s) => s.loginAt && s.logoutAt
+      ).reduce(
+        (sum, s) => sum + (new Date(s.logoutAt) - new Date(s.loginAt)),
+        0
+      );
+      const totalHours = +(totalMs / (1000 * 60 * 60)).toFixed(2);
+      return { ...emp, totalLoggedHours: totalHours };
+    });
+
     return NextResponse.json({
-      employees,
+      employees: enriched,
       pagination: {
         total,
         page,

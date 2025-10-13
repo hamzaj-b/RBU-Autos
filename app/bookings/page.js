@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { CalendarDays } from "lucide-react";
 import { useAuth } from "@/app/context/AuthContext";
+import toast from "react-hot-toast";
 
 const localizer = momentLocalizer(moment);
 
@@ -70,6 +71,7 @@ export default function BookingPage() {
   };
 
   const fetchSlots = async (date) => {
+    toast.loading("Fetching Slots...");
     try {
       setLoading(true);
       const res = await fetch("/api/slots", {
@@ -79,6 +81,7 @@ export default function BookingPage() {
       });
       const data = await res.json();
       setSlots(data.slots || []);
+      toast.dismiss();
     } catch (err) {
       console.error("Slot fetch error:", err);
     } finally {
