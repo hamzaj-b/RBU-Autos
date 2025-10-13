@@ -20,9 +20,9 @@ export default function Header({ toggleSidebar, className = "" }) {
 
   const handleConfirmLogout = async () => {
     try {
-      // Clear auth + cookies
-      Cookies.remove("authToken");
-      Cookies.remove("authUser");
+      // // Clear auth + cookies
+      // Cookies.remove("authToken");
+      // Cookies.remove("authUser");
       logout();
 
       // Redirect manually
