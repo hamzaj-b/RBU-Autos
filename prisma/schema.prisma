@@ -21,10 +21,16 @@ enum BookingStatus {
   DONE
 }
 
+enum BookingType {
+  WALKIN
+  PREBOOKING
+}
+
 enum WorkOrderStatus {
   DRAFT // Admin prepared, not visible to employees yet
   OPEN // Visible to all employees, unassigned
   ASSIGNED // Directly assigned to an employee by Admin
+  WAITING // Waiting for employee to start work
   IN_PROGRESS // Employee started work
   DONE // Employee finished work
   CANCELLED // Job cancelled (admin/employee)
@@ -105,6 +111,9 @@ model Booking {
   customerId      String        @db.ObjectId
   createdByUserId String        @db.ObjectId
   status          BookingStatus @default(PENDING)
+
+  // 🆕 Booking Type
+  bookingType BookingType @default(WALKIN)
 
   // scheduling
   date        DateTime

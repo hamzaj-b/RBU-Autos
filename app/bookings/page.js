@@ -1,410 +1,336 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Calendar, momentLocalizer } from "react-big-calendar";
-import moment from "moment";
-import "react-big-calendar/lib/css/react-big-calendar.css";
-import Select from "react-select";
-import { Modal, Spin, message, Tag, Divider } from "antd";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { CalendarDays } from "lucide-react";
+import { useEffect, useState } from "react";
+import toast, { Toaster } from "react-hot-toast";
+import { Select, Input, Button, Card, Tag, Skeleton } from "antd";
+import { Clock, UserPlus, Calendar } from "lucide-react";
 import { useAuth } from "@/app/context/AuthContext";
-import toast from "react-hot-toast";
 
-const localizer = momentLocalizer(moment);
+const { TextArea } = Input;
 
-export default function BookingPage() {
-  // ─── State ────────────────────────────────────────
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editMode, setEditMode] = useState(false);
-  const [viewMode, setViewMode] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [selectedBooking, setSelectedBooking] = useState(null);
-  const [slots, setSlots] = useState([]);
-  const [customers, setCustomers] = useState([]);
-  const [services, setServices] = useState([]);
-  const [employees, setEmployees] = useState([]);
-  const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(false);
-
-  const [formData, setFormData] = useState({
-    customer: null,
-    services: [],
-    employee: null,
-    slot: null,
-    notes: "",
-  });
-
+export default function WalkInBookingPage() {
   const { token } = useAuth();
 
-  // ─── Fetch Helpers ────────────────────────────────
-  const fetchCustomers = async () => {
-    const res = await fetch("/api/customers", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) return;
-    const data = await res.json();
-    setCustomers(
-      data.customers?.map((c) => ({ label: c.fullName, value: c.id })) || []
-    );
-  };
+  const [customers, setCustomers] = useState([]);
+  const [services, setServices] = useState([]);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [selectedServices, setSelectedServices] = useState([]);
+  const [availableEmployees, setAvailableEmployees] = useState([]);
+  const [busyEmployees, setBusyEmployees] = useState([]);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [notes, setNotes] = useState("");
+  const [pageLoading, setPageLoading] = useState(true);
+  const [employeeLoading, setEmployeeLoading] = useState(false);
+  const [submitLoading, setSubmitLoading] = useState(false);
+  const [totalDuration, setTotalDuration] = useState(0);
+  const [totalPrice, setTotalPrice] = useState(0);
 
-  const fetchServices = async () => {
-    const res = await fetch("/api/services", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) return;
-    const data = await res.json();
-    setServices(data.data?.map((s) => ({ label: s.name, value: s.id })) || []);
-  };
-
-  const fetchEmployees = async () => {
-    const res = await fetch("/api/auth/admin/employee", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) return;
-    const data = await res.json();
-    setEmployees(
-      data.employees?.map((e) => ({ label: e.fullName, value: e.id })) || []
-    );
-  };
-
-  const fetchSlots = async (date) => {
-    toast.loading("Fetching Slots...");
-    try {
-      setLoading(true);
-      const res = await fetch("/api/slots", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date }),
-      });
-      const data = await res.json();
-      setSlots(data.slots || []);
-      toast.dismiss();
-    } catch (err) {
-      console.error("Slot fetch error:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchBookings = async () => {
-    const res = await fetch("/api/bookings", {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
-    });
-    if (!res.ok) return;
-    const data = await res.json();
-    const mapped =
-      data.bookings?.map((b) => ({
-        id: b.id,
-        title: `${b.customerName} — ${b.services.join(", ")}`,
-        start: new Date(b.startAt),
-        end: new Date(b.endAt),
-        status: b.status,
-        raw: b,
-      })) || [];
-    setEvents(mapped);
-  };
-
-  // ─── Calendar Handlers ────────────────────────────
-  const handleSelectDate = async (slotInfo) => {
-    const date = moment(slotInfo.start).format("YYYY-MM-DD");
-    if (moment(date).isBefore(moment().format("YYYY-MM-DD"))) {
-      message.warning("Cannot create booking in the past.");
-      return;
-    }
-    setSelectedDate(date);
-    setEditMode(false);
-    setViewMode(false);
-    await fetchSlots(date);
-    setModalOpen(true);
-  };
-
-  const handleEventClick = async (event) => {
-    setSelectedBooking(event.raw);
-    setViewMode(true);
-    setEditMode(false);
-    setModalOpen(true);
-  };
-
-  // ─── Booking CRUD ────────────────────────────────
-  const handleCreateOrUpdateBooking = async () => {
-    if (!formData.customer || !formData.services.length || !formData.slot) {
-      message.warning("Please select customer, services and time slot.");
-      return;
-    }
-
-    const payload = {
-      customerId: formData.customer.value,
-      serviceIds: formData.services.map((s) => s.value),
-      startAt: formData.slot.start,
-      endAt: formData.slot.end,
-      notes: formData.notes,
-    };
-    if (formData.employee?.value)
-      payload.directAssignEmployeeId = formData.employee.value;
-
-    const url = editMode
-      ? `/api/bookings/${selectedBooking.id}`
-      : "/api/bookings";
-    const method = editMode ? "PUT" : "POST";
-
-    try {
-      setLoading(true);
-      const res = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
-      if (res.ok) {
-        message.success(
-          editMode
-            ? "✅ Booking updated successfully!"
-            : "✅ Booking created successfully!"
-        );
-        setModalOpen(false);
-        fetchBookings();
-      } else {
-        message.error(data.error || "Failed to save booking.");
-      }
-    } catch (err) {
-      console.error("Booking save error:", err);
-      message.error("Something went wrong.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ─── Helpers ─────────────────────────────────────
-  const formatTime = (isoString) => {
-    const raw = isoString.replace("Z", "");
-    const [hour, minute] = raw.slice(11, 16).split(":");
-    const h = parseInt(hour, 10);
-    const ampm = h >= 12 ? "PM" : "AM";
-    const formattedHour = ((h + 11) % 12) + 1;
-    return `${formattedHour}:${minute} ${ampm}`;
-  };
-
-  // ─── Mount ───────────────────────────────────────
+  // 🔹 Fetch Customers & Services
   useEffect(() => {
     if (!token) return;
-    fetchCustomers();
-    fetchServices();
-    fetchEmployees();
-    fetchBookings();
+
+    const fetchData = async () => {
+      try {
+        const [custRes, servRes] = await Promise.all([
+          fetch("/api/customers", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch("/api/services", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
+
+        const [custData, servData] = await Promise.all([
+          custRes.json(),
+          servRes.json(),
+        ]);
+
+        setCustomers(
+          custData.customers?.map((c) => ({
+            label: `${c.fullName} (${c.User?.[0]?.email || "no email"})`,
+            value: c.id,
+          })) || []
+        );
+
+        setServices(
+          servData.data?.map((s) => ({
+            label: `${s.name} (${s.durationMinutes}m • Rs ${s.basePrice})`,
+            value: s.id,
+            duration: s.durationMinutes,
+            price: s.basePrice,
+          })) || []
+        );
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to load customers or services");
+      } finally {
+        setPageLoading(false);
+      }
+    };
+
+    fetchData();
   }, [token]);
 
-  // ─── UI ──────────────────────────────────────────
+  // 🔹 Auto Calculate Totals
+  useEffect(() => {
+    const selected = services.filter((s) => selectedServices.includes(s.value));
+    const totalDur = selected.reduce((sum, s) => sum + (s.duration || 0), 0);
+    const totalCost = selected.reduce((sum, s) => sum + (s.price || 0), 0);
+    setTotalDuration(totalDur);
+    setTotalPrice(totalCost);
+  }, [selectedServices, services]);
+
+  // 🔹 Fetch Available Employees
+  const fetchAvailableEmployees = async () => {
+    if (!token) return;
+
+    try {
+      setEmployeeLoading(true);
+      const now = new Date().toISOString();
+      const res = await fetch(`/api/available-employees?time=${now}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error);
+
+      setAvailableEmployees(
+        data.availableEmployees.map((e) => ({
+          label: e.fullName,
+          value: e.id,
+        }))
+      );
+      setBusyEmployees(data.busyEmployees || []);
+
+      // toast.dismiss();
+      toast.success("Available employees fetched successfully");
+    } catch (err) {
+      console.error(err);
+      toast.dismiss();
+      toast.error("Failed to fetch available employees");
+    } finally {
+      setEmployeeLoading(false);
+    }
+  };
+
+  // 🔹 Submit Walk-in Booking
+  const handleSubmit = async () => {
+    if (!selectedCustomer || selectedServices.length === 0) {
+      toast.error("Select a customer and at least one service");
+      return;
+    }
+
+    try {
+      setSubmitLoading(true);
+
+      const startAt = new Date();
+      const endAt = new Date(startAt.getTime() + totalDuration * 60000);
+
+      const res = await fetch("/api/bookings/walkin", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          customerId: selectedCustomer,
+          serviceIds: selectedServices,
+          startAt,
+          endAt,
+          directAssignEmployeeId: selectedEmployee || null,
+          notes,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      toast.dismiss();
+      toast.success(data.message || "Walk-in booking created successfully!");
+      resetForm();
+    } catch (err) {
+      console.error(err);
+      toast.dismiss();
+      toast.error(err.message || "Failed to create booking");
+    } finally {
+      setSubmitLoading(false);
+    }
+  };
+
+  const resetForm = () => {
+    setSelectedCustomer(null);
+    setSelectedServices([]);
+    setSelectedEmployee(null);
+    setNotes("");
+    setTotalDuration(0);
+    setTotalPrice(0);
+  };
+
+  // 🔹 UI
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-semibold flex items-center gap-2">
-          <CalendarDays className="w-8 h-8 text-blue-600" />
-          Booking Calendar
-        </h1>
-        <Button
-          onClick={() => fetchBookings()}
-          className="bg-blue-theme hover:bg-blue-bold !text-white"
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white py-10 px-4">
+      <div className="w-full mx-auto">
+        <Card
+          bordered={false}
+          className="shadow-lg rounded-2xl border border-gray-100"
+          title={
+            <div className="flex items-center gap-2 text-[#0f74b2]">
+              <Calendar className="w-5 h-5" />
+              <span className="font-semibold text-lg">Walk-In Booking</span>
+            </div>
+          }
         >
-          Refresh
-        </Button>
-      </div>
-
-      <div className="bg-white rounded-2xl shadow p-4 border">
-        <Calendar
-          localizer={localizer}
-          selectable
-          onSelectSlot={handleSelectDate}
-          onSelectEvent={handleEventClick}
-          events={events}
-          style={{ height: 650 }}
-          popup
-          views={["month", "week", "day"]}
-          eventPropGetter={(event) => ({
-            style: {
-              backgroundColor:
-                event.status === "CANCELLED"
-                  ? "#f87171"
-                  : event.status === "DONE"
-                  ? "#10b981"
-                  : "#2563eb",
-              color: "#fff",
-              borderRadius: "8px",
-            },
-          })}
-        />
-      </div>
-
-      {/* ─── Modal ───────────────────────────────────── */}
-      <Modal
-        open={modalOpen}
-        onCancel={() => setModalOpen(false)}
-        footer={null}
-        width={700}
-        className="rounded-xl"
-        destroyOnClose
-        title={
-          viewMode
-            ? `Booking Details`
-            : editMode
-            ? "Edit Booking"
-            : `Create Booking — ${selectedDate}`
-        }
-      >
-        {loading ? (
-          <div className="flex justify-center py-10">
-            <Spin size="large" />
-          </div>
-        ) : viewMode && selectedBooking ? (
-          <div className="space-y-3">
-            <p>
-              <strong>Customer:</strong> {selectedBooking.customerName}
-            </p>
-            <p>
-              <strong>Services:</strong>{" "}
-              {selectedBooking.services?.join(", ") || "N/A"}
-            </p>
-            <p>
-              <strong>Employee:</strong>{" "}
-              {selectedBooking.employeeName || "Unassigned"}
-            </p>
-            <p>
-              <strong>Time:</strong> {formatTime(selectedBooking.startAt)} -{" "}
-              {formatTime(selectedBooking.endAt)}
-            </p>
-            <p>
-              <strong>Status:</strong>{" "}
-              <Tag
-                color={
-                  selectedBooking.status === "CANCELLED"
-                    ? "red"
-                    : selectedBooking.status === "DONE"
-                    ? "green"
-                    : "blue"
-                }
-              >
-                {selectedBooking.status}
-              </Tag>
-            </p>
-            <p>
-              <strong>Notes:</strong> {selectedBooking.notes || "—"}
-            </p>
-            <Divider />
-            <div className="flex justify-end gap-2">
-              <Button
-                onClick={() => {
-                  setEditMode(true);
-                  setViewMode(false);
-                  setModalOpen(true);
-                  setFormData({
-                    customer: customers.find(
-                      (c) => c.value === selectedBooking.raw.customerId
-                    ),
-                    services: services.filter((s) =>
-                      selectedBooking.raw.bookingServices?.some(
-                        (bs) => bs.service.id === s.value
-                      )
-                    ),
-                    employee: employees.find(
-                      (e) =>
-                        e.label === selectedBooking.employeeName ||
-                        e.value === selectedBooking.raw.workOrder?.employeeId
-                    ),
-                    slot: {
-                      start: selectedBooking.startAt,
-                      end: selectedBooking.endAt,
-                    },
-                    notes: selectedBooking.notes || "",
-                  });
-                }}
-                className="bg-blue-theme !text-white hover:bg-blue-bold"
-              >
-                Edit
-              </Button>
-              <Button
-                className="bg-rose-600 hover:bg-red-600 !text-white"
-                onClick={() => setModalOpen(false)}
-              >
-                Close
-              </Button>
+          {pageLoading ? (
+            <div className="space-y-6">
+              <Skeleton.Input active block />
+              <Skeleton.Input active block />
+              <Skeleton.Input active block />
             </div>
-          </div>
-        ) : (
-          // ─── Create/Edit Form ───────────────────────────
-          <div className="space-y-5">
-            <div>
-              <label className="font-medium">Time Slot</label>
-              <Select
-                placeholder="Select time slot"
-                options={slots.map((s) => ({
-                  value: s,
-                  label: `${formatTime(s.start)} - ${formatTime(s.end)} (${
-                    s.capacity
-                  } available)`,
-                  isDisabled: s.capacity <= 0,
-                }))}
-                onChange={(opt) =>
-                  setFormData((p) => ({ ...p, slot: opt.value }))
-                }
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Customer */}
               <div>
-                <label className="font-medium">Customer</label>
+                <label className="block text-sm font-medium mb-2 text-gray-700">
+                  Customer
+                </label>
                 <Select
+                  placeholder="Search or select customer"
                   options={customers}
-                  value={formData.customer}
-                  onChange={(v) => setFormData((p) => ({ ...p, customer: v }))}
+                  value={selectedCustomer}
+                  onChange={setSelectedCustomer}
+                  className="w-full"
+                  size="large"
+                  showSearch
+                  allowClear
+                  filterOption={(input, option) =>
+                    option?.label?.toLowerCase().includes(input.toLowerCase())
+                  }
                 />
               </div>
 
+              {/* Services */}
               <div>
-                <label className="font-medium">Employee (optional)</label>
+                <label className="block text-sm font-medium mb-2 text-gray-700">
+                  Services
+                </label>
                 <Select
-                  options={employees}
-                  value={formData.employee}
-                  onChange={(v) => setFormData((p) => ({ ...p, employee: v }))}
-                  isClearable
+                  mode="multiple"
+                  placeholder="Search and select services"
+                  options={services}
+                  value={selectedServices}
+                  onChange={setSelectedServices}
+                  className="w-full"
+                  size="large"
+                  showSearch
+                  allowClear
+                  filterOption={(input, option) =>
+                    option?.label?.toLowerCase().includes(input.toLowerCase())
+                  }
                 />
               </div>
-            </div>
-            <div>
-              <label className="font-medium">Services</label>
-              <Select
-                isMulti
-                options={services}
-                value={formData.services}
-                onChange={(v) => setFormData((p) => ({ ...p, services: v }))}
-              />
-            </div>
 
-            <div>
-              <label className="font-medium">Notes</label>
-              <Textarea
-                value={formData.notes}
-                onChange={(e) =>
-                  setFormData((p) => ({ ...p, notes: e.target.value }))
-                }
-              />
-            </div>
+              {/* Duration & Cost */}
+              <div className="col-span-1 md:col-span-2 bg-[#f9fbfd] rounded-xl p-4 border border-gray-100">
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 text-gray-700">
+                    <Clock className="w-4 h-4 text-blue-600" />
+                    <span className="font-medium">
+                      Total Duration:{" "}
+                      <span className="text-[#0f74b2]">{totalDuration}</span>{" "}
+                      min
+                    </span>
+                  </div>
+                  <span className="font-semibold text-[#0f74b2]">
+                    Total Price: Rs {totalPrice}
+                  </span>
+                </div>
+              </div>
 
-            <Button
-              onClick={handleCreateOrUpdateBooking}
-              className="w-full bg-blue-theme hover:bg-blue-bold !text-white"
-            >
-              {editMode ? "Update Booking" : "Create Booking"}
-            </Button>
-          </div>
-        )}
-      </Modal>
+              {/* Notes */}
+              <div className="col-span-1 md:col-span-2">
+                <label className="block text-sm font-medium mb-2 text-gray-700">
+                  Notes
+                </label>
+                <TextArea
+                  rows={3}
+                  placeholder="Enter notes (optional)"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className="rounded-lg border-gray-200 focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
+                />
+              </div>
+
+              {/* Employees */}
+              <div className="col-span-1 md:col-span-2">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-semibold flex items-center gap-2 text-[#0f74b2]">
+                    <UserPlus className="w-4 h-4" />
+                    Assign Employee
+                  </h4>
+                  <Button
+                    size="small"
+                    onClick={fetchAvailableEmployees}
+                    type="primary"
+                    className="bg-[#0f74b2] hover:bg-blue-800 border-none text-white"
+                    loading={employeeLoading}
+                  >
+                    Fetch Available Employees
+                  </Button>
+                </div>
+
+                <Select
+                  showSearch
+                  placeholder="Select available employee (optional)"
+                  options={availableEmployees}
+                  value={selectedEmployee}
+                  onChange={setSelectedEmployee}
+                  allowClear
+                  className="w-full"
+                  size="large"
+                  disabled={employeeLoading}
+                />
+
+                {/* Busy Employees */}
+                {busyEmployees.length > 0 && (
+                  <div className="mt-4 border-t pt-3">
+                    <p className="text-sm font-medium text-gray-500 mb-2">
+                      Busy Employees:
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {busyEmployees.map((emp) => (
+                        <Tag
+                          key={emp.id}
+                          color="red"
+                          className="px-3 py-1 text-xs font-medium"
+                        >
+                          {emp.fullName} — busy till{" "}
+                          {new Date(emp.busyUntil).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </Tag>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Submit */}
+              <div className="col-span-1 md:col-span-2 flex justify-end mt-4">
+                <Button
+                  type="primary"
+                  size="large"
+                  loading={submitLoading}
+                  onClick={handleSubmit}
+                  className="bg-[#0f74b2] hover:bg-blue-800 rounded-lg font-semibold shadow-md"
+                >
+                  Create Booking
+                </Button>
+              </div>
+            </div>
+          )}
+        </Card>
+      </div>
     </div>
   );
 }

@@ -3,6 +3,7 @@ const {
   PrismaClient,
   BookingStatus,
   WorkOrderStatus,
+  BookingType,
 } = require("@prisma/client");
 const jwt = require("jsonwebtoken");
 const { getSlots } = require("@/lib/slot");
@@ -172,9 +173,10 @@ async function POST(req) {
 
 // -------------------------------------------
 // 📜 GET — Fetch All Bookings
-// -------------------------------------------
+
 async function GET(req) {
   try {
+    // 🔑 Auth
     const authHeader = req.headers.get("authorization");
     if (!authHeader)
       return NextResponse.json({ error: "No token provided" }, { status: 401 });
@@ -190,33 +192,77 @@ async function GET(req) {
       );
     }
 
-    // Query params
+    // 📦 Query params
     const { searchParams } = new URL(req.url);
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    // accept pageSize alias as well as limit
+    const limit = parseInt(
+      searchParams.get("pageSize") || searchParams.get("limit") || "10",
+      10
+    );
     const skip = (page - 1) * limit;
 
-    const status = searchParams.get("status");
-    const search = searchParams.get("search")?.trim();
+    const statusParam = searchParams.get("status"); // e.g. ACCEPTED
+    const search = searchParams.get("search")?.trim() || "";
+    const typeParam = (searchParams.get("type") || "").toUpperCase(); // WALKIN / PREBOOKING
     const dateFrom = searchParams.get("dateFrom");
     const dateTo = searchParams.get("dateTo");
     const sortOrder = searchParams.get("sortOrder") === "asc" ? "asc" : "desc";
 
+    // 🧠 Build where
     const where = {};
 
-    if (decoded.userType === "CUSTOMER" && decoded.customerId)
+    // Role-based scope
+    if (decoded.userType === "CUSTOMER" && decoded.customerId) {
       where.customerId = decoded.customerId;
-    else if (decoded.userType === "EMPLOYEE" && decoded.employeeId)
+    } else if (decoded.userType === "EMPLOYEE" && decoded.employeeId) {
+      // only bookings where its work order is assigned to this employee
       where.workOrder = { employeeId: decoded.employeeId };
+    }
 
-    if (status && status !== "all") where.status = status;
+    // Booking type (validate against enum)
+    if (typeParam && Object.values(BookingType).includes(typeParam)) {
+      // Prisma enums are strings under the hood
+      where.bookingType = typeParam;
+    }
 
+    // Booking status (validate against enum)
+    if (
+      statusParam &&
+      statusParam !== "all" &&
+      Object.values(BookingStatus).includes(statusParam)
+    ) {
+      where.status = statusParam;
+    }
+
+    // Date range (by booking.date)
     if (dateFrom || dateTo) {
       where.date = {};
       if (dateFrom) where.date.gte = new Date(dateFrom);
       if (dateTo) where.date.lte = new Date(dateTo);
     }
 
+    // Search across notes, customer name, employee name, service name
+    if (search) {
+      where.OR = [
+        { notes: { contains: search, mode: "insensitive" } },
+        { customer: { fullName: { contains: search, mode: "insensitive" } } },
+        {
+          workOrder: {
+            employee: { fullName: { contains: search, mode: "insensitive" } },
+          },
+        },
+        {
+          bookingServices: {
+            some: {
+              service: { name: { contains: search, mode: "insensitive" } },
+            },
+          },
+        },
+      ];
+    }
+
+    // ⚡ Query
     const [total, bookings] = await Promise.all([
       prisma.booking.count({ where }),
       prisma.booking.findMany({
@@ -232,15 +278,22 @@ async function GET(req) {
       }),
     ]);
 
-    const results = bookings.map((b) => ({
+    // 🧩 Shape response
+    const items = bookings.map((b) => ({
       id: b.id,
+      bookingType: b.bookingType, // WALKIN | PREBOOKING
       services: b.bookingServices.map((bs) => bs.service.name),
+      totalDuration: b.bookingServices.reduce(
+        (sum, bs) => sum + (bs.service.durationMinutes || 0),
+        0
+      ),
       customerName: b.customer?.fullName || "N/A",
       employeeName: b.workOrder?.employee?.fullName || "Unassigned",
       status: b.status,
       notes: b.notes,
       startAt: b.startAt,
       endAt: b.endAt,
+      date: b.date,
       createdAt: b.createdAt,
       updatedAt: b.updatedAt,
       raw: b,
@@ -249,15 +302,29 @@ async function GET(req) {
     return NextResponse.json({
       total,
       page,
-      limit,
+      limit, // also works as pageSize on frontend
       totalPages: Math.ceil(total / limit),
-      count: results.length,
-      bookings: results,
+      count: items.length,
+      filters: {
+        status: statusParam || "all",
+        type: typeParam || "all",
+        dateFrom: dateFrom || null,
+        dateTo: dateTo || null,
+        search,
+      },
+      bookings: items,
+      pagination: {
+        // convenient block for UIs
+        total,
+        page,
+        pageSize: limit,
+        totalPages: Math.ceil(total / limit),
+      },
     });
   } catch (err) {
-    console.error("Fetch bookings error:", err);
+    console.error("❌ Fetch bookings error:", err);
     return NextResponse.json(
-      { error: "Failed to fetch bookings" },
+      { error: err.message || "Failed to fetch bookings" },
       { status: 500 }
     );
   }
