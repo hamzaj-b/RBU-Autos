@@ -110,13 +110,9 @@ async function GET(req) {
         wo.booking?.bookingServices?.map((bs) => bs.service.name) ||
         [],
       bookingTime: wo.booking
-        ? `${new Date(wo.booking.startAt).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          })} - ${new Date(wo.booking.endAt).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          })}`
+        ? `${new Date(wo.booking.startAt).toLocaleTimeString()} - ${new Date(
+            wo.booking.endAt
+          ).toLocaleTimeString()}`
         : null,
       notes: wo.notes,
       raw: wo,

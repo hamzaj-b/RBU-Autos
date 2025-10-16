@@ -1,3 +1,4 @@
+// ✅ FILE: app/api/available-employees/route.js
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import jwt from "jsonwebtoken";
@@ -39,6 +40,14 @@ export async function GET(req) {
     const now = new Date();
     const startAt = startAtParam ? new Date(startAtParam) : now;
     const endAt = new Date(startAt.getTime() + duration * 60 * 1000);
+
+    // ⏳ Validate if time is valid (future allowed, past not allowed)
+    if (isNaN(startAt.getTime())) {
+      return NextResponse.json(
+        { error: "Invalid start time" },
+        { status: 400 }
+      );
+    }
 
     // 🧠 3️⃣ Find busy employees in that window
     const busyWorkOrders = await prisma.workOrder.findMany({
