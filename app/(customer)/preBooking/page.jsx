@@ -126,7 +126,7 @@ export default function CustomerPreBookingPage() {
         }
       }
 
-      const res = await fetch("/api/bookings/prebooking", {
+      const res = await fetch("/api/bookings/pre", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
