@@ -13,8 +13,8 @@ import {
   Send,
 } from "lucide-react";
 import { useAuth } from "@/app/context/AuthContext";
-import CustomerModal from "../components/app/CustomerModal";
-import InviteModal from "../components/app/InviteModal";
+import CustomerModal from "../../components/app/CustomerModal";
+import InviteModal from "../../components/app/InviteModal";
 import toast from "react-hot-toast";
 
 export default function CustomerManagement() {

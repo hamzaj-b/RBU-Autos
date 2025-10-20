@@ -4,10 +4,10 @@ import { FileDownIcon, Plus, RefreshCcw } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { Input, Spin, Empty, message, Tooltip, Popconfirm } from "antd";
 import { Button } from "@/components/ui/button";
-import AdminAddEmployee from "../components/Modals/AdminAddEmployee";
-import { useAuth } from "../context/AuthContext";
+import AdminAddEmployee from "../../components/Modals/AdminAddEmployee";
+import { useAuth } from "../../context/AuthContext";
 import { Pencil, Trash2 } from "lucide-react";
-import EditEmployeeModal from "../components/Modals/EditEmployeeModal";
+import EditEmployeeModal from "../../components/Modals/EditEmployeeModal";
 
 export default function StaffManagement() {
   const { token } = useAuth();
