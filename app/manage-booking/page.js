@@ -164,27 +164,37 @@ export default function BookingsPage() {
     setEditModal(true);
   };
 
-  const saveEdit = async () => {
-    if (!selectedBooking?.id) return;
-    try {
-      const res = await fetch(`/api/bookings/${selectedBooking.id}`, {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ notes: editNotes, status: editStatus }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to update booking.");
+ const saveEdit = async () => {
+  if (!selectedBooking?.id) return; // Ensure the selected booking has an id
+  try {
+    // Prepare the request payload
+    const payload = {
+      notes: editNotes,    // Notes to be updated
+      status: editStatus,  // Status to be updated
+    };
 
-      toast.success("Booking updated");
-      setEditModal(false);
-      fetchBookings();
-    } catch (err) {
-      toast.error(err.message);
-    }
-  };
+    // Send PATCH request to update the booking
+    const res = await fetch(`/api/bookings/walkin/${selectedBooking.id}`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",  // Ensure content type is application/json
+      },
+      body: JSON.stringify(payload),  // Sending the updated notes and status in the body
+    });
+
+    const data = await res.json();  // Parse the response
+
+    if (!res.ok) throw new Error(data.error || "Failed to update booking.");  // Handle any API errors
+
+    toast.success("Booking updated");  // Show success toast
+    setEditModal(false);  // Close the edit modal
+    fetchBookings();  // Fetch updated bookings
+  } catch (err) {
+    toast.error(err.message || "Something went wrong");  // Show error message if request fails
+  }
+};
+
 
   const deleteBooking = async (id) => {
     try {

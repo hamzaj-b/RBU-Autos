@@ -37,10 +37,13 @@ export default function RepairTracker() {
 
   // 🔄 Debounce Search
   useEffect(() => {
-    const handler = setTimeout(() => setDebouncedSearch(searchTerm), 500);
-    return () => clearTimeout(handler);
-  }, [searchTerm]);
-
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchTerm); // Debounce search
+    }, 500); // 500ms debounce delay
+  
+    return () => clearTimeout(handler); // Clean up the timeout on component unmount
+  }, [searchTerm]); // Trigger debounce on searchTerm change
+  
   // 📦 Fetch WorkOrders
   const fetchWorkOrders = useCallback(async () => {
     if (!token) return;
@@ -49,13 +52,13 @@ export default function RepairTracker() {
       const params = new URLSearchParams({
         page,
         limit,
-        search: debouncedSearch,
+        search: debouncedSearch, // Use the debounced search value here
         sortOrder: "desc",
       });
       if (statusFilter !== "all") params.append("status", statusFilter);
       if (dateFrom) params.append("dateFrom", dateFrom);
       if (dateTo) params.append("dateTo", dateTo);
-
+  
       const res = await fetch(`/api/workOrders?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -64,7 +67,7 @@ export default function RepairTracker() {
         logout();
         return;
       }
-
+  
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setWorkOrders(data.workOrders || []);
@@ -76,6 +79,7 @@ export default function RepairTracker() {
       setLoading(false);
     }
   }, [debouncedSearch, statusFilter, dateFrom, dateTo, page, limit, token]);
+  
 
   // 📋 Fetch employees
   const fetchEmployees = async () => {
@@ -177,16 +181,16 @@ export default function RepairTracker() {
       {/* 🔍 Filters */}
       <div className="bg-white p-4 rounded-lg shadow border border-gray-100">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-2.5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search by customer or service..."
-              className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-400"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
+        <div className="relative flex-1">
+  <Search className="absolute left-3 top-1 text-gray-400 max-w-[20px]" />
+  <input
+    type="text"
+    placeholder="Search by customer or service..."
+    className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-400"
+    value={searchTerm} // Link value to state
+    onChange={(e) => setSearchTerm(e.target.value)} // Update searchTerm on change
+  />
+</div>
 
           <div className="flex gap-2">
             {[

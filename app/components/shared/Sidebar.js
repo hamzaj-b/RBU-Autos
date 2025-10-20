@@ -43,6 +43,7 @@ export default function Sidebar() {
         label: "Staff Management",
         icon: <SquareUser />,
       },
+      { href: "/manage-booking", label: "Manage Booking", icon: <SquareUser /> },
       { href: "/marketing", label: "Marketing", icon: <SquareUser /> },
       { href: "/settings", label: "Settings", icon: <Settings /> },
     ],
