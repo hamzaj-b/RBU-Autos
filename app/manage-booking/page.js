@@ -175,7 +175,7 @@ export default function BookingsPage() {
 
     // Send PATCH request to update the booking
     const res = await fetch(`/api/bookings/walkin/${selectedBooking.id}`, {
-      method: "PATCH",
+      method: "PUT",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",  // Ensure content type is application/json
