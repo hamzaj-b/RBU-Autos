@@ -157,6 +157,8 @@ model WorkOrder {
   openedAt     DateTime?
   closedAt     DateTime?
 
+  totalRevenue Float? @default(0)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -195,26 +197,6 @@ model WorkOrderService {
 
   @@index([workOrderId])
   @@index([serviceId])
-}
-
-model DiagnosticReport {
-  id          String @id @default(auto()) @map("_id") @db.ObjectId
-  bookingId   String @db.ObjectId
-  customerId  String @db.ObjectId
-  serviceId   String @db.ObjectId
-  createdById String @db.ObjectId
-
-  complaint       String?
-  findings        String?
-  diagnosticJson  Json?
-  recommendations String?
-  attachments     Json?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([customerId, createdAt])
-  @@index([serviceId, createdAt])
 }
 
 model EmployeeSession {

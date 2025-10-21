@@ -7,7 +7,7 @@ const SECRET_KEY = process.env.JWT_SECRET || "supersecret";
 
 export async function PATCH(req, { params }) {
   try {
-    // 🔑 Auth check (Admin only)
+    // 🔑 Auth (Admin only)
     const authHeader = req.headers.get("authorization");
     if (!authHeader)
       return NextResponse.json({ error: "No token provided" }, { status: 401 });
@@ -42,14 +42,15 @@ export async function PATCH(req, { params }) {
       );
     }
 
-    // Fetch booking
+    // Fetch booking (with services)
     const booking = await prisma.booking.findUnique({
       where: { id },
-      include: { bookingServices: true },
+      include: {
+        bookingServices: { include: { service: true } },
+      },
     });
-    if (!booking) {
+    if (!booking)
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
-    }
 
     if (booking.bookingType !== "PREBOOKING") {
       return NextResponse.json(
@@ -91,7 +92,7 @@ export async function PATCH(req, { params }) {
         );
       }
 
-      // Check if employee is available for that time
+      // Check employee availability
       const overlap = await prisma.workOrder.findFirst({
         where: {
           employeeId,
@@ -102,7 +103,6 @@ export async function PATCH(req, { params }) {
           },
         },
       });
-
       if (overlap) {
         return NextResponse.json(
           {
@@ -113,8 +113,14 @@ export async function PATCH(req, { params }) {
         );
       }
 
-      // Transaction: Update booking + create work order
-      const [updatedBooking, workOrder] = await prisma.$transaction(
+      // 💰 Calculate base revenue from selected services
+      const totalRevenue = booking.bookingServices.reduce(
+        (sum, bs) => sum + (bs.service?.basePrice || 0),
+        0
+      );
+
+      // 🔁 Transaction: approve + create work order
+      const [updatedBooking, newWorkOrder] = await prisma.$transaction(
         async (tx) => {
           const updatedBooking = await tx.booking.update({
             where: { id },
@@ -125,16 +131,18 @@ export async function PATCH(req, { params }) {
             },
           });
 
+          // Create WorkOrder with base revenue
           const newWorkOrder = await tx.workOrder.create({
             data: {
               bookingId: booking.id,
               customerId: booking.customerId,
               employeeId,
               status: WorkOrderStatus.ASSIGNED,
+              totalRevenue, // 💰 initial service revenue stored here
             },
           });
 
-          // Link services
+          // Link workOrder → services
           await tx.workOrderService.createMany({
             data: booking.bookingServices.map((s) => ({
               workOrderId: newWorkOrder.id,
@@ -146,11 +154,13 @@ export async function PATCH(req, { params }) {
         }
       );
 
+      // ✅ Response
       return NextResponse.json(
         {
           message: "Pre-booking approved and assigned successfully.",
           booking: updatedBooking,
-          workOrder,
+          workOrder: newWorkOrder,
+          totalRevenue,
         },
         { status: 200 }
       );

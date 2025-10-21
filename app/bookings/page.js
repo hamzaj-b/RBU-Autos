@@ -54,7 +54,7 @@ export default function WalkInBookingPage() {
 
         setServices(
           servData.data?.map((s) => ({
-            label: `${s.name} (${s.durationMinutes}m • Rs ${s.basePrice})`,
+            label: `${s.name} (${s.durationMinutes}m • $ ${s.basePrice})`,
             value: s.id,
             duration: s.durationMinutes,
             price: s.basePrice,
@@ -235,13 +235,13 @@ export default function WalkInBookingPage() {
                   <div className="flex items-center gap-2 text-gray-700">
                     <Clock className="w-4 h-4 text-blue-600" />
                     <span className="font-medium">
-                      Total Duration:{" "}
+                      Total Duration(Estimated):{" "}
                       <span className="text-[#0f74b2]">{totalDuration}</span>{" "}
                       min
                     </span>
                   </div>
                   <span className="font-semibold text-[#0f74b2]">
-                    Total Price: Rs {totalPrice}
+                    Total Price(Estimated): Rs {totalPrice}
                   </span>
                 </div>
               </div>

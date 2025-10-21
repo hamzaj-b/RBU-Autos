@@ -29,21 +29,20 @@ async function PATCH(req, { params }) {
       );
     }
 
-    const { id: workOrderId } = await params;
-    if (!workOrderId) {
+    const { id: workOrderId } = params;
+    if (!workOrderId)
       return NextResponse.json(
         { error: "WorkOrder ID required" },
         { status: 400 }
       );
-    }
 
     // -------------------------
     // 🧾 2. Parse optional body fields
     // -------------------------
     const body = await req.json().catch(() => ({}));
     const note = body?.note?.trim?.() || "";
-    const partsUsed = body?.partsUsed || null;
-    const laborEntries = body?.laborEntries || null;
+    const partsUsed = body?.partsUsed || [];
+    const laborEntries = body?.laborEntries || [];
     const photos = body?.photos || null;
 
     // -------------------------
@@ -52,30 +51,24 @@ async function PATCH(req, { params }) {
     const workOrder = await prisma.workOrder.findUnique({
       where: { id: workOrderId },
       include: {
-        booking: {
-          include: { bookingServices: { include: { service: true } } },
-        },
+        booking: true,
         workOrderServices: { include: { service: true } },
       },
     });
 
-    if (!workOrder) {
+    if (!workOrder)
       return NextResponse.json(
         { error: "WorkOrder not found" },
         { status: 404 }
       );
-    }
 
-    if (workOrder.status === WorkOrderStatus.DONE) {
+    if (
+      [WorkOrderStatus.DONE, WorkOrderStatus.CANCELLED].includes(
+        workOrder.status
+      )
+    ) {
       return NextResponse.json(
-        { error: "WorkOrder already marked as completed" },
-        { status: 409 }
-      );
-    }
-
-    if (workOrder.status === WorkOrderStatus.CANCELLED) {
-      return NextResponse.json(
-        { error: "Cancelled WorkOrder cannot be completed" },
+        { error: `WorkOrder already ${workOrder.status.toLowerCase()}` },
         { status: 409 }
       );
     }
@@ -86,23 +79,46 @@ async function PATCH(req, { params }) {
     const isAdmin = decoded.userType === "ADMIN";
     const isEmployee = decoded.userType === "EMPLOYEE";
 
-    if (!isAdmin && !isEmployee) {
+    if (!isAdmin && !isEmployee)
       return NextResponse.json(
         { error: "Only Admin or Employee can complete work orders" },
         { status: 403 }
       );
-    }
 
-    // If employee, ensure it’s their own work order
-    if (isEmployee && workOrder.employeeId !== decoded.employeeId) {
+    if (isEmployee && workOrder.employeeId !== decoded.employeeId)
       return NextResponse.json(
         { error: "You are not authorized to complete this work order" },
         { status: 403 }
       );
-    }
 
     // -------------------------
-    // 💾 5. Transaction: mark done + update booking + add extras
+    // 💰 5. Compute Additional Revenue
+    // -------------------------
+    // Expected structures:
+    // partsUsed: [{ name, qty, price }]
+    // laborEntries: [{ task, hours, rate }]
+    let extraPartsTotal = 0;
+    let extraLaborTotal = 0;
+
+    if (Array.isArray(partsUsed)) {
+      extraPartsTotal = partsUsed.reduce(
+        (sum, p) => sum + (Number(p.price) || 0) * (Number(p.qty) || 1),
+        0
+      );
+    }
+
+    if (Array.isArray(laborEntries)) {
+      extraLaborTotal = laborEntries.reduce(
+        (sum, l) => sum + (Number(l.rate) || 0) * (Number(l.hours) || 1),
+        0
+      );
+    }
+
+    const extraTotal = extraPartsTotal + extraLaborTotal;
+    const finalRevenue = (workOrder.totalRevenue || 0) + extraTotal;
+
+    // -------------------------
+    // 💾 6. Transaction: mark done + update booking + revenue
     // -------------------------
     const [updatedWorkOrder, updatedBooking] = await prisma.$transaction(
       async (tx) => {
@@ -111,13 +127,12 @@ async function PATCH(req, { params }) {
           data: {
             status: WorkOrderStatus.DONE,
             closedAt: new Date(),
-            partsUsed: partsUsed
-              ? JSON.stringify(partsUsed)
-              : workOrder.partsUsed,
-            laborEntries: laborEntries
-              ? JSON.stringify(laborEntries)
+            totalRevenue: finalRevenue, // 💰 update with added labor/parts
+            partsUsed: partsUsed.length ? partsUsed : workOrder.partsUsed,
+            laborEntries: laborEntries.length
+              ? laborEntries
               : workOrder.laborEntries,
-            photos: photos ? JSON.stringify(photos) : workOrder.photos,
+            photos: photos ? photos : workOrder.photos,
             notes:
               note.length > 0
                 ? `${workOrder.notes || ""}${workOrder.notes ? "\n" : ""}${
@@ -143,7 +158,7 @@ async function PATCH(req, { params }) {
     );
 
     // -------------------------
-    // ✅ 6. Success Response
+    // ✅ 7. Success Response
     // -------------------------
     const msg = isAdmin
       ? "Work order completed by Admin successfully."
@@ -154,11 +169,17 @@ async function PATCH(req, { params }) {
         message: msg,
         workOrder: updatedWorkOrder,
         booking: updatedBooking,
+        revenueBreakdown: {
+          previous: workOrder.totalRevenue || 0,
+          extraPartsTotal,
+          extraLaborTotal,
+          finalRevenue,
+        },
       },
       { status: 200 }
     );
   } catch (err) {
-    console.error("Complete work order error:", err);
+    console.error("❌ Complete work order error:", err);
     return NextResponse.json(
       { error: err.message || "Failed to complete work order" },
       { status: 500 }

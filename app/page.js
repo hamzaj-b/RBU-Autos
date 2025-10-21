@@ -1,109 +1,195 @@
 "use client";
-import Image from "next/image";
 import React, { useEffect, useState } from "react";
+import { Spin, message } from "antd";
 
-import ServiceReport from "./components/dashboard/ServicesChart";
-import RecentWorkOrder from "./components/RecentWorkOrder";
-import CustomShape from "./components/app/CustomShape";
-import { IoEllipsisVertical } from "react-icons/io5";
-import { FaRegCalendarAlt } from "react-icons/fa";
-import OverallSalesCard from "./components/dashboard/SalesCard";
-import WeeklyTransactionsCard from "./components/dashboard/TransactionSummary";
+import { useAuth } from "@/app/context/AuthContext";
+
 import NewNetIncomeCard from "./components/dashboard/NetIncomeCard";
 import TotalBookingsCard from "./components/dashboard/TotalBookings";
 import WorkCompletedCard from "./components/dashboard/WorkCompletedCard";
-import { useAuth } from "@/app/context/AuthContext";
-import { Spin } from "antd";
-const page = () => {
-  const { user, token } = useAuth();
+import OverallSalesCard from "./components/dashboard/SalesCard";
+import ServiceReport from "./components/dashboard/ServicesChart";
+import RecentWorkOrder from "./components/RecentWorkOrder";
 
-  console.log("user token:", token);
- console.log ("user" , user);
-   const [workOrders, setWorkOrders] = useState([]);
-   const [loading, setLoading] = useState(false);
- 
-   console.log("Token is", token);
- 
-   // 🧠 Fetch WorkOrders API call
-   const fetchWorkOrders = async () => {
-     try {
-       setLoading(true);
- 
-       const params = new URLSearchParams({
-         limit: 5,
-         sortOrder: "desc",
-       });
- 
-       const res = await fetch(`/api/workOrders/open`, {
-         headers: { Authorization: `Bearer ${token}` },
-       });
- 
-       const data = await res.json();
-       if (!res.ok) throw new Error(data.error || "Failed to fetch work orders");
-      console.log("work order data", data);
-       setWorkOrders(data.workOrders || []);
-     } catch (err) {
-       console.error("Error fetching work orders:", err);
-     } finally {
-       setLoading(false);
-     }
-   };
+export default function DashboardPage() {
+  const { token } = useAuth();
 
-   useEffect(() => {
+  const [overview, setOverview] = useState(null);
+  const [salesData, setSalesData] = useState([]);
+  const [serviceReport, setServiceReport] = useState(null);
+  const [workOrders, setWorkOrders] = useState([]);
+
+  const [loadingOverview, setLoadingOverview] = useState(false);
+  const [loadingSales, setLoadingSales] = useState(false);
+  const [loadingServiceReport, setLoadingServiceReport] = useState(false);
+  const [loadingWorkOrders, setLoadingWorkOrders] = useState(false);
+
+  const [selectedRange, setSelectedRange] = useState("6M");
+
+  // === 1️⃣ Overview API ===
+  const fetchOverview = async () => {
+    if (!token) return;
+    try {
+      setLoadingOverview(true);
+      const res = await fetch("/api/dashboard/overview", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to fetch overview");
+      setOverview(data);
+    } catch (err) {
+      console.error(err);
+      message.error("Failed to load overview data");
+    } finally {
+      setLoadingOverview(false);
+    }
+  };
+
+  // === 2️⃣ Sales API ===
+  const fetchSales = async (range = "6M") => {
+    if (!token) return;
+    try {
+      setLoadingSales(true);
+      const res = await fetch(`/api/dashboard/sales?months=${range}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to fetch sales data");
+      setSalesData(data.data || []);
+    } catch (err) {
+      console.error(err);
+      message.error("Failed to load sales data");
+    } finally {
+      setLoadingSales(false);
+    }
+  };
+
+  // === 3️⃣ Service Report API ===
+  const fetchServiceReport = async () => {
+    if (!token) return;
+    try {
+      setLoadingServiceReport(true);
+      const res = await fetch("/api/dashboard/service-report", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok)
+        throw new Error(data.error || "Failed to fetch service report");
+      setServiceReport(data);
+    } catch (err) {
+      console.error(err);
+      message.error("Failed to load service report");
+    } finally {
+      setLoadingServiceReport(false);
+    }
+  };
+
+  // === 4️⃣ Recent Work Orders API ===
+  const fetchWorkOrders = async () => {
+    if (!token) return;
+    try {
+      setLoadingWorkOrders(true);
+      const res = await fetch(`/api/workOrders/open?limit=5`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok)
+        throw new Error(data.error || "Failed to fetch recent work orders");
+      setWorkOrders(data.workOrders || []);
+    } catch (err) {
+      console.error(err);
+      message.error("Failed to load recent work orders");
+    } finally {
+      setLoadingWorkOrders(false);
+    }
+  };
+
+  // === 🚀 Initial Load (runs ONCE when token is ready) ===
+  useEffect(() => {
+    if (token) {
+      fetchOverview();
+      fetchServiceReport();
       fetchWorkOrders();
-    }, []);
+      fetchSales(selectedRange); // load default 6M data once
+    }
+  }, [token]);
+
+  // === 🔁 Re-run ONLY Sales API when range changes ===
+  useEffect(() => {
+    if (token) {
+      fetchSales(selectedRange);
+    }
+  }, [selectedRange]); // ✅ only triggers when range changes
+
   return (
-    <>
-      <div className="min-h-screen bg-gray-100">
-        {/* <h1 className="text-2xl font-bold">Welcome {user}</h1> */}
-        <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          <NewNetIncomeCard />
-          <TotalBookingsCard />
-          <WorkCompletedCard />
-        </div>
+    <div className="min-h-screen bg-gray-100">
+      {/* === Top Cards === */}
+      <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <NewNetIncomeCard
+          title="Total Revenue"
+          amount={overview?.totalRevenue}
+          loading={loadingOverview}
+        />
+        <TotalBookingsCard
+          title="Total Bookings"
+          amount={overview?.totalBookings}
+          loading={loadingOverview}
+        />
+        <WorkCompletedCard
+          title="Work Orders Completed"
+          amount={overview?.workCompleted}
+          loading={loadingOverview}
+        />
+      </div>
 
-        <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="md:col-span-2 bg-white p-6 rounded-lg shadow-md">
-            <OverallSalesCard />
-          </div>
-
-          <div className="md:col-span-1 bg-white p-6 rounded-lg shadow-md">
-            <ServiceReport />
-          </div>
-        </div>
-        <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-         <div className="md:col-span-3 bg-white p-2 md:p-6 rounded-lg shadow-md">
-
-        {loading ? (
-          <div className="text-center py-10 text-gray-500">
-            <Spin size="large" />
-          </div>
-        ) : workOrders.length === 0 ? (
-          <div className="text-center py-10 text-gray-400">
-            No work orders found.
-          </div>
-        ) : (
-          <RecentWorkOrder
-            data={workOrders.map((wo) => ({
-              id: wo.id,
-              customer: wo.customerName || "Unknown",
-              image: "/user1.png",
-              orderDate:
-                wo.bookingTime?.split(" - ")[0] ||
-                new Date(wo.createdAt).toLocaleDateString(),
-              orderTime: wo.bookingTime?.split(" - ")[1] || "",
-              status: wo.status,
-            }))}
-            containerWidth="w-full"
+      {/* === Sales & Service Report === */}
+      <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="md:col-span-2 bg-white rounded-lg shadow-md p-6">
+          <OverallSalesCard
+            data={salesData}
+            loading={loadingSales}
+            onRangeChange={setSelectedRange}
+            activeRange={selectedRange}
           />
-        )}
-      </div>
+        </div>
 
-          {/* <WeeklyTransactionsCard /> */}
+        <div className="md:col-span-1 bg-white rounded-lg shadow-md p-6">
+          <ServiceReport
+            data={serviceReport?.topServices || []}
+            month={serviceReport?.month}
+            loading={loadingServiceReport}
+          />
         </div>
       </div>
-    </>
-  );
-};
 
-export default page;
+      {/* === Recent Work Orders === */}
+      <div className="p-6">
+        <div className="bg-white p-4 md:p-6 rounded-lg shadow-md">
+          {loadingWorkOrders ? (
+            <div className="text-center py-10 text-gray-500">
+              <Spin size="large" />
+            </div>
+          ) : workOrders.length === 0 ? (
+            <div className="text-center py-10 text-gray-400">
+              No work orders found.
+            </div>
+          ) : (
+            <RecentWorkOrder
+              data={workOrders.map((wo) => ({
+                id: wo.id,
+                customer: wo.customerName || "Unknown",
+                image: "/user1.png",
+                orderDate:
+                  wo.bookingTime?.split(" - ")[0] ||
+                  new Date(wo.createdAt).toLocaleDateString(),
+                orderTime: wo.bookingTime?.split(" - ")[1] || "",
+                status: wo.status,
+              }))}
+              containerWidth="w-full"
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,8 +1,10 @@
 "use client";
-import React from "react";
-import { ArrowUpDown, MoreVertical, Tag } from "lucide-react";
 
-/* --- micro bar chart (even spacing, rounded bars; never cuts last bar) --- */
+import React from "react";
+import { MoreVertical, Tag } from "lucide-react";
+import { Skeleton } from "antd";
+
+/* --- Micro bar chart --- */
 function MiniBars({ data = [78, 34, 96, 58], accentIndex = 0 }) {
   const w = 148,
     h = 84;
@@ -24,7 +26,7 @@ function MiniBars({ data = [78, 34, 96, 58], accentIndex = 0 }) {
         const barH = Math.round((v / max) * (h - 12));
         const y = h - barH;
         const isAccent = i === accentIndex;
-        const fill = isAccent ? "#0D1426" : "#2A7BAE"; // lime accent, navy base
+        const fill = isAccent ? "#0D1426" : "#2A7BAE";
         return (
           <rect
             key={i}
@@ -44,37 +46,44 @@ function MiniBars({ data = [78, 34, 96, 58], accentIndex = 0 }) {
 
 export default function WorkCompletedCard({
   title = "Work Completed",
-  amount = 1256,
-  deltaPct = "+1.0%",
-  bars = [78, 36, 98, 60], // tweak to match your visual
-  accentIndex = 0, // first bar highlighted (lime)
-  iconSrc = "/icon4.png", // set to your tag icon asset
+  amount,
+  loading = false,
+  bars = [78, 36, 98, 60],
+  accentIndex = 0,
 }) {
   return (
-    <div className="w-full rounded-[18px] bg-white p-4 sm:p-5 shadow-sm ring-1 ring-gray-200/70 flex flex-col justify-between">
-      {/* header */}
+    <div className="w-full rounded-[18px] bg-white p-4 sm:p-5 shadow-sm ring-1 ring-gray-200/70 flex flex-col justify-between transition-all hover:shadow-md">
+      {/* === Header === */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-2 sm:gap-3">
-          <Tag className="h-6 w-6 text-blue" />
+          <Tag className="h-5 w-5 text-blue-500" />
           <div className="text-lg sm:text-[22px] font-bold tracking-tight text-[#0a1733]">
             {title}
           </div>
         </div>
-        <div className="flex items-center gap-2 sm:gap-3">
-          <button className="grid h-7 w-7 sm:h-8 sm:w-8 place-items-center rounded-full text-[#9AA3AF] hover:bg-gray-50">
-            <MoreVertical className="h-4 w-4 sm:h-5 sm:w-5" />
-          </button>
-        </div>
+
+        <button className="grid h-7 sm:h-8 w-7 sm:w-8 place-items-center rounded-full text-[#9AA3AF] hover:bg-gray-50">
+          <MoreVertical className="h-4 sm:h-5 w-4 sm:w-5" />
+        </button>
       </div>
 
-      {/* metric + delta + spark bars */}
+      {/* === Value & Mini Chart === */}
       <div className="mt-3 sm:mt-4 flex items-end justify-between">
         <div>
-          <div className="text-xl sm:text-[32px] font-black leading-none tracking-tight text-[#0a1733]">
-            {amount.toLocaleString()}
-          </div>
+          {loading ? (
+            <Skeleton.Input
+              active
+              size="large"
+              style={{ width: 100, height: 36, borderRadius: 6 }}
+            />
+          ) : (
+            <div className="text-xl sm:text-[32px] font-black leading-none tracking-tight text-[#0a1733]">
+              {amount?.toLocaleString() ?? 0}
+            </div>
+          )}
         </div>
 
+        {/* Mini bar chart */}
         <div className="shrink-0 rounded-2xl bg-white pr-1">
           <MiniBars data={bars} accentIndex={accentIndex} />
         </div>

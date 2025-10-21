@@ -1,15 +1,17 @@
 "use client";
-import React from "react";
-import { ArrowUpDown, MoreVertical, ShoppingCart } from "lucide-react";
 
-// --- micro bar chart (kept consistent so last bar never clips)
-function MiniBars({ data = [48, 26, 84, 52], accentIndex = 2 }) {
+import React from "react";
+import { MoreVertical, Tag } from "lucide-react";
+import { Skeleton } from "antd";
+
+/* --- Micro bar chart (consistent spacing & rounded corners) --- */
+function MiniBars({ data = [78, 34, 96, 58], accentIndex = 0 }) {
   const w = 148,
     h = 84;
   const padX = 12,
     barW = 18,
     gap = 20,
-    radius = 6;
+    radius = 4;
   const max = Math.max(...data, 1);
 
   return (
@@ -24,7 +26,7 @@ function MiniBars({ data = [48, 26, 84, 52], accentIndex = 2 }) {
         const barH = Math.round((v / max) * (h - 12));
         const y = h - barH;
         const isAccent = i === accentIndex;
-        const fill = isAccent ? "#0D1426" : "#2A7BAE"; // lime accent, navy base
+        const fill = isAccent ? "#0D1426" : "#2A7BAE";
         return (
           <rect
             key={i}
@@ -42,38 +44,47 @@ function MiniBars({ data = [48, 26, 84, 52], accentIndex = 2 }) {
   );
 }
 
-export default function NewBookingsCard({
-  title = "Total Bookings",
-  amount = 256,
-  deltaPct = "+1.0%",
-  bars = [58, 30, 92, 50],
-  accentIndex = 2,
+/* --- Main Component --- */
+export default function WorkCompletedCard({
+  title = "Work Completed",
+  amount,
+  loading = false,
+  bars = [78, 36, 98, 60],
+  accentIndex = 0,
 }) {
   return (
-    <div className="w-full rounded-[18px] bg-white p-4 sm:p-5 shadow-sm ring-1 ring-gray-200/70 flex flex-col justify-between">
-      {/* header */}
+    <div className="w-full rounded-[18px] bg-white p-4 sm:p-5 shadow-sm ring-1 ring-gray-200/70 flex flex-col justify-between transition-all hover:shadow-md">
+      {/* === Header === */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-2 sm:gap-3">
-          <ShoppingCart className="h-6 w-6 text-blue" />
+          <Tag className="h-5 w-5 text-blue-500" />
           <div className="text-lg sm:text-[22px] font-bold tracking-tight text-[#0a1733]">
             {title}
           </div>
         </div>
-        <div className="flex items-center gap-2 sm:gap-3">
-          <button className="grid h-7 w-7 sm:h-8 sm:w-8 place-items-center rounded-full text-[#9AA3AF] hover:bg-gray-50">
-            <MoreVertical className="h-4 w-4 sm:h-5 sm:w-5" />
-          </button>
-        </div>
+
+        <button className="grid h-7 sm:h-8 w-7 sm:w-8 place-items-center rounded-full text-[#9AA3AF] hover:bg-gray-50">
+          <MoreVertical className="h-4 sm:h-5 w-4 sm:w-5" />
+        </button>
       </div>
 
-      {/* metric + spark bars */}
+      {/* === Value + Mini Chart === */}
       <div className="mt-3 sm:mt-4 flex items-end justify-between">
         <div>
-          <div className="text-xl sm:text-[32px] font-black leading-none tracking-tight text-[#0a1733]">
-            {amount}
-          </div>
+          {loading ? (
+            <Skeleton.Input
+              active
+              size="large"
+              style={{ width: 100, height: 36, borderRadius: 6 }}
+            />
+          ) : (
+            <div className="text-xl sm:text-[32px] font-black leading-none tracking-tight text-[#0a1733]">
+              {amount?.toLocaleString() ?? 0}
+            </div>
+          )}
         </div>
 
+        {/* Mini Bars */}
         <div className="shrink-0 rounded-2xl bg-white pr-1">
           <MiniBars data={bars} accentIndex={accentIndex} />
         </div>

@@ -41,10 +41,10 @@ export async function POST(req) {
       );
     }
 
-    // 🧮 3️⃣ Calculate total duration from services
+    // 🧮 3️⃣ Calculate total duration AND base revenue from services
     const services = await prisma.service.findMany({
       where: { id: { in: serviceIds } },
-      select: { durationMinutes: true },
+      select: { durationMinutes: true, basePrice: true },
     });
 
     if (!services.length) {
@@ -56,6 +56,12 @@ export async function POST(req) {
 
     const totalDuration = services.reduce(
       (sum, s) => sum + (s.durationMinutes || 0),
+      0
+    );
+
+    // 💰 Base revenue from selected services
+    const baseRevenue = services.reduce(
+      (sum, s) => sum + (s.basePrice || 0),
       0
     );
 
@@ -84,9 +90,9 @@ export async function POST(req) {
       if (overlap) {
         employeeAvailable = false;
         conflict = overlap;
-        workOrderStatus = WorkOrderStatus.WAITING; // add to waiting queue
+        workOrderStatus = WorkOrderStatus.WAITING;
       } else {
-        workOrderStatus = WorkOrderStatus.ASSIGNED; // assign instantly
+        workOrderStatus = WorkOrderStatus.ASSIGNED;
       }
     }
 
@@ -115,13 +121,14 @@ export async function POST(req) {
         })),
       });
 
-      // ➕ Create workOrder
+      // ➕ Create workOrder with precomputed base revenue
       const workOrder = await tx.workOrder.create({
         data: {
           bookingId: booking.id,
           customerId,
           employeeId: directAssignEmployeeId || null,
           status: workOrderStatus,
+          totalRevenue: baseRevenue, // 💰 store initial revenue
         },
       });
 
@@ -155,12 +162,13 @@ export async function POST(req) {
         "Employee is currently busy. Booking added to the waiting queue and will be auto-assigned when available.";
     }
 
-    // ✅ 7️⃣ Send success response
+    // ✅ 7️⃣ Return
     return NextResponse.json(
       {
         message,
         booking,
         workOrder,
+        baseRevenue,
         conflict: conflict
           ? {
               employeeId: directAssignEmployeeId,

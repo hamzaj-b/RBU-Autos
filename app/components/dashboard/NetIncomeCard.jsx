@@ -1,16 +1,13 @@
 "use client";
-import React from "react";
-import {
-  MoreVertical,
-  ArrowDown,
-  CircleDollarSign,
-  ArrowUpDown,
-} from "lucide-react";
 
-// Improved SVG micro bar chart with even spacing
+import React from "react";
+import { MoreVertical, CircleDollarSign } from "lucide-react";
+import { Skeleton } from "antd";
+
+// 📊 Small inline bar visualization
 function MiniBars({ data = [54, 22, 96, 44], accentIndex = 1 }) {
-  const w = 140; // svg width
-  const h = 80; // svg height
+  const w = 140;
+  const h = 80;
   const padX = 12;
   const barW = 18;
   const gap = 18;
@@ -29,7 +26,7 @@ function MiniBars({ data = [54, 22, 96, 44], accentIndex = 1 }) {
         const barH = Math.round((v / max) * (h - 12));
         const y = h - barH;
         const isAccent = i === accentIndex;
-        const fill = isAccent ? "#0d1426" : "#2A7BAE"; // lime vs navy
+        const fill = isAccent ? "#0d1426" : "#2A7BAE";
         return (
           <rect
             key={i}
@@ -47,51 +44,52 @@ function MiniBars({ data = [54, 22, 96, 44], accentIndex = 1 }) {
   );
 }
 
-const currency = (n) =>
-  new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(
-    n
+// 💰 Currency formatter
+const formatCurrency = (n) =>
+  new Intl.NumberFormat("en-GB", { style: "currency", currency: "USD" }).format(
+    n || 0
   );
 
 export default function NewNetIncomeCard({
-  title = "New Net Income",
-  amount = 8245,
-  deltaPct = -0.5,
+  title = "Net Revenue",
+  amount,
+  loading = false,
   bars = [62, 28, 95, 46],
   accentIndex = 1,
 }) {
-  const down = deltaPct < 0;
-  const pctText = `${down ? "-" : "+"}${Math.abs(deltaPct).toLocaleString(
-    undefined,
-    { maximumFractionDigits: 1 }
-  )}%`;
-
   return (
-    <div className="w-full rounded-[18px] bg-white p-4 sm:p-5 shadow-sm ring-1 ring-gray-200/70 flex flex-col justify-between">
-      {/* top row */}
+    <div className="w-full rounded-[18px] bg-white p-4 sm:p-5 shadow-sm ring-1 ring-gray-200/70 flex flex-col justify-between transition-all hover:shadow-md">
+      {/* === Header === */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* <img src="/icon2.png" alt="" className="w-5 sm:w-auto" /> */}
-          <CircleDollarSign className="h- w- text-blue" />
+          <CircleDollarSign className="h-5 w-5 text-blue-500" />
           <div className="text-lg sm:text-[22px] font-bold tracking-tight text-[#0a1733]">
             {title}
           </div>
         </div>
-        <div className="flex items-center gap-2 sm:gap-3">
-          <button className="grid h-7 sm:h-8 w-7 sm:w-8 place-items-center rounded-full text-[#9AA3AF] hover:bg-gray-50">
-            <MoreVertical className="h-4 sm:h-5 w-4 sm:w-5" />
-          </button>
-        </div>
+
+        <button className="grid h-7 sm:h-8 w-7 sm:w-8 place-items-center rounded-full text-[#9AA3AF] hover:bg-gray-50">
+          <MoreVertical className="h-4 sm:h-5 w-4 sm:w-5" />
+        </button>
       </div>
 
-      {/* amount row */}
+      {/* === Value & MiniChart === */}
       <div className="mt-3 sm:mt-4 flex items-end justify-between">
         <div>
-          <div className="text-xl sm:text-[32px] font-bold tracking-tight text-[#0a1733]">
-            {currency(amount)}
-          </div>
+          {loading ? (
+            <Skeleton.Input
+              active
+              size="large"
+              style={{ width: 100, height: 36, borderRadius: 6 }}
+            />
+          ) : (
+            <div className="text-xl sm:text-[32px] font-bold tracking-tight text-[#0a1733]">
+              {formatCurrency(amount)}
+            </div>
+          )}
         </div>
 
-        {/* mini chart */}
+        {/* Micro Chart */}
         <div className="shrink-0 rounded-2xl bg-white pr-1">
           <MiniBars data={bars} accentIndex={accentIndex} />
         </div>

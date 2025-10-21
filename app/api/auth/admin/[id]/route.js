@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 // ✅ Get single admin
 async function GET(req, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const admin = await prisma.user.findFirst({
       where: { id, userType: UserType.ADMIN },
       select: {
@@ -35,7 +35,7 @@ async function GET(req, { params }) {
 // ✅ Update admin
 async function PUT(req, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
     const { email, phone, password, isActive } = body;
 
@@ -66,7 +66,7 @@ async function PUT(req, { params }) {
 // ✅ Delete admin
 async function DELETE(req, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const deleted = await prisma.user.deleteMany({
       where: { id, userType: UserType.ADMIN },
     });

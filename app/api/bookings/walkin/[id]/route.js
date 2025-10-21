@@ -5,7 +5,7 @@ import jwt from "jsonwebtoken";
 const prisma = new PrismaClient();
 const SECRET_KEY = process.env.JWT_SECRET || "supersecret";
 
-// 🔑 Helper: Auth verification
+// 🔑 Helper: verify JWT
 async function verifyAuth(req) {
   const authHeader = req.headers.get("authorization");
   if (!authHeader) throw new Error("No token provided");
@@ -18,10 +18,8 @@ async function verifyAuth(req) {
   }
 }
 
-/**
- * 🔵 GET /api/bookings/walkin/[id]
- * Fetch detailed booking info (includes services, workOrder, employee, etc.)
- */
+/* 🔵 GET /api/bookings/walkin/[id]
+   Fetch booking with services & work order (includes revenue) */
 export async function GET(req, { params }) {
   try {
     await verifyAuth(req);
@@ -46,7 +44,7 @@ export async function GET(req, { params }) {
 
     return NextResponse.json(booking);
   } catch (err) {
-    console.error("❌ GET by ID error:", err);
+    console.error("❌ GET booking error:", err);
     return NextResponse.json(
       { error: err.message || "Failed to fetch booking" },
       { status: 500 }
@@ -54,10 +52,8 @@ export async function GET(req, { params }) {
   }
 }
 
-/**
- * 🟡 PUT /api/bookings/walkin/[id]
- * Update general details (e.g., notes, time, services)
- */
+/* 🟡 PUT /api/bookings/walkin/[id]
+   Update booking details (notes, timing, services) */
 export async function PUT(req, { params }) {
   try {
     const decoded = await verifyAuth(req);
@@ -69,10 +65,9 @@ export async function PUT(req, { params }) {
 
     const { id } = params;
     const body = await req.json();
-
     const { notes, startAt, endAt, serviceIds } = body;
-    const updateData = {};
 
+    const updateData = {};
     if (notes) updateData.notes = notes;
     if (startAt && endAt) {
       updateData.startAt = new Date(startAt);
@@ -82,17 +77,33 @@ export async function PUT(req, { params }) {
       );
     }
 
-    // Update booking
+    // 1️⃣ Update booking base fields
     const updatedBooking = await prisma.booking.update({
       where: { id },
       data: updateData,
     });
 
-    // Update services if provided
+    // 2️⃣ Update services (re-calculate base revenue)
     if (Array.isArray(serviceIds) && serviceIds.length > 0) {
       await prisma.bookingService.deleteMany({ where: { bookingId: id } });
       await prisma.bookingService.createMany({
-        data: serviceIds.map((serviceId) => ({ bookingId: id, serviceId })),
+        data: serviceIds.map((sid) => ({ bookingId: id, serviceId: sid })),
+      });
+
+      // fetch service base prices
+      const services = await prisma.service.findMany({
+        where: { id: { in: serviceIds } },
+        select: { basePrice: true },
+      });
+      const baseRevenue = services.reduce(
+        (sum, s) => sum + (s.basePrice || 0),
+        0
+      );
+
+      // update linked work order revenue
+      await prisma.workOrder.updateMany({
+        where: { bookingId: id },
+        data: { totalRevenue: baseRevenue },
       });
     }
 
@@ -101,7 +112,7 @@ export async function PUT(req, { params }) {
       booking: updatedBooking,
     });
   } catch (err) {
-    console.error("❌ PUT by ID error:", err);
+    console.error("❌ PUT booking error:", err);
     return NextResponse.json(
       { error: err.message || "Failed to update booking" },
       { status: 500 }
@@ -109,10 +120,8 @@ export async function PUT(req, { params }) {
   }
 }
 
-/**
- * 🟠 PATCH /api/bookings/walkin/[id]
- * Update status — assign employee, complete, cancel
- */
+/* 🟠 PATCH /api/bookings/walkin/[id]
+   Handle assign / complete / cancel actions */
 export async function PATCH(req, { params }) {
   try {
     const decoded = await verifyAuth(req);
@@ -122,13 +131,20 @@ export async function PATCH(req, { params }) {
 
     const booking = await prisma.booking.findUnique({
       where: { id },
-      include: { workOrder: true },
+      include: {
+        workOrder: {
+          include: {
+            workOrderServices: { include: { service: true } },
+          },
+        },
+      },
     });
 
     if (!booking)
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
 
     switch (action) {
+      /* ✅ ASSIGN EMPLOYEE */
       case "assign": {
         if (decoded.userType !== "ADMIN")
           return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -141,9 +157,7 @@ export async function PATCH(req, { params }) {
         const overlap = await prisma.workOrder.findFirst({
           where: {
             employeeId,
-            status: {
-              in: [WorkOrderStatus.ASSIGNED, WorkOrderStatus.IN_PROGRESS],
-            },
+            status: { in: ["ASSIGNED", "IN_PROGRESS"] },
             booking: {
               startAt: { lt: booking.endAt },
               endAt: { gt: booking.startAt },
@@ -166,6 +180,7 @@ export async function PATCH(req, { params }) {
             data: { status: BookingStatus.ACCEPTED, acceptedAt: new Date() },
           }),
         ]);
+
         return NextResponse.json({
           message: "Employee assigned successfully",
           booking: bk,
@@ -173,35 +188,64 @@ export async function PATCH(req, { params }) {
         });
       }
 
+      /* ✅ COMPLETE WORK ORDER */
       case "complete": {
         const isAdmin = decoded.userType === "ADMIN";
         const isEmployee = decoded.userType === "EMPLOYEE";
         if (!isAdmin && !isEmployee)
           return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
-        const [wo, bk] = await prisma.$transaction([
+        // calculate totalRevenue (services + parts + labor)
+        const wo = booking.workOrder;
+        let serviceRevenue = wo.workOrderServices.reduce(
+          (sum, ws) => sum + (ws.service?.basePrice || 0),
+          0
+        );
+
+        // these JSONs might be updated elsewhere, so we re-fetch current state
+        const liveWO = await prisma.workOrder.findUnique({
+          where: { id: wo.id },
+          select: { partsUsed: true, laborEntries: true },
+        });
+
+        const partsRevenue = Array.isArray(liveWO?.partsUsed)
+          ? liveWO.partsUsed.reduce((s, p) => s + (p.price || 0), 0)
+          : 0;
+
+        const laborRevenue = Array.isArray(liveWO?.laborEntries)
+          ? liveWO.laborEntries.reduce((s, l) => s + (l.price || 0), 0)
+          : 0;
+
+        const totalRevenue = serviceRevenue + partsRevenue + laborRevenue;
+
+        const [updatedWO, updatedBK] = await prisma.$transaction([
           prisma.workOrder.update({
-            where: { id: booking.workOrder.id },
+            where: { id: wo.id },
             data: {
               status: WorkOrderStatus.DONE,
-              notes: `${booking.workOrder.notes || ""}\n[COMPLETED] ${
-                note || ""
-              }`,
+              notes: `${wo.notes || ""}\n[COMPLETED] ${note || ""}`,
               closedAt: new Date(),
+              totalRevenue, // 💰 store final total
             },
           }),
           prisma.booking.update({
             where: { id },
-            data: { status: BookingStatus.DONE, completedAt: new Date() },
+            data: {
+              status: BookingStatus.DONE,
+              completedAt: new Date(),
+            },
           }),
         ]);
+
         return NextResponse.json({
           message: "Booking completed successfully",
-          booking: bk,
-          workOrder: wo,
+          booking: updatedBK,
+          workOrder: updatedWO,
+          totalRevenue,
         });
       }
 
+      /* ✅ CANCEL */
       case "cancel": {
         if (decoded.userType !== "ADMIN")
           return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -238,7 +282,7 @@ export async function PATCH(req, { params }) {
         return NextResponse.json({ error: "Invalid action" }, { status: 400 });
     }
   } catch (err) {
-    console.error("❌ PATCH by ID error:", err);
+    console.error("❌ PATCH booking error:", err);
     return NextResponse.json(
       { error: err.message || "Failed to update status" },
       { status: 500 }
@@ -246,10 +290,8 @@ export async function PATCH(req, { params }) {
   }
 }
 
-/**
- * 🔴 DELETE /api/bookings/walkin/[id]
- * Hard delete booking + related work order + link tables
- */
+/* 🔴 DELETE /api/bookings/walkin/[id]
+   Hard delete booking + related work order */
 export async function DELETE(req, { params }) {
   try {
     const decoded = await verifyAuth(req);
@@ -257,7 +299,6 @@ export async function DELETE(req, { params }) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const { id } = params;
-
     const booking = await prisma.booking.findUnique({
       where: { id },
       include: { workOrder: true },
@@ -279,7 +320,7 @@ export async function DELETE(req, { params }) {
 
     return NextResponse.json({ message: "Booking deleted successfully" });
   } catch (err) {
-    console.error("❌ DELETE by ID error:", err);
+    console.error("❌ DELETE booking error:", err);
     return NextResponse.json(
       { error: err.message || "Failed to delete booking" },
       { status: 500 }
