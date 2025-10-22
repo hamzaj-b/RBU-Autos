@@ -1,28 +1,28 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Search, Eye, PlayCircle, CheckCircle, UserPlus } from "lucide-react";
+import { Search, Eye, PlayCircle, CheckCircle, Printer } from "lucide-react";
 import { Spin, message, Modal } from "antd";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
 
-export default function RepairTracker() {
+export default function EmployeeRepairTracker() {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [workOrders, setWorkOrders] = useState([]);
-  const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
-
   const [selectedWO, setSelectedWO] = useState(null);
   const [viewModal, setViewModal] = useState(false);
   const [loadingIds, setLoadingIds] = useState(new Set());
 
   const { token, logout } = useAuth();
+  const router = useRouter();
 
   // 🔄 Debounce search
   useEffect(() => {
@@ -41,7 +41,6 @@ export default function RepairTracker() {
         search: debouncedSearch,
         sortOrder: "desc",
       });
-
       if (statusFilter !== "all") params.append("status", statusFilter);
       if (dateFrom) params.append("dateFrom", dateFrom);
       if (dateTo) params.append("dateTo", dateTo);
@@ -72,30 +71,8 @@ export default function RepairTracker() {
     fetchWorkOrders();
   }, [fetchWorkOrders]);
 
-  // ✅ Assign Employee (for Admin)
-  const handleAssign = async (woId, empId) => {
-    try {
-      const res = await fetch(`/api/workOrders/${woId}/assign`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ employeeId: empId }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      message.success("Employee assigned successfully!");
-      fetchWorkOrders();
-    } catch (err) {
-      message.error(err.message || "Failed to assign employee");
-    }
-  };
-
   // 🚀 Start WorkOrder
   const handleStart = async (item) => {
-    if (!token) return message.error("Unauthorized: Please log in first");
-
     setLoadingIds((prev) => new Set([...prev, item.id]));
     try {
       const res = await fetch(`/api/workOrders/${item.id}/employee/start`, {
@@ -105,7 +82,6 @@ export default function RepairTracker() {
           Authorization: `Bearer ${token}`,
         },
       });
-
       const data = await res.json();
       if (res.ok) {
         message.success("🚀 Work started!");
@@ -123,28 +99,25 @@ export default function RepairTracker() {
     }
   };
 
-  // ✅ Complete WorkOrder
-  const handleComplete = async (item) => {
-    if (!token) return message.error("Unauthorized: Please log in first");
-
+  // ✅ Mark as Done
+  const handleMarkDone = async (item) => {
     setLoadingIds((prev) => new Set([...prev, item.id]));
     try {
-      const res = await fetch(`/api/workOrders/${item.id}/completed`, {
+      const res = await fetch(`/api/workOrders/${item.id}/mark-as-done`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ note: "Completed by employee" }),
+        body: JSON.stringify({ note: "Marked as done by employee" }),
       });
-
       const data = await res.json();
       if (res.ok) {
-        message.success("✅ Work order marked as completed!");
+        message.success("✅ Work order marked as done!");
         fetchWorkOrders();
-      } else message.error(data.error || "Failed to complete work order");
+      } else message.error(data.error || "Failed to mark as done");
     } catch (err) {
-      console.error("Complete error:", err);
+      console.error("Done error:", err);
       message.error("Network error.");
     } finally {
       setLoadingIds((prev) => {
@@ -155,13 +128,19 @@ export default function RepairTracker() {
     }
   };
 
-  // 🏷️ Status Tag Colors
+  // 🖨️ Print Invoice (for completed workOrders)
+  const handlePrint = (item) => {
+    window.open(`/employee/workOrders/${item.id}/invoice`, "_blank");
+  };
+
+  // 🏷️ Status Tag
   const getStatusTag = (status) => {
     const colorMap = {
       OPEN: "bg-blue-100 text-blue-700",
       ASSIGNED: "bg-amber-100 text-amber-700",
       IN_PROGRESS: "bg-indigo-100 text-indigo-700",
       DONE: "bg-emerald-100 text-emerald-700",
+      COMPLETED: "bg-green-100 text-green-700",
       CANCELLED: "bg-rose-100 text-rose-700",
     };
     return (
@@ -175,7 +154,7 @@ export default function RepairTracker() {
     );
   };
 
-  // 🧭 Pagination
+  // 📖 Pagination
   const renderPagination = () => (
     <div className="flex flex-wrap justify-between items-center mt-6">
       <div className="flex items-center space-x-2 text-sm">
@@ -233,39 +212,28 @@ export default function RepairTracker() {
 
           {/* Status Filters */}
           <div className="flex flex-wrap gap-2">
-            {["all", "OPEN", "ASSIGNED", "IN_PROGRESS", "DONE", "CANCELLED"].map(
-              (status) => (
-                <button
-                  key={status}
-                  onClick={() => setStatusFilter(status)}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium ${
-                    statusFilter === status
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
-                >
-                  {status === "all"
-                    ? "All"
-                    : status.replace("_", " ").toLowerCase()}
-                </button>
-              )
-            )}
-          </div>
-
-          {/* Date Range */}
-          <div className="flex space-x-3">
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              className="p-2 border border-gray-300 rounded-md text-sm"
-            />
-            <input
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              className="p-2 border border-gray-300 rounded-md text-sm"
-            />
+            {[
+              "all",
+              "OPEN",
+              "ASSIGNED",
+              "IN_PROGRESS",
+              "DONE",
+              "COMPLETED",
+            ].map((status) => (
+              <button
+                key={status}
+                onClick={() => setStatusFilter(status)}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium ${
+                  statusFilter === status
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                {status === "all"
+                  ? "All"
+                  : status.replace("_", " ").toLowerCase()}
+              </button>
+            ))}
           </div>
         </div>
       </div>
@@ -277,7 +245,9 @@ export default function RepairTracker() {
             <Spin size="large" />
           </div>
         ) : workOrders.length === 0 ? (
-          <p className="text-center text-gray-400 py-10">No work orders found</p>
+          <p className="text-center text-gray-400 py-10">
+            No work orders found
+          </p>
         ) : (
           workOrders.map((wo) => {
             const isLoading = loadingIds.has(wo.id);
@@ -287,15 +257,17 @@ export default function RepairTracker() {
                 className="flex justify-between items-center border-b py-3 px-3 hover:bg-gray-50 transition"
               >
                 <div className="flex flex-col">
-                  <p className="font-semibold text-gray-800">{wo.serviceName}</p>
+                  <p className="font-semibold text-gray-800">
+                    {wo.services?.join(", ") || "—"}
+                  </p>
                   <p className="text-xs text-gray-500">
                     {wo.customerName} • {wo.employeeName || "Unassigned"}
                   </p>
                   <div className="mt-1">{getStatusTag(wo.status)}</div>
                 </div>
 
-                <div className="flex gap-2">
-                  {/* 👁️ View */}
+                <div className="flex gap-2 items-center">
+                  {/* View */}
                   <button
                     onClick={() => {
                       setSelectedWO(wo);
@@ -307,33 +279,46 @@ export default function RepairTracker() {
                     View
                   </button>
 
-                  {/* ▶️ Start */}
+                  {/* Start */}
                   {wo.status === "ASSIGNED" && (
                     <button
                       disabled={isLoading}
                       onClick={() => handleStart(wo)}
-                     className={`px-3 py-2 text-xs rounded-md !text-white ${
-                        isLoading
-                          ? "bg-gray-400 cursor-not-allowed"
-                          : "bg-blue-theme hover:bg-blue-bold"
-                      }`} >
-                      {isLoading ? "Starting..." : "Start"}
-                    </button>
-                  )}
-
-                  {/* ✅ Complete */}
-                  {wo.status === "IN_PROGRESS" && (
-                    <button
-                      disabled={isLoading}
-                      onClick={() => handleComplete(wo)}
                       className={`px-3 py-2 text-xs rounded-md !text-white ${
                         isLoading
                           ? "bg-gray-400 cursor-not-allowed"
                           : "bg-blue-theme hover:bg-blue-bold"
                       }`}
                     >
-                      {isLoading ? "Completing..." : "Mark As Done"}
+                      {isLoading ? "Starting..." : "Start"}
                     </button>
+                  )}
+
+                  {/* Mark as Done */}
+                  {wo.status === "IN_PROGRESS" && (
+                    <button
+                      disabled={isLoading}
+                      onClick={() => handleMarkDone(wo)}
+                      className={`px-3 py-2 text-xs rounded-md !text-white ${
+                        isLoading
+                          ? "bg-gray-400 cursor-not-allowed"
+                          : "bg-green-600 hover:bg-green-700"
+                      }`}
+                    >
+                      {isLoading ? "Marking..." : "Mark as Done"}
+                    </button>
+                  )}
+
+                  {/* Print */}
+                  {wo.status === "COMPLETED" && (
+                    <div
+                      onClick={() => handlePrint(wo)}
+                      className="text-xs bg-gradient-to-br from-[#0f74b2] via-sky-800 to-blue-900 
+                                 p-2 rounded-lg hover:scale-105 transition-transform duration-500 
+                                 text-white italic flex items-center gap-1 hover:underline cursor-pointer"
+                    >
+                      <Printer size={15} /> Print
+                    </div>
                   )}
                 </div>
               </div>
@@ -344,7 +329,7 @@ export default function RepairTracker() {
 
       {renderPagination()}
 
-      {/* 👁️ Modal */}
+      {/* 👁️ View Modal */}
       <Modal
         open={viewModal}
         onCancel={() => setViewModal(false)}
@@ -359,21 +344,17 @@ export default function RepairTracker() {
         {selectedWO && (
           <div className="space-y-2 text-sm text-gray-700">
             <p>
-              <strong>Service:</strong> {selectedWO.serviceName}
-            </p>
-            <p>
               <strong>Customer:</strong> {selectedWO.customerName}
             </p>
             <p>
               <strong>Employee:</strong>{" "}
-              {selectedWO.employeeName || "Not assigned"}
+              {selectedWO.employeeName || "Unassigned"}
             </p>
             <p>
               <strong>Status:</strong> {getStatusTag(selectedWO.status)}
             </p>
             <p>
-              <strong>Created At:</strong>{" "}
-              {new Date(selectedWO.createdAt).toLocaleString()}
+              <strong>Booking Time:</strong> {selectedWO.bookingTime || "—"}
             </p>
             {selectedWO.notes && (
               <p>

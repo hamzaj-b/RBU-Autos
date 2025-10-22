@@ -7,7 +7,8 @@ import { usePathname } from "next/navigation";
 
 export default function ClientLayout({ children }) {
   const pathname = usePathname();
-  const isAuthRoute = pathname.startsWith("/auth");
+  const authRoutes = ["/auth", "/checkout"];
+  const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route));
   const showSidebarAndHeader = !isAuthRoute;
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -16,10 +17,7 @@ export default function ClientLayout({ children }) {
   // Close sidebar on outside click (mobile)
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (
-        sidebarRef.current &&
-        !sidebarRef.current.contains(event.target)
-      ) {
+      if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
         setIsSidebarOpen(false);
       }
     };
