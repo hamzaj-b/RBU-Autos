@@ -220,9 +220,26 @@ export default function ReportsPage() {
       },
     },
     {
-      service: "Tire Rotation",
-      date: "2021-08-20",
-      status: "Completed",
+      title: "Total Revenue ($)",
+      dataIndex: "totalRevenue",
+      key: "totalRevenue",
+      render: (amt) => (
+        <span className="font-semibold text-blue-700">
+          ${Number(amt || 0).toFixed(2)}
+        </span>
+      ),
+    },
+    {
+      title: "Opened At",
+      dataIndex: "openedAt",
+      key: "openedAt",
+      render: (date) => formatMaybeDate(date),
+    },
+    {
+      title: "Closed At",
+      dataIndex: "closedAt",
+      key: "closedAt",
+      render: (date) => formatMaybeDate(date),
     },
   ];
 
@@ -236,107 +253,61 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="bg-gray-100 min-h-screen p-8">
-      <div className="w-full bg-white shadow-md rounded-lg overflow-hidden">
-        <div className="flex flex-col md:flex-row">
-          {/* Sidebar with Tabs */}
-          <div className="w-full md:w-64 bg-gray-200 p-4 border-r border-gray-300">
-            <div className="space-y-2">
-              <button
-                onClick={() => setActiveTab("interaction")}
-                className={`w-full px-4 py-3 text-left font-semibold transition-colors rounded-md focus:outline-none focus:ring-2 focus:ring-blue-bold focus:ring-opacity-50 ${
-                  activeTab === "interaction"
-                    ? "!text-white bg-blue-theme"
-                    : "text-gray-800 bg-white hover:bg-gray-100 border border-gray-300"
-                }`}
-              >
-                Customer Interaction
-              </button>
-              <button
-                onClick={() => setActiveTab("services")}
-                className={`w-full px-4 py-3 text-left font-semibold transition-colors rounded-md focus:outline-none focus:ring-2 focus:ring-blue-bold focus:ring-opacity-50 ${
-                  activeTab === "services"
-                    ? "text-black bg-blue-theme"
-                    : "text-gray-800 bg-white hover:bg-gray-100 border border-gray-300"
-                }`}
-              >
-                Services History
-              </button>
-            </div>
-          </div>
+    <div className="p-6 bg-gray-50 min-h-screen">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3">
+        <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+          <FileBarChart2 className="text-blue-700" size={28} />
+          Work Order Reports
+        </h1>
 
-          {/* Main Content */}
-          <div className="flex-1 p-6 space-y-4">
-            {activeTab === "interaction" && (
-              <>
-                {interactions.map((interaction, index) => (
-                  <div
-                    key={index}
-                    className="bg-gray-100 p-5 rounded-md shadow-sm border border-gray-200"
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-bold text-gray-900">
-                          {interaction.name}
-                        </h3>
-                        <p className="text-sm text-gray-700">
-                          Phone: {interaction.phone}
-                        </p>
-                        <p className="text-sm text-gray-700">
-                          Interaction: {interaction.interaction}
-                        </p>
-                        <p className="text-sm text-gray-700">
-                          Date: {interaction.date}
-                        </p>
-                        <p className="text-sm text-gray-700">
-                          Summary: {interaction.summary}
-                        </p>
-                      </div>
-                      <button className="px-4 py-2 bg-blue-theme hover:bg-blue-bold !text-white font-medium rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-bold focus:ring-opacity-50">
-                        View Details
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </>
-            )}
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={exportCsv}
+            className="flex items-center gap-2 px-4"
+          >
+            <Download className="w-4 h-4" />
+            Export
+          </Button>
+          <Button
+            variant="outline"
+            onClick={fetchReport}
+            disabled={loading}
+            className="flex items-center gap-2 px-4"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        </div>
+      </div>
 
-            {activeTab === "services" && (
-              <div className="space-y-4">
-                {servicesHistory.map((service, index) => (
-                  <div
-                    key={index}
-                    className="bg-gray-100 p-5 rounded-md shadow-sm border border-gray-200"
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-bold text-gray-900">
-                          {service.service}
-                        </h3>
-                        <p className="text-sm text-gray-700">
-                          Date: {service.date}
-                        </p>
-                        <p className="text-sm text-gray-700">
-                          Status: {service.status}
-                        </p>
-                      </div>
-                      <button className="px-4 py-2 bg-blue-theme hover:bg-blue-bold text-black font-medium rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-bold focus:ring-opacity-50">
-                        View Details
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="text-sm text-gray-500">Total Orders</div>
+          <div className="text-2xl font-bold text-gray-800">
+            {totals.totalOrders}
           </div>
-        ) : (
-          <Table
-            dataSource={report}
-            columns={columns}
-            rowKey="id"
-            pagination={{ pageSize: 10 }}
-          />
-        )}
+        </div>
+        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="text-sm text-gray-500">Total Revenue</div>
+          <div className="text-2xl font-extrabold text-blue-700">
+            ${totals.totalRevenue.toFixed(2)}
+          </div>
+        </div>
+        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="text-sm text-gray-500">Completed</div>
+          <div className="text-2xl font-bold text-emerald-600">
+            {totals.completed}
+          </div>
+        </div>
+        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="text-sm text-gray-500">In Progress</div>
+          <div className="text-2xl font-bold text-indigo-600">
+            {totals.inProgress}
+          </div>
+        </div>
       </div>
 
       {/* Filters */}
@@ -386,7 +357,7 @@ export default function ReportsPage() {
         <Button
           onClick={fetchReport}
           disabled={loading}
-          className="bg-blue-theme hover:bg-blue-bold !text-white"
+          className="bg-blue-theme hover:bg-blue-bold text-white"
         >
           Apply Filters
         </Button>
