@@ -32,7 +32,8 @@ enum WorkOrderStatus {
   ASSIGNED // Directly assigned to an employee by Admin
   WAITING // Waiting for employee to start work
   IN_PROGRESS // Employee started work
-  DONE // Employee finished work
+  DONE // Employee marked work as done (pending admin review)
+  COMPLETED // Admin reviewed and finalized the work order
   CANCELLED // Job cancelled (admin/employee)
 }
 

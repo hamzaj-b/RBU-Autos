@@ -9,10 +9,10 @@ const jwt = require("jsonwebtoken");
 const prisma = new PrismaClient();
 const SECRET_KEY = process.env.JWT_SECRET || "supersecret";
 
-export async function PATCH(req, { params }) {
+async function PATCH(req, { params }) {
   try {
     // -------------------------
-    // 🔑 1. Verify Admin Token
+    // 🔑 1. Verify JWT Token
     // -------------------------
     const authHeader = req.headers.get("authorization");
     if (!authHeader?.startsWith("Bearer ")) {
@@ -29,14 +29,7 @@ export async function PATCH(req, { params }) {
       );
     }
 
-    if (decoded.userType !== "ADMIN") {
-      return NextResponse.json(
-        { error: "Only Admin can mark work orders as COMPLETED" },
-        { status: 403 }
-      );
-    }
-
-    const { id: workOrderId } = params;
+    const { id: workOrderId } = await params;
     if (!workOrderId) {
       return NextResponse.json(
         { error: "WorkOrder ID required" },
@@ -45,25 +38,17 @@ export async function PATCH(req, { params }) {
     }
 
     // -------------------------
-    // 🧾 2. Parse Body Fields
+    // 🧾 2. Parse optional note
     // -------------------------
     const body = await req.json().catch(() => ({}));
     const note = body?.note?.trim?.() || "";
-    const partsUsed = Array.isArray(body?.partsUsed) ? body.partsUsed : [];
-    const laborEntries = Array.isArray(body?.laborEntries)
-      ? body.laborEntries
-      : [];
-    const photos = body?.photos || null;
 
     // -------------------------
-    // 🔍 3. Find Work Order
+    // 🔍 3. Load WorkOrder
     // -------------------------
     const workOrder = await prisma.workOrder.findUnique({
       where: { id: workOrderId },
-      include: {
-        booking: true,
-        workOrderServices: { include: { service: true } },
-      },
+      include: { booking: true },
     });
 
     if (!workOrder) {
@@ -85,50 +70,51 @@ export async function PATCH(req, { params }) {
     }
 
     // -------------------------
-    // 💰 4. Compute Revenue Additions
+    // ⚖️ 4. Permission checks
     // -------------------------
-    const extraPartsTotal = partsUsed.reduce(
-      (sum, p) => sum + (Number(p.price) || 0) * (Number(p.qty) || 1),
-      0
-    );
+    const isAdmin = decoded.userType === "ADMIN";
+    const isEmployee = decoded.userType === "EMPLOYEE";
 
-    const extraLaborTotal = laborEntries.reduce(
-      (sum, l) => sum + (Number(l.rate) || 0) * (Number(l.hours) || 1),
-      0
-    );
+    if (!isAdmin && !isEmployee) {
+      return NextResponse.json(
+        { error: "Only Admin or Employee can mark work orders as done" },
+        { status: 403 }
+      );
+    }
 
-    const extraTotal = extraPartsTotal + extraLaborTotal;
-    const finalRevenue = (workOrder.totalRevenue || 0) + extraTotal;
+    if (isEmployee && workOrder.employeeId !== decoded.employeeId) {
+      return NextResponse.json(
+        { error: "You are not authorized to mark this work order as done" },
+        { status: 403 }
+      );
+    }
 
     // -------------------------
-    // 💾 5. Transaction: Mark COMPLETED + Update Booking
+    // 💾 5. Mark as DONE + update booking
     // -------------------------
     const [updatedWorkOrder, updatedBooking] = await prisma.$transaction(
       async (tx) => {
         const updatedWO = await tx.workOrder.update({
           where: { id: workOrderId },
           data: {
-            status: WorkOrderStatus.COMPLETED,
+            status: WorkOrderStatus.DONE,
             closedAt: new Date(),
-            totalRevenue: finalRevenue,
-            partsUsed: partsUsed.length ? partsUsed : workOrder.partsUsed,
-            laborEntries: laborEntries.length
-              ? laborEntries
-              : workOrder.laborEntries,
-            photos: photos ? photos : workOrder.photos,
             notes:
               note.length > 0
-                ? `${workOrder.notes || ""}${
-                    workOrder.notes ? "\n" : ""
-                  }[ADMIN-COMPLETED] ${note}`
-                : workOrder.notes || "[SYSTEM] Marked as COMPLETED by Admin",
+                ? `${workOrder.notes || ""}${workOrder.notes ? "\n" : ""}${
+                    isAdmin ? "[ADMIN-DONE]" : "[EMPLOYEE-DONE]"
+                  } ${note}`
+                : workOrder.notes ||
+                  `[SYSTEM] Marked as DONE by ${
+                    isAdmin ? "Admin" : "Employee"
+                  }`,
           },
         });
 
         const updatedBk = await tx.booking.update({
           where: { id: workOrder.bookingId },
           data: {
-            status: BookingStatus.DONE, // keep booking as DONE
+            status: BookingStatus.DONE,
             completedAt: new Date(),
           },
         });
@@ -140,25 +126,25 @@ export async function PATCH(req, { params }) {
     // -------------------------
     // ✅ 6. Success Response
     // -------------------------
+    const msg = isAdmin
+      ? "Work order marked as DONE by Admin."
+      : "Work order marked as DONE by Employee.";
+
     return NextResponse.json(
       {
-        message: "Work order marked as COMPLETED by Admin.",
+        message: msg,
         workOrder: updatedWorkOrder,
         booking: updatedBooking,
-        revenueBreakdown: {
-          previous: workOrder.totalRevenue || 0,
-          extraPartsTotal,
-          extraLaborTotal,
-          finalRevenue,
-        },
       },
       { status: 200 }
     );
   } catch (err) {
-    console.error("❌ Complete (Admin) Work Order Error:", err);
+    console.error("❌ Mark as DONE Error:", err);
     return NextResponse.json(
-      { error: err.message || "Failed to complete work order" },
+      { error: err.message || "Failed to mark work order as done" },
       { status: 500 }
     );
   }
 }
+
+module.exports = { PATCH };

@@ -12,12 +12,13 @@ import {
   Car,
   User,
   DollarSign,
-  Clock,
+  Printer,
 } from "lucide-react";
 import { Spin, message, Tag, Modal, Input } from "antd";
 import Select from "react-select";
 import { useAuth } from "@/app/context/AuthContext";
 import ConfirmDialog from "@/app/components/shared/ConfirmModal";
+import { useRouter } from "next/navigation";
 
 export default function RepairTracker() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -35,6 +36,7 @@ export default function RepairTracker() {
   const [laborEntries, setLaborEntries] = useState([]);
   const [partsUsed, setPartsUsed] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const router = useRouter();
 
   const { token, logout } = useAuth();
 
@@ -122,7 +124,32 @@ export default function RepairTracker() {
     }
   };
 
-  const handleMarkDone = (wo) => {
+  // ✅ Mark as Done
+  const handleMarkAsDone = async (wo) => {
+    try {
+      setSubmitting(true);
+      const res = await fetch(`/api/workOrders/${wo.id}/mark-as-done`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      message.success("Work order marked as DONE successfully!");
+      fetchWorkOrders();
+    } catch (err) {
+      message.error(err.message || "Failed to mark as done");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // 🧾 Complete (Checkout Modal)
+  const handleComplete = (wo) => {
+    if (wo.status !== "DONE") {
+      return message.warning(
+        "Work order must be marked as DONE before completing."
+      );
+    }
     setSelectedWO(wo);
     setLaborEntries([]);
     setPartsUsed([]);
@@ -152,6 +179,7 @@ export default function RepairTracker() {
     }
   };
 
+  // ❌ Cancel WorkOrder
   const handleCancel = (wo) => {
     setSelectedWO(wo);
     setCancelDialog(true);
@@ -181,12 +209,13 @@ export default function RepairTracker() {
       ASSIGNED: "gold",
       IN_PROGRESS: "purple",
       DONE: "green",
+      COMPLETED: "cyan",
       CANCELLED: "red",
     };
     return <Tag color={colorMap[status] || "default"}>{status}</Tag>;
   };
 
-  // ➕ Helpers
+  // ➕ Helpers for parts/labor
   const addLabor = () =>
     setLaborEntries([...laborEntries, { task: "", hours: 1, rate: 0 }]);
   const addPart = () =>
@@ -229,21 +258,27 @@ export default function RepairTracker() {
           />
         </div>
         <div className="flex gap-2 flex-wrap justify-end">
-          {["all", "OPEN", "ASSIGNED", "IN_PROGRESS", "DONE", "CANCELLED"].map(
-            (s) => (
-              <button
-                key={s}
-                onClick={() => setStatusFilter(s)}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${
-                  statusFilter === s
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-100 hover:bg-gray-200 text-gray-700"
-                }`}
-              >
-                {s === "all" ? "All" : s.replace("_", " ")}
-              </button>
-            )
-          )}
+          {[
+            "all",
+            "OPEN",
+            "ASSIGNED",
+            "IN_PROGRESS",
+            "DONE",
+            "COMPLETED",
+            "CANCELLED",
+          ].map((s) => (
+            <button
+              key={s}
+              onClick={() => setStatusFilter(s)}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${
+                statusFilter === s
+                  ? "bg-blue-600 !text-white"
+                  : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+              }`}
+            >
+              {s === "all" ? "All" : s.replace("_", " ")}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -278,28 +313,52 @@ export default function RepairTracker() {
                       setSelectedWO(wo);
                       setAssignModal(true);
                     }}
-                    className="px-3 py-1 text-xs rounded-md bg-blue-600 text-white hover:bg-blue-700 font-medium"
+                    className="px-3 py-1 text-xs rounded-md bg-blue-600 !text-white hover:bg-blue-700 font-medium"
                   >
                     <UserPlus className="inline w-4 h-4 mr-1" /> Assign
                   </button>
                 )}
 
-                {wo.status === "ASSIGNED" && (
+                {wo.status === "IN_PROGRESS" && (
                   <button
-                    onClick={() => handleMarkDone(wo)}
-                    className="px-3 py-1 text-xs rounded-md bg-emerald-600 text-white hover:bg-emerald-700 font-medium"
+                    onClick={() => handleMarkAsDone(wo)}
+                    disabled={submitting}
+                    className="px-3 py-1 text-xs rounded-md bg-emerald-600 !text-white hover:bg-emerald-700 font-medium"
                   >
-                    <CheckCircle className="inline w-4 h-4 mr-1" /> Complete
+                    <CheckCircle className="inline w-4 h-4 mr-1" />{" "}
+                    {submitting ? "Processing..." : "Mark as Done"}
                   </button>
                 )}
 
-                {wo.status !== "DONE" && wo.status !== "CANCELLED" && (
+                {wo.status === "DONE" && (
                   <button
-                    onClick={() => handleCancel(wo)}
-                    className="px-3 py-1 text-xs rounded-md bg-rose-600 text-white hover:bg-rose-700 font-medium"
+                    onClick={() => handleComplete(wo)}
+                    className="px-3 py-1 text-xs rounded-md bg-teal-600 !text-white hover:bg-teal-700 font-medium"
                   >
-                    <XCircle className="inline w-4 h-4 mr-1" /> Cancel
+                    <CheckCircle className="inline w-4 h-4 mr-1" /> CheckOut
                   </button>
+                )}
+
+                {wo.status !== "CANCELLED" &&
+                  wo.status !== "COMPLETED" &&
+                  wo.status !== "DONE" && (
+                    <button
+                      onClick={() => handleCancel(wo)}
+                      className="px-3 py-1 text-xs rounded-md bg-rose-600 !text-white hover:bg-rose-700 font-medium"
+                    >
+                      <XCircle className="inline w-4 h-4 mr-1" /> Cancel
+                    </button>
+                  )}
+
+                {wo.status === "COMPLETED" && (
+                  <div
+                    onClick={() => window.open(`/checkout/${wo.id}`, "_blank")}
+                    className="text-sm bg-gradient-to-br from-[#0f74b2] via-sky-800 to-blue-900 
+               p-2 rounded-lg hover:scale-105 transition-transform duration-500 
+               text-white italic flex items-center gap-1 hover:underline cursor-pointer"
+                  >
+                    <Printer size={16} /> Print
+                  </div>
                 )}
               </div>
             </div>
