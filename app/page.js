@@ -89,24 +89,23 @@ export default function DashboardPage() {
     if (!token) return;
     try {
       setLoadingWorkOrders(true);
-  
+
       // Fetch all work orders
       const res = await fetch(`/api/workOrders`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      console.log("Recent WorkOrder" , data);
       if (!res.ok)
         throw new Error(data.error || "Failed to fetch recent work orders");
-  
+
       // Filter out completed work orders
       const completedWorkOrders = data.workOrders.filter(
-        (workOrder) => workOrder.status === "DONE"
+        (workOrder) => workOrder.status === "COMPLETED"
       );
-  
+
       // Limit to only the first 5 completed work orders
       const filteredWorkOrders = completedWorkOrders.slice(0, 5);
-  
+
       setWorkOrders(filteredWorkOrders); // Set the filtered work orders
     } catch (err) {
       console.error(err);
@@ -115,7 +114,6 @@ export default function DashboardPage() {
       setLoadingWorkOrders(false);
     }
   };
-  
 
   // === 🚀 Initial Load (runs ONCE when token is ready) ===
   useEffect(() => {
@@ -191,7 +189,6 @@ export default function DashboardPage() {
               data={workOrders.map((wo) => ({
                 id: wo.id,
                 customer: wo.customerName || "Unknown",
-                image: "/user1.png",
                 orderDate:
                   wo.bookingTime?.split(" - ")[0] ||
                   new Date(wo.createdAt).toLocaleDateString(),

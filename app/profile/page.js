@@ -318,7 +318,7 @@ export default function ProfilePage() {
                 <b>Title:</b> {profileData.title}
               </p>
               <p>
-                <b>Hourly Rate:</b> Rs. {profileData.hourlyRate}/hr
+                <b>Hourly Rate:</b> $ {profileData.hourlyRate}/hr
               </p>
               <p>
                 <b>Total Logged Hours:</b> {profileData.totalLoggedHours || 0}{" "}

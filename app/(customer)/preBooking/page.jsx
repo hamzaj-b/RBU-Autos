@@ -47,7 +47,7 @@ export default function CustomerPreBookingPage() {
 
         setServices(
           servData.data?.map((s) => ({
-            label: `${s.name} (${s.durationMinutes}m • Rs ${s.basePrice})`,
+            label: `${s.name} (${s.durationMinutes}m • $ ${s.basePrice})`,
             value: s.id,
             duration: s.durationMinutes,
             price: s.basePrice,
@@ -232,7 +232,7 @@ export default function CustomerPreBookingPage() {
                   </span>
                 </div>
                 <div className="font-semibold text-[#0f74b2]">
-                  Total: Rs {totalPrice}
+                  Total: $ {totalPrice}
                 </div>
               </div>
 

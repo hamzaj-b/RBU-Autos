@@ -241,7 +241,7 @@ export default function WalkInBookingPage() {
                     </span>
                   </div>
                   <span className="font-semibold text-[#0f74b2]">
-                    Total Price(Estimated): Rs {totalPrice}
+                    Total Price(Estimated): $ {totalPrice}
                   </span>
                 </div>
               </div>
