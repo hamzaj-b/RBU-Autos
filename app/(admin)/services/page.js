@@ -192,7 +192,7 @@ export default function ServicesPage() {
       dataIndex: "basePrice",
       render: (p, record) => (
         <span className={record.isActive ? "text-gray-800" : "text-gray-400"}>
-          ₨ {p?.toFixed(2)}
+          ${p?.toFixed(2)}
         </span>
       ),
     },

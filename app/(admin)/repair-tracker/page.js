@@ -248,7 +248,10 @@ export default function RepairTracker() {
       {/* 🔍 Filters */}
       <div className="bg-white p-4 rounded-lg shadow border border-gray-100 flex flex-wrap gap-3 items-center justify-between">
         <div className="relative flex-1 min-w-[250px]">
-          <Search className="absolute left-3 top-2 md:top-3 text-gray-400" size={18} />
+          <Search
+            className="absolute left-3 top-2 md:top-3 text-gray-400"
+            size={18}
+          />
           <input
             type="text"
             placeholder="Search by customer or service..."
@@ -281,36 +284,37 @@ export default function RepairTracker() {
           ))}
         </div>
         <div className="flex flex-col gap-2 flex-wrap justify-end items-end">
-  {/* Dropdown for small screens */}
-  <div className="md:hidden">
-    <select
-      onChange={(e) => setStatusFilter(e.target.value)}
-      value={statusFilter}
-      className="px-2 py-1 text-xs md:text-sm rounded-lg font-medium bg-white border border-gray-300 hover:bg-gray-200 focus:ring-0 focus:border-blue-500 focus:outline-none transition-colors duration-200"
-    >
-      {[
-        "all",
-        "OPEN",
-        "ASSIGNED",
-        "IN_PROGRESS",
-        "DONE",
-        "COMPLETED",
-        "CANCELLED",
-      ].map((s) => (
-        <option
-          key={s}
-          value={s}
-          className={`${
-            statusFilter === s ? "bg-blue-theme text-white" : "text-gray-500"
-          }`}
-        >
-          {s === "all" ? "All" : s.replace("_", " ")}
-        </option>
-      ))}
-    </select>
-  </div>
-</div>
-
+          {/* Dropdown for small screens */}
+          <div className="md:hidden">
+            <select
+              onChange={(e) => setStatusFilter(e.target.value)}
+              value={statusFilter}
+              className="px-2 py-1 text-xs md:text-sm rounded-lg font-medium bg-white border border-gray-300 hover:bg-gray-200 focus:ring-0 focus:border-blue-500 focus:outline-none transition-colors duration-200"
+            >
+              {[
+                "all",
+                "OPEN",
+                "ASSIGNED",
+                "IN_PROGRESS",
+                "DONE",
+                "COMPLETED",
+                "CANCELLED",
+              ].map((s) => (
+                <option
+                  key={s}
+                  value={s}
+                  className={`${
+                    statusFilter === s
+                      ? "bg-blue-theme text-white"
+                      : "text-gray-500"
+                  }`}
+                >
+                  {s === "all" ? "All" : s.replace("_", " ")}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
 
       {/* 📋 Work Orders */}
@@ -415,7 +419,7 @@ export default function RepairTracker() {
           <button
             onClick={() => handleAssign(selectedWO.id)}
             disabled={assigning}
-            className="w-full py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-medium"
+            className="w-full py-2 rounded-md bg-blue-600 hover:bg-blue-700 !text-white font-medium"
           >
             {assigning ? "Assigning..." : "Confirm Assignment"}
           </button>
@@ -746,10 +750,6 @@ export default function RepairTracker() {
         onConfirm={confirmCancel}
         title="Cancel Work Order?"
         description="This will permanently cancel this work order. Are you sure?"
-        style={{
-          backgroundColor: "#f87171", // Tailwind's red-400 for danger bg
-          color: "white", // White text color
-        }}
       />
     </div>
   );

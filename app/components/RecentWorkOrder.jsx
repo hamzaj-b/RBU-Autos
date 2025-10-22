@@ -97,21 +97,12 @@ const RecentWorkOrder = ({
               {item.status === "COMPLETED" && (
                 <div
                   onClick={() => window.open(`/checkout/${item.id}`, "_blank")}
-                  className="text-sm bg-gradient-to-br from-[#0f74b2] via-sky-800 to-blue-900 
+                  className="text-sm  bg-gradient-to-tl from-blue-bold to-blue-theme
                py-1 px-2  rounded-lg hover:scale-105 transition-transform duration-500 
                text-white italic flex items-center gap-1 hover:underline cursor-pointer"
                 >
-                  <Printer size={16} /> View More
-                </div>
-              )}
-              {item.status === "COMPLETED" && (
-                <div
-                  onClick={() => window.open(`/checkout/${item.id}`, "_blank")}
-                  className="text-sm bg-gradient-to-br from-[#0f74b2] via-sky-800 to-blue-900 
-               py-1 px-2  rounded-lg hover:scale-105 transition-transform duration-500 
-               text-white italic flex items-center gap-1 hover:underline cursor-pointer"
-                >
-                  <Printer size={16} /> View More
+                  <Printer size={16} />{" "}
+                  <span className="hidden md:block">View details </span>
                 </div>
               )}
             </div>

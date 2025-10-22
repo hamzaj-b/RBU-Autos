@@ -33,7 +33,7 @@ export default function ConfirmDialog({
       <div className="space-y-4">
         <h2 className={`text-xl font-semibold ${colors[type]}`}>{title}</h2>
         <p className="text-gray-600">{message}</p>
-        <div className="flex justify-end space-x-3 pt-4">
+        <div className="flex justify-end gap-2 pt-4">
           <button
             onClick={onCancel}
             className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-md text-gray-700 font-medium"
@@ -42,7 +42,7 @@ export default function ConfirmDialog({
           </button>
           <button
             onClick={onConfirm}
-            className={`px-4 py-2 rounded-md text-white font-medium ${buttonColors[type]}`}
+            className={`px-4 py-2 rounded-md !text-white font-medium ${buttonColors[type]}`}
           >
             {confirmText}
           </button>
