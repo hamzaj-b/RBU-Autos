@@ -357,7 +357,7 @@ export default function ReportsPage() {
         <Button
           onClick={fetchReport}
           disabled={loading}
-          className="bg-blue-theme hover:bg-blue-bold text-white"
+          className="bg-blue-theme hover:bg-blue-bold !text-white"
         >
           Apply Filters
         </Button>
