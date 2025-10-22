@@ -709,18 +709,17 @@ export default function RepairTracker() {
 
       {/* ❌ Cancel Confirmation */}
       <ConfirmDialog
-  open={cancelDialog}
-  onCancel={() => setCancelDialog(false)}
-  type="danger"
-  onConfirm={confirmCancel}
-  title="Cancel Work Order?"
-  description="This will permanently cancel this work order. Are you sure?"
-  style={{
-    backgroundColor: '#f87171', // Tailwind's red-400 for danger bg
-    color: 'white', // White text color
-  }}
-/>
-
+        open={cancelDialog}
+        onCancel={() => setCancelDialog(false)}
+        type="danger"
+        onConfirm={confirmCancel}
+        title="Cancel Work Order?"
+        description="This will permanently cancel this work order. Are you sure?"
+        style={{
+          backgroundColor: "#f87171", // Tailwind's red-400 for danger bg
+          color: "white", // White text color
+        }}
+      />
     </div>
   );
 }

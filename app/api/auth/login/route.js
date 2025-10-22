@@ -11,7 +11,7 @@ async function POST(req) {
     const body = await req.json();
     const { email, password } = body;
 
-    // 🔍 1. Find user
+    // 🔍 1. Find user + related profiles
     const user = await prisma.user.findUnique({
       where: { email },
       include: {
@@ -43,17 +43,21 @@ async function POST(req) {
       userType: user.userType,
     };
 
+    // 👤 Get fullName from the correct profile
+    let username = "Admin";
     if (user.userType === "EMPLOYEE" && user.employeeProfileId) {
       tokenPayload.employeeId = user.employeeProfileId;
+      username = user.employee?.fullName || username;
     }
     if (user.userType === "CUSTOMER" && user.customerProfileId) {
       tokenPayload.customerId = user.customerProfileId;
+      username = user.customer?.fullName || username;
     }
 
     // 🪙 4. Generate token
     const token = jwt.sign(tokenPayload, SECRET_KEY, { expiresIn: "24h" });
 
-    // ✅ 5. Return success (no employeeSession logging)
+    // ✅ 5. Return token + user info
     return NextResponse.json({
       token,
       user: {
@@ -62,10 +66,11 @@ async function POST(req) {
         userType: user.userType,
         employeeId: user.employeeProfileId || null,
         customerId: user.customerProfileId || null,
+        username, // 👈 added fullName here
       },
     });
   } catch (err) {
-    console.error("Login error:", err);
+    console.error("❌ Login error:", err);
     return NextResponse.json({ error: "Login failed" }, { status: 500 });
   }
 }

@@ -7,9 +7,10 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import LogoutDialog from "./LogoutModal";
+import { Skeleton } from "antd";
 
 export default function Header({ toggleSidebar, className = "" }) {
-  const { user, logout } = useAuth();
+  const { user, username, logout, loading } = useAuth();
   const [open, setOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -20,12 +21,7 @@ export default function Header({ toggleSidebar, className = "" }) {
 
   const handleConfirmLogout = async () => {
     try {
-      // // Clear auth + cookies
-      // Cookies.remove("authToken");
-      // Cookies.remove("authUser");
-      logout();
-
-      // Redirect manually
+      await logout();
       window.location.href = "/auth/login";
     } catch (err) {
       console.error("Logout error:", err);
@@ -42,14 +38,6 @@ export default function Header({ toggleSidebar, className = "" }) {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  // 🧩 Extract avatar initials
-  const initials =
-    user?.fullName
-      ?.split(" ")
-      .map((n) => n[0]?.toUpperCase())
-      .join("")
-      .slice(0, 2) || "U";
 
   return (
     <>
@@ -78,12 +66,25 @@ export default function Header({ toggleSidebar, className = "" }) {
 
         {/* Greeting */}
         <div className="hidden md:flex flex-col ml-4">
-          <h2 className="text-xl font-semibold text-gray-800">
-            Hi, {user?.fullName || "User"}
-          </h2>
-          <p className="text-sm text-gray-500">
-            Let’s see what’s happening in your garage today 🚗
-          </p>
+          {loading ? (
+            <>
+              <Skeleton.Input
+                active
+                size="small"
+                style={{ width: 120, marginBottom: 6 }}
+              />
+              <Skeleton.Input active size="small" style={{ width: 200 }} />
+            </>
+          ) : (
+            <>
+              <h2 className="text-xl font-semibold text-gray-800">
+                Hi, {username || "User"}
+              </h2>
+              <p className="text-sm text-gray-500">
+                Let’s see what’s happening in your garage today 🚗
+              </p>
+            </>
+          )}
         </div>
 
         {/* Right Controls */}
@@ -109,7 +110,25 @@ export default function Header({ toggleSidebar, className = "" }) {
               className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-[#0f74b2] via-sky-800 to-blue-900 !text-white font-semibold shadow-md hover:shadow-lg transition"
               onClick={() => setOpen((prev) => !prev)}
             >
-              {initials}
+              {loading ? (
+                // 🔹 Skeleton Avatar
+                <Skeleton.Avatar
+                  active
+                  size="small"
+                  shape="circle"
+                  style={{ backgroundColor: "#e5e7eb" }}
+                />
+              ) : username ? (
+                // 🔹 Show initials
+                username
+                  .split(" ")
+                  .map((n) => n[0]?.toUpperCase())
+                  .join("")
+                  .slice(0, 2)
+              ) : (
+                // 🔹 Fallback if username missing
+                "?"
+              )}
             </button>
 
             {/* Dropdown Menu */}
@@ -125,7 +144,7 @@ export default function Header({ toggleSidebar, className = "" }) {
                   {/* Header */}
                   <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
                     <p className="text-sm font-semibold text-gray-800 !mb-0">
-                      {user?.fullName || "User"}
+                      {username || "User"}
                     </p>
                     <p className="text-xs text-gray-500 mt-0">
                       {user?.email || "user@example.com"}
@@ -164,6 +183,8 @@ export default function Header({ toggleSidebar, className = "" }) {
           </div>
         </div>
       </header>
+
+      {/* 🚪 Logout Dialog */}
       <LogoutDialog
         isOpen={logoutOpen}
         onClose={() => setLogoutOpen(false)}

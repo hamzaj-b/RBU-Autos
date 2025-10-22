@@ -10,6 +10,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [sessionId, setSessionId] = useState(null);
+  const [username, setUsername] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // 🔄 Load cookies and localStorage when app starts
@@ -19,13 +20,16 @@ export function AuthProvider({ children }) {
     const savedSessionId = localStorage.getItem("sessionId");
 
     if (savedToken && savedUser) {
-      setToken(savedToken);
       const userData = JSON.parse(savedUser);
+      setToken(savedToken);
       setUser(userData);
+      setUsername(userData.username || null);
+
       if (userData.userType === "EMPLOYEE" && savedSessionId) {
         setSessionId(savedSessionId);
       }
     }
+
     setLoading(false);
   }, []);
 
@@ -43,15 +47,19 @@ export function AuthProvider({ children }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Login failed");
 
+      // 🪙 Store auth data in cookies
       Cookies.set("authToken", data.token, { expires: 1 });
       Cookies.set("authUser", JSON.stringify(data.user), { expires: 1 });
 
       setToken(data.token);
       setUser(data.user);
+      setUsername(data.user.username || null);
 
-      toast.success("Logged in successfully!", { id: "login" });
+      toast.success(`Welcome ${data.user.username || "User"}!`, {
+        id: "login",
+      });
 
-      // 🧠 If Employee → Start session
+      // 🧠 Start session if Employee
       if (data.user.userType === "EMPLOYEE") {
         toast.loading("Starting employee session...", { id: "session" });
 
@@ -83,7 +91,7 @@ export function AuthProvider({ children }) {
           toast.error("Error starting session", { id: "session" });
         }
       } else {
-        // Non-employee user → clear any session data
+        // Non-employee → clear session
         setSessionId(null);
         localStorage.removeItem("sessionId");
       }
@@ -102,34 +110,31 @@ export function AuthProvider({ children }) {
 
     try {
       if (token) {
-        const res = await fetch("/api/auth/logout", {
+        await fetch("/api/auth/logout", {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
-
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Logout failed");
       }
     } catch (error) {
       console.error("Logout API error:", error.message);
-      // Still proceed with local cleanup even if API fails
     } finally {
-      // Clear local state regardless of API success
+      // 🧹 Clear everything
       Cookies.remove("authToken");
       Cookies.remove("authUser");
       localStorage.removeItem("sessionId");
+
       setUser(null);
       setToken(null);
+      setUsername(null);
       setSessionId(null);
+
       toast.success("👋 Logged out successfully!", { id: "logout" });
     }
   }
 
   return (
     <AuthContext.Provider
-      value={{ user, token, sessionId, login, logout, loading }}
+      value={{ user, token, username, sessionId, login, logout, loading }}
     >
       {children}
     </AuthContext.Provider>
