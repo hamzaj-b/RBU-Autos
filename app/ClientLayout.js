@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 
 export default function ClientLayout({ children }) {
   const pathname = usePathname();
-  const authRoutes = ["/auth", "/checkout"];
+  const authRoutes = ["/auth", "/checkout", "/unauthorized", "/403"];
   const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route));
   const showSidebarAndHeader = !isAuthRoute;
 

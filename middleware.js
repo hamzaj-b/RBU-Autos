@@ -1,63 +1,104 @@
 import { NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
-// Use the same secret you used for signing JWTs in your API
 const SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || "supersecret"
 );
 
-export async function middleware(req) {
-  const token = req.cookies.get("authToken")?.value;
-
-  // ✅ Define which routes should be protected
-  const protectedPaths = [
-    "/", // root path
-    "/dashboard",
+// ✅ Role-based route access map
+const roleAccess = {
+  ADMIN: [
+    "/",
     "/bookings",
+    "/manage-bookings",
+    "/pending-bookings",
     "/customers",
     "/staff-management",
+    "/services",
+    "/settings",
     "/work-order",
     "/diagnostics",
     "/repair-tracker",
-  ];
+    "/checkout",
+    "/profile",
+  ],
 
+  EMPLOYEE: ["/", "/employee/repair-tracker", "/work-order", "/profile"],
+
+  CUSTOMER: ["/", "/my-bookings", "/preBooking", "/profile"],
+};
+
+export async function middleware(req) {
+  const token = req.cookies.get("authToken")?.value;
   const { pathname } = req.nextUrl;
 
-  // Check if current route needs protection
-  const isProtected = protectedPaths.some(
+  // 🧩 Flatten all allowed paths to detect protected routes
+  const allProtectedPaths = Array.from(
+    new Set(Object.values(roleAccess).flat())
+  );
+
+  const isProtected = allProtectedPaths.some(
     (path) => pathname === path || pathname.startsWith(`${path}/`)
   );
 
-  // If not a protected route → allow access
+  // Allow public routes
   if (!isProtected) return NextResponse.next();
 
-  // If no token → redirect to login
+  // 🚫 No token → redirect to login
   if (!token) {
     return NextResponse.redirect(new URL("/auth/login", req.url));
   }
 
-  // Verify JWT token
   try {
-    await jwtVerify(token, SECRET);
-    return NextResponse.next(); // ✅ Token valid → continue
+    // ✅ Verify token
+    const { payload } = await jwtVerify(token, SECRET);
+    const userType = payload?.userType;
+
+    if (!userType) {
+      console.warn("No userType in token payload");
+      return NextResponse.redirect(new URL("/auth/login", req.url));
+    }
+
+    // 🎯 Determine user’s allowed routes
+    const allowedRoutes = roleAccess[userType] || [];
+
+    const hasAccess = allowedRoutes.some(
+      (path) => pathname === path || pathname.startsWith(`${path}/`)
+    );
+
+    if (!hasAccess) {
+      console.warn(`❌ Access denied for ${userType} → ${pathname}`);
+      return NextResponse.redirect(new URL("/403", req.url));
+    }
+
+    // ✅ All good → allow
+    return NextResponse.next();
   } catch (err) {
     console.error("Invalid or expired token:", err);
     const response = NextResponse.redirect(new URL("/auth/login", req.url));
-    response.cookies.delete("authToken"); // clear bad token
+    response.cookies.delete("authToken");
     return response;
   }
 }
 
-// ✅ Configure which routes middleware applies to
+// ✅ Apply to all secured routes
 export const config = {
   matcher: [
-    "/", // Protect root
-    "/dashboard/:path*",
+    "/",
     "/bookings/:path*",
+    "/manage-bookings/:path*",
+    "/pending-bookings/:path*",
     "/customers/:path*",
     "/staff-management/:path*",
+    "/services/:path*",
+    "/settings/:path*",
     "/work-order/:path*",
     "/diagnostics/:path*",
     "/repair-tracker/:path*",
+    "/employee/:path*",
+    "/my-bookings/:path*",
+    "/preBooking/:path*",
+    "/checkout/:path*",
+    "/profile/:path*",
   ],
 };
