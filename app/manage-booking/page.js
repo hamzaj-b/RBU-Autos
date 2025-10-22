@@ -11,6 +11,7 @@ import {
   Popconfirm,
   Skeleton,
   Card,
+  DatePicker,
 } from "antd";
 import { Eye, Edit2, Trash2, Calendar } from "lucide-react";
 import toast from "react-hot-toast";
@@ -54,7 +55,9 @@ export default function BookingsPage() {
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [editNotes, setEditNotes] = useState("");
   const [editStatus, setEditStatus] = useState("");
-
+  const [editStartAt, setEditStartAt] = useState("");
+  const [editEndAt, setEditEndAt] = useState("");
+  const [editServiceIds, setEditServiceIds] = useState([]);
   const statusTagColor = useMemo(
     () => ({
       PENDING: "default",
@@ -164,36 +167,39 @@ export default function BookingsPage() {
     setEditModal(true);
   };
 
- const saveEdit = async () => {
-  if (!selectedBooking?.id) return; // Ensure the selected booking has an id
-  try {
-    // Prepare the request payload
-    const payload = {
-      notes: editNotes,    // Notes to be updated
-      status: editStatus,  // Status to be updated
-    };
-
-    // Send PATCH request to update the booking
-    const res = await fetch(`/api/bookings/walkin/${selectedBooking.id}`, {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",  // Ensure content type is application/json
-      },
-      body: JSON.stringify(payload),  // Sending the updated notes and status in the body
-    });
-
-    const data = await res.json();  // Parse the response
-
-    if (!res.ok) throw new Error(data.error || "Failed to update booking.");  // Handle any API errors
-
-    toast.success("Booking updated");  // Show success toast
-    setEditModal(false);  // Close the edit modal
-    fetchBookings();  // Fetch updated bookings
-  } catch (err) {
-    toast.error(err.message || "Something went wrong");  // Show error message if request fails
-  }
-};
+  const saveEdit = async () => {
+    if (!selectedBooking?.id) return; // Ensure the selected booking has an id
+    try {
+      // Prepare the request payload
+      const payload = {
+        notes: editNotes,    // Notes to be updated
+        startAt: editStartAt, // Start time to be updated
+        endAt: editEndAt,    // End time to be updated
+        serviceIds: editServiceIds, // Services to be updated
+      };
+  
+      // Send PUT request to update the booking
+      const res = await fetch(`/api/bookings/walkin/${selectedBooking.id}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",  // Ensure content type is application/json
+        },
+        body: JSON.stringify(payload),  // Sending the updated notes, startAt, endAt, and serviceIds in the body
+      });
+  
+      const data = await res.json();  // Parse the response
+  
+      if (!res.ok) throw new Error(data.error || "Failed to update booking.");  // Handle any API errors
+  
+      toast.success("Booking updated");  // Show success toast
+      setEditModal(false);  // Close the edit modal
+      fetchBookings();  // Fetch updated bookings
+    } catch (err) {
+      toast.error(err.message || "Something went wrong");  // Show error message if request fails
+    }
+  };
+  
 
 
   const deleteBooking = async (id) => {
@@ -464,39 +470,57 @@ export default function BookingsPage() {
 
       {/* Edit Modal */}
       <Modal
-        open={editModal}
-        onCancel={() => setEditModal(false)}
-        onOk={saveEdit}
-        okText="Save Changes"
-        title="Edit Booking"
-        confirmLoading={loading}
-      >
-        <div className="space-y-3">
-          <label className="block text-sm font-medium text-gray-700">
-            Notes
-          </label>
-          <Input.TextArea
-            rows={3}
-            value={editNotes}
-            onChange={(e) => setEditNotes(e.target.value)}
-            placeholder="Update notes..."
-          />
-          <label className="block text-sm font-medium text-gray-700">
-            Status
-          </label>
-          <Select
-            value={editStatus}
-            onChange={setEditStatus}
-            className="w-full"
-            options={[
-              { value: "PENDING", label: "Pending" },
-              { value: "ACCEPTED", label: "Accepted" },
-              { value: "DONE", label: "Done" },
-              { value: "CANCELLED", label: "Cancelled" },
-            ]}
-          />
-        </div>
-      </Modal>
+  open={editModal}
+  onCancel={() => setEditModal(false)}
+  onOk={saveEdit}
+  okText="Save Changes"
+  title="Edit Booking"
+  confirmLoading={loading}
+>
+  <div className="space-y-3">
+    {/* Editable Notes */}
+    <label className="block text-sm font-medium text-gray-700">Notes</label>
+    <Input.TextArea
+      rows={3}
+      value={editNotes}
+      onChange={(e) => setEditNotes(e.target.value)}
+      placeholder="Update notes..."
+    />
+
+    {/* Editable Start and End Time */}
+    <div className="flex space-x-3">
+      <div className="w-1/2">
+        <label className="block text-sm font-medium text-gray-700">Start Time</label>
+        <DatePicker
+          showTime
+          value={editStartAt}
+          onChange={(date) => setEditStartAt(date)}
+          className="w-full"
+        />
+      </div>
+      <div className="w-1/2">
+        <label className="block text-sm font-medium text-gray-700">End Time</label>
+        <DatePicker
+          showTime
+          value={editEndAt}
+          onChange={(date) => setEditEndAt(date)}
+          className="w-full"
+        />
+      </div>
+    </div>
+
+    {/* Editable Services
+    <label className="block text-sm font-medium text-gray-700">Services</label>
+    <Select
+      mode="multiple"
+      value={editServiceIds}
+      onChange={setEditServiceIds}
+      className="w-full"
+      options={allServicesOptions} // Assuming you have an array of service options
+    /> */}
+  </div>
+</Modal>
+
     </div>
   );
 }

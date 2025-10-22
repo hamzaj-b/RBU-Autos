@@ -234,10 +234,10 @@ export default function RepairTracker() {
               <button
                 key={s}
                 onClick={() => setStatusFilter(s)}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${
+                className={`px-3 py-1 rounded-md text-sm font-medium transition ${
                   statusFilter === s
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                    ? "bg-blue-bold !text-white"
+                    : "bg-gray-100 hover:bg-gray-200 !text-gray-600"
                 }`}
               >
                 {s === "all" ? "All" : s.replace("_", " ")}
@@ -296,7 +296,7 @@ export default function RepairTracker() {
                 {wo.status !== "DONE" && wo.status !== "CANCELLED" && (
                   <button
                     onClick={() => handleCancel(wo)}
-                    className="px-3 py-1 text-xs rounded-md bg-rose-600 text-white hover:bg-rose-700 font-medium"
+                    className="px-3 py-1 text-xs rounded-md border border-gray-400 text-black font-medium"
                   >
                     <XCircle className="inline w-4 h-4 mr-1" /> Cancel
                   </button>
@@ -650,13 +650,18 @@ export default function RepairTracker() {
 
       {/* ❌ Cancel Confirmation */}
       <ConfirmDialog
-        open={cancelDialog}
-        onCancel={() => setCancelDialog(false)}
-        type="danger"
-        onConfirm={confirmCancel}
-        title="Cancel Work Order?"
-        description="This will permanently cancel this work order. Are you sure?"
-      />
+  open={cancelDialog}
+  onCancel={() => setCancelDialog(false)}
+  type="danger"
+  onConfirm={confirmCancel}
+  title="Cancel Work Order?"
+  description="This will permanently cancel this work order. Are you sure?"
+  style={{
+    backgroundColor: '#f87171', // Tailwind's red-400 for danger bg
+    color: 'white', // White text color
+  }}
+/>
+
     </div>
   );
 }

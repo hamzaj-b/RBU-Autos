@@ -50,7 +50,8 @@ export default function Sidebar() {
 
     CUSTOMER: [
       { href: "/", label: "Dashboard", icon: <LayoutDashboard /> },
-      { href: "/bookings", label: "Create Booking", icon: <CalendarDays /> },
+      { href: "/preBooking", label: "Request Booking", icon: <CalendarDays /> },
+      { href: "/my-bookings", label: "My Bookings ", icon: <CalendarDays /> },
       { href: "/diagnostics", label: "Diagnostics", icon: <Lightbulb /> },
     ],
 

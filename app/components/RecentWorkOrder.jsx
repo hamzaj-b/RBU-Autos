@@ -52,8 +52,8 @@ const RecentWorkOrder = ({
                     <div className="md:hidden">
                       <p
                         className={`h-6 px-2 rounded-full inline-flex items-center justify-end text-sm font-medium
-                      ${item.status === "Completed"
-                            ? "bg-green-100 text-green-600"
+                      ${item.status === "DONE"
+                            ? "bg-blue-theme text-white"
                             : item.status === "Pending"
                               ? "bg-yellow-100 text-yellow-700"
                               : "bg-gray-100 text-gray-600"
@@ -68,9 +68,9 @@ const RecentWorkOrder = ({
                 <div className="flex items-center gap-4 justify-end">
                   {/* Status pill */}
                   <span
-                    className={`hidden h-6 px-4 rounded-full md:inline-flex items-center justify-center  font-medium
-                      ${item.status === "Completed"
-                        ? "bg-green-100 text-green-600"
+                    className={`hidden h-6 py-1 px-4 rounded-full md:inline-flex items-center justify-center  font-medium
+                     ${item.status === "DONE"
+                            ? "bg-blue-bold text-white"
                         : item.status === "Pending"
                           ? "bg-yellow-100 text-yellow-700"
                           : "bg-gray-100 text-gray-600"
@@ -80,7 +80,7 @@ const RecentWorkOrder = ({
                   </span>
 
                   {/* Assign select */}
-                  <select
+                  {/* <select
                     aria-label={`Assign employee for order #${item.id}`}
                     className="h-6 sm:h-9 text-sm rounded-lg border border-gray-300 text-gray-700 focus:ring-2 focus:ring-gray-200 focus:outline-none px-2 bg-white"
                     defaultValue=""
@@ -89,9 +89,9 @@ const RecentWorkOrder = ({
                       Select Employee
                     </option>
                     {/* TODO: map your employees */}
-                    <option value="emp-1">John Doe</option>
+                    {/* <option value="emp-1">John Doe</option>
                     <option value="emp-2">Jane Smith</option>
-                  </select>
+                  </select> */} 
                 </div>
               </div>
             </div>

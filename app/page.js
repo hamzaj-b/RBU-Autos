@@ -89,13 +89,25 @@ export default function DashboardPage() {
     if (!token) return;
     try {
       setLoadingWorkOrders(true);
-      const res = await fetch(`/api/workOrders/open?limit=5`, {
+  
+      // Fetch all work orders
+      const res = await fetch(`/api/workOrders`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
+      console.log("Recent WorkOrder" , data);
       if (!res.ok)
         throw new Error(data.error || "Failed to fetch recent work orders");
-      setWorkOrders(data.workOrders || []);
+  
+      // Filter out completed work orders
+      const completedWorkOrders = data.workOrders.filter(
+        (workOrder) => workOrder.status === "DONE"
+      );
+  
+      // Limit to only the first 5 completed work orders
+      const filteredWorkOrders = completedWorkOrders.slice(0, 5);
+  
+      setWorkOrders(filteredWorkOrders); // Set the filtered work orders
     } catch (err) {
       console.error(err);
       message.error("Failed to load recent work orders");
@@ -103,6 +115,7 @@ export default function DashboardPage() {
       setLoadingWorkOrders(false);
     }
   };
+  
 
   // === 🚀 Initial Load (runs ONCE when token is ready) ===
   useEffect(() => {
