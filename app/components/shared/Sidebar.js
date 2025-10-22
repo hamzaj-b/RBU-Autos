@@ -28,7 +28,6 @@ export default function Sidebar({ toggleSidebar }) { // <-- Accept toggleSidebar
   }
 
   const userType = user?.userType; // e.g. "ADMIN", "CUSTOMER", "EMPLOYEE"
-  console.log("Sidebar userType:", userType);
 
   // Define routes for each role
   const linksByRole = {
@@ -38,14 +37,22 @@ export default function Sidebar({ toggleSidebar }) { // <-- Accept toggleSidebar
       { href: "/services", label: "Services", icon: <Settings2 /> },
       { href: "/customers", label: "Customers", icon: <Users /> },
       { href: "/bookings", label: "Walkin Booking", icon: <CalendarDays /> },
-      { href: "/pending-bookings", label: "Pre Booking", icon: <CalendarDays /> },
+      {
+        href: "/pending-bookings",
+        label: "Pre Booking",
+        icon: <CalendarDays />,
+      },
       { href: "/diagnostics", label: "Diagnostics", icon: <Lightbulb /> },
       {
         href: "/staff-management",
         label: "Staff Management",
         icon: <SquareUser />,
       },
-      { href: "/manage-booking", label: "Manage Booking", icon: <SquareUser /> },
+      {
+        href: "/manage-booking",
+        label: "Manage Booking",
+        icon: <SquareUser />,
+      },
       { href: "/marketing", label: "Marketing", icon: <SquareUser /> },
       { href: "/settings", label: "Settings", icon: <Settings /> },
     ],
@@ -59,7 +66,12 @@ export default function Sidebar({ toggleSidebar }) { // <-- Accept toggleSidebar
 
     EMPLOYEE: [
       { href: "/", label: "Dashboard", icon: <LayoutDashboard /> },
-      { href: "/employee/repair-tracker", label: "Repair tracker", icon: <Wrench /> },
+      // { href: "/work-order", label: "Create Work Order", icon: <Users /> },
+      {
+        href: "/employee/repair-tracker",
+        label: "Repair tracker",
+        icon: <Wrench />,
+      },
       { href: "/work-order", label: "Work Orders", icon: <Users /> },
     ],
   };
