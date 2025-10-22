@@ -1,4 +1,5 @@
 
+import { Eye } from "lucide-react";
 import React from "react";
 
 const RecentWorkOrder = ({
@@ -51,7 +52,7 @@ const RecentWorkOrder = ({
                     </div>
                     <div className="md:hidden">
                       <p
-                        className={`h-6 px-2 rounded-full inline-flex items-center justify-end text-sm font-medium
+                        className={`text-xs  h-4 px-2 rounded-full inline-flex items-center justify-end  font-medium
                       ${item.status === "DONE"
                             ? "bg-blue-theme text-white"
                             : item.status === "Pending"
@@ -78,20 +79,7 @@ const RecentWorkOrder = ({
                   >
                     {item.status}
                   </span>
-
-                  {/* Assign select */}
-                  {/* <select
-                    aria-label={`Assign employee for order #${item.id}`}
-                    className="h-6 sm:h-9 text-sm rounded-lg border border-gray-300 text-gray-700 focus:ring-2 focus:ring-gray-200 focus:outline-none px-2 bg-white"
-                    defaultValue=""
-                  >
-                    <option value="" disabled>
-                      Select Employee
-                    </option>
-                    {/* TODO: map your employees */}
-                    {/* <option value="emp-1">John Doe</option>
-                    <option value="emp-2">Jane Smith</option>
-                  </select> */} 
+ 
                 </div>
               </div>
             </div>
@@ -106,9 +94,9 @@ const RecentWorkOrder = ({
               </div>
               <button
                 type="button"
-                className="text-xs sm:text-sm text-gray-600 hover:text-gray-800 bg-gray-100 hover:bg-gray-200 rounded-md px-2 py-1 transition-colors"
+                className="text-xs flex items-center gap-2 text-gray-600 hover:text-gray-800 bg-gray-100 hover:bg-gray-200 rounded-md px-2 py-1 transition-colors"
               >
-                View details
+               <Eye size={16} /> <span className="hidden md:block">View details </span>
               </button>
             </div>
           </article>

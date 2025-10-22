@@ -248,16 +248,16 @@ export default function RepairTracker() {
       {/* 🔍 Filters */}
       <div className="bg-white p-4 rounded-lg shadow border border-gray-100 flex flex-wrap gap-3 items-center justify-between">
         <div className="relative flex-1 min-w-[250px]">
-          <Search className="absolute left-3 top-3 text-gray-400" size={18} />
+          <Search className="absolute left-3 top-2 md:top-3 text-gray-400" size={18} />
           <input
             type="text"
             placeholder="Search by customer or service..."
-            className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-400"
+            className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg  focus:outline-none"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div className="flex gap-2 flex-wrap justify-end">
+        <div className="hidden md:flex gap-2 flex-wrap justify-end">
           {[
             "all",
             "OPEN",
@@ -270,7 +270,7 @@ export default function RepairTracker() {
             <button
               key={s}
               onClick={() => setStatusFilter(s)}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${
+              className={`px-3 py-1 rounded-md text-sm font-medium transition ${
                 statusFilter === s
                   ? "bg-blue-600 !text-white"
                   : "bg-gray-100 hover:bg-gray-200 text-gray-700"
@@ -280,6 +280,37 @@ export default function RepairTracker() {
             </button>
           ))}
         </div>
+        <div className="flex flex-col gap-2 flex-wrap justify-end items-end">
+  {/* Dropdown for small screens */}
+  <div className="md:hidden">
+    <select
+      onChange={(e) => setStatusFilter(e.target.value)}
+      value={statusFilter}
+      className="px-2 py-1 text-xs md:text-sm rounded-lg font-medium bg-white border border-gray-300 hover:bg-gray-200 focus:ring-0 focus:border-blue-500 focus:outline-none transition-colors duration-200"
+    >
+      {[
+        "all",
+        "OPEN",
+        "ASSIGNED",
+        "IN_PROGRESS",
+        "DONE",
+        "COMPLETED",
+        "CANCELLED",
+      ].map((s) => (
+        <option
+          key={s}
+          value={s}
+          className={`${
+            statusFilter === s ? "bg-blue-theme text-white" : "text-gray-500"
+          }`}
+        >
+          {s === "all" ? "All" : s.replace("_", " ")}
+        </option>
+      ))}
+    </select>
+  </div>
+</div>
+
       </div>
 
       {/* 📋 Work Orders */}

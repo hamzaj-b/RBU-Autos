@@ -8,6 +8,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import LogoutDialog from "./LogoutModal";
 import { Skeleton } from "antd";
+import { HiMenuAlt3 } from "react-icons/hi";
 
 export default function Header({ toggleSidebar, className = "" }) {
   const { user, username, logout, loading } = useAuth();
@@ -45,24 +46,10 @@ export default function Header({ toggleSidebar, className = "" }) {
         className={`w-full bg-white flex items-center justify-between px-4 md:px-6 py-3 shadow-sm border-b border-gray-100 ${className}`}
       >
         {/* Sidebar Toggle */}
-        <button
-          className="md:hidden text-gray-700 hover:text-blue-600 transition"
+        <HiMenuAlt3
+          className="md:hidden text-blue-theme text-2xl transition"
           onClick={toggleSidebar}
-        >
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M4 6h16M4 12h16m-7 6h7"
-            />
-          </svg>
-        </button>
+        />
 
         {/* Greeting */}
         <div className="hidden md:flex flex-col ml-4">
@@ -163,7 +150,7 @@ export default function Header({ toggleSidebar, className = "" }) {
 
                     <Link
                       href="/settings"
-                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
+                      className="flex items-center px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 transition font-medium"
                     >
                       <Settings className="w-4 h-4 mr-2 text-blue-500" />
                       Settings

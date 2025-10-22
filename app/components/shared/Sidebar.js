@@ -10,12 +10,13 @@ import {
   SquareUser,
   Users,
   Wrench,
+  ChevronLeft, // <-- Add the arrow icon
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
 
-export default function Sidebar() {
+export default function Sidebar({ toggleSidebar }) { // <-- Accept toggleSidebar as a prop
   const pathname = usePathname();
   const { user, loading } = useAuth();
 
@@ -58,7 +59,6 @@ export default function Sidebar() {
 
     EMPLOYEE: [
       { href: "/", label: "Dashboard", icon: <LayoutDashboard /> },
-      // { href: "/work-order", label: "Create Work Order", icon: <Users /> },
       { href: "/employee/repair-tracker", label: "Repair tracker", icon: <Wrench /> },
       { href: "/work-order", label: "Work Orders", icon: <Users /> },
     ],
@@ -79,6 +79,11 @@ export default function Sidebar() {
         </h2>
       </div>
 
+      {/* Arrow Icon */}
+      <div className="absolute md:hidden top-4 right-4 cursor-pointer" onClick={toggleSidebar}>
+        <ChevronLeft className="text-blue-theme" size={30} />
+      </div>
+
       {/* Navigation */}
       <nav className="w-full">
         {links.map((link, index) => {
@@ -95,9 +100,7 @@ export default function Sidebar() {
               }`}
             >
               <span
-                className={`mr-2 ${
-                  isActive ? "text-white" : "text-blue-theme"
-                }`}
+                className={`mr-2 ${isActive ? "text-white" : "text-blue-theme"}`}
               >
                 {link.icon}
               </span>

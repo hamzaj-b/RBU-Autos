@@ -63,9 +63,9 @@ export default function WorkCompletedCard({
           </div>
         </div>
 
-        <button className="grid h-7 sm:h-8 w-7 sm:w-8 place-items-center rounded-full text-[#9AA3AF] hover:bg-gray-50">
+        {/* <button className="grid h-7 sm:h-8 w-7 sm:w-8 place-items-center rounded-full text-[#9AA3AF] hover:bg-gray-50">
           <MoreVertical className="h-4 sm:h-5 w-4 sm:w-5" />
-        </button>
+        </button> */}
       </div>
 
       {/* === Value + Mini Chart === */}

@@ -37,7 +37,7 @@ export default function ClientLayout({ children }) {
             isSidebarOpen ? "translate-x-0" : "-translate-x-full"
           } md:translate-x-0 w-64 h-screen bg-white flex flex-col items-center py-6 transition-transform duration-300 z-40`}
         >
-          <Sidebar />
+          <Sidebar toggleSidebar={toggleSidebar}/>
         </div>
       )}
 
