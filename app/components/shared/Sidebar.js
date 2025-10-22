@@ -36,7 +36,8 @@ export default function Sidebar() {
       { href: "/repair-tracker", label: "Repair tracker", icon: <Wrench /> },
       { href: "/services", label: "Services", icon: <Settings2 /> },
       { href: "/customers", label: "Customers", icon: <Users /> },
-      { href: "/bookings", label: "Create Booking", icon: <CalendarDays /> },
+      { href: "/bookings", label: "Walkin Booking", icon: <CalendarDays /> },
+      { href: "/pending-bookings", label: "Pre Booking", icon: <CalendarDays /> },
       { href: "/diagnostics", label: "Diagnostics", icon: <Lightbulb /> },
       {
         href: "/staff-management",

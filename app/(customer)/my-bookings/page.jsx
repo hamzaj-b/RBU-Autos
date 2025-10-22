@@ -136,7 +136,7 @@ export default function MyBookingsPage() {
             }}
             size="small"
           />
-          {(record.status === "PENDING" || record.status === "ACCEPTED") && (
+          {(record.status === "PENDING" ) && (
             <Button
               danger
               icon={<XCircle size={16} />}
