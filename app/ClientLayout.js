@@ -13,6 +13,7 @@ export default function ClientLayout({ children }) {
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const sidebarRef = useRef(null);
+  const mainContentRef = useRef(null);
 
   // Close sidebar on outside click (mobile)
   useEffect(() => {
@@ -26,6 +27,19 @@ export default function ClientLayout({ children }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Stop scrolling on main content when sidebar is open
+  useEffect(() => {
+    if (isSidebarOpen) {
+      mainContentRef.current.style.overflow = "hidden"; // Disable scroll for children
+    } else {
+      mainContentRef.current.style.overflow = "auto"; // Enable scroll for children
+    }
+
+    return () => {
+      mainContentRef.current.style.overflow = "auto"; // Reset to default when component unmounts
+    };
+  }, [isSidebarOpen]);
+
   const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
 
   return (
@@ -37,19 +51,17 @@ export default function ClientLayout({ children }) {
             isSidebarOpen ? "translate-x-0" : "-translate-x-full"
           } md:translate-x-0 w-64 h-screen bg-white flex flex-col items-center py-6 transition-transform duration-300 z-40`}
         >
-          <Sidebar toggleSidebar={toggleSidebar}/>
+          <Sidebar toggleSidebar={toggleSidebar} />
         </div>
       )}
 
       <div className="flex-1 flex flex-col">
         {showSidebarAndHeader && (
-          <Header
-            toggleSidebar={toggleSidebar}
-            className={`md:pl-[270px] md:w-full`}
-          />
+          <Header toggleSidebar={toggleSidebar} className={`md:pl-[270px] md:w-full`} />
         )}
 
         <main
+          ref={mainContentRef} // Attach ref to the main content
           className={`flex-1 overflow-y-auto ${
             showSidebarAndHeader ? "md:pl-[260px]" : ""
           }`}

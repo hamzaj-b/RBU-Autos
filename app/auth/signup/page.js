@@ -7,9 +7,9 @@ const SignInPage = () => {
       <div className="flex flex-col items-center justify-center px-6 py-8 mx-auto md:h-screen lg:py-0">
         <div className="flex flex-col items-center mb-10">
           <div className="flex items-center justify-center">
-            <img src="/logoDark.png" width={100} alt="Logo" />
+          <img src="/rbu-logo.png" width={100} alt="Logo" />
           </div>
-          <h2 className="text-xl font-semibold text-black mt-2">LoremIpsum</h2>
+          <h2 className="text-2xl font-semibold text-black mt-2">RBU Autos CRM</h2>
         </div>
         <div className="w-full bg-white rounded-lg shadow md:mt-0 sm:max-w-md xl:p-0">
           <div className="p-6 space-y-4 md:space-y-6 sm:p-8">
@@ -79,7 +79,7 @@ const SignInPage = () => {
               </div>
               <button
                 type="submit"
-                className="w-full text-black bg-blue-theme hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-bold rounded-lg text-sm px-5 py-2.5 text-center"
+                className="w-full !text-white bg-blue-theme hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-bold rounded-lg text-sm px-5 py-2.5 text-center"
               >
                 Sign up with email
               </button>

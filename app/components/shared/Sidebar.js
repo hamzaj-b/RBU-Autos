@@ -16,7 +16,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
 
-export default function Sidebar({ toggleSidebar }) { // <-- Accept toggleSidebar as a prop
+export default function Sidebar({ toggleSidebar }) {
   const pathname = usePathname();
   const { user, loading } = useAuth();
 
@@ -66,7 +66,6 @@ export default function Sidebar({ toggleSidebar }) { // <-- Accept toggleSidebar
 
     EMPLOYEE: [
       { href: "/", label: "Dashboard", icon: <LayoutDashboard /> },
-      // { href: "/work-order", label: "Create Work Order", icon: <Users /> },
       {
         href: "/employee/repair-tracker",
         label: "Repair tracker",
@@ -82,11 +81,11 @@ export default function Sidebar({ toggleSidebar }) { // <-- Accept toggleSidebar
   return (
     <div className="flex flex-col items-center w-full h-full">
       {/* Logo & Branding */}
-      <div className="flex flex-col items-center mb-10">
+      <div className="flex flex-col items-center mb-2 md:mb-10">
         <div className="flex items-center justify-center">
           <img src="/rbu-logo.png" width={120} alt="Logo" />
         </div>
-        <h2 className="text-xl font-extrabold text-blue-theme mt-2">
+        <h2 className="text-xl font-extrabold text-blue-theme md:mt-2">
           RBU <span className="text-black">AUTO INC</span>
         </h2>
       </div>
@@ -97,7 +96,7 @@ export default function Sidebar({ toggleSidebar }) { // <-- Accept toggleSidebar
       </div>
 
       {/* Navigation */}
-      <nav className="w-full">
+      <nav className="w-full flex-1 overflow-y-auto max-h-screen mb-16">
         {links.map((link, index) => {
           const isActive = pathname === link.href;
 

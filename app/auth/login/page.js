@@ -31,13 +31,13 @@ export default function SignInPage() {
     <section className="bg-blue-theme min-h-screen text-gray-800 flex items-center justify-center">
       <div className="w-full max-w-md bg-white rounded-lg shadow p-6">
         <div className="text-center mb-4">
-          <img src="/logoDark.png" alt="Logo" width={100} className="mx-auto" />
-          <h2 className="text-xl font-semibold text-gray-800 mt-2">
+        <img src="/rbu-logo.png" alt="Logo" width={100} className="mx-auto" />
+          <h2 className="text-2xl font-extrabold text-gray-800 mt-2">
             RBU Autos CRM
           </h2>
         </div>
 
-        <h1 className="text-2xl font-bold  text-center mb-6">
+        <h1 className="text-xl font-bold  text-center mb-6">
           Login to your account
         </h1>
 
@@ -75,7 +75,7 @@ export default function SignInPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-theme text-black font-bold py-2.5 rounded-lg hover:bg-blue-600"
+            className="w-full bg-blue-theme !text-white font-bold py-2.5 rounded-lg hover:bg-blue-bold"
           >
             {loading ? "Signing in..." : "Sign in"}
           </button>
