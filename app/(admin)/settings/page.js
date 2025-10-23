@@ -207,42 +207,6 @@ export default function BusinessSettingsPage() {
             </div>
           </section>
 
-          {/* ─── Slot Config ──────────────────────────── */}
-          <section>
-            <h2 className="text-lg font-semibold text-gray-800 mb-3">
-              Slot Configuration
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm text-gray-600 font-medium">
-                  Slot Duration (minutes)
-                </label>
-                <InputNumber
-                  min={5}
-                  max={120}
-                  value={settings.slotMinutes}
-                  onChange={(val) =>
-                    setSettings((p) => ({ ...p, slotMinutes: val }))
-                  }
-                  className="w-full mt-1"
-                />
-              </div>
-              <div>
-                <label className="text-sm text-gray-600 font-medium">
-                  Buffer Time (minutes)
-                </label>
-                <InputNumber
-                  min={0}
-                  max={60}
-                  value={settings.bufferMinutes}
-                  onChange={(val) =>
-                    setSettings((p) => ({ ...p, bufferMinutes: val }))
-                  }
-                  className="w-full mt-1"
-                />
-              </div>
-            </div>
-          </section>
 
           {/* ─── Booking Control ──────────────────────── */}
           <section className="bg-gray-50 border border-gray-200 rounded-xl p-4 flex items-center justify-between">
