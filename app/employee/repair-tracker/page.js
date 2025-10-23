@@ -85,12 +85,12 @@ export default function EmployeeRepairTracker() {
       });
       const data = await res.json();
       if (res.ok) {
-        toast.success("🚀 Work started!"); 
+        toast.success("🚀 Work started!");
         fetchWorkOrders();
-      } else toast.error(data.error || "Failed to start work order"); 
+      } else toast.error(data.error || "Failed to start work order");
     } catch (err) {
       console.error("Start error:", err);
-      toast.error("Network error."); 
+      toast.error("Network error.");
     } finally {
       setLoadingIds((prev) => {
         const s = new Set(prev);
@@ -116,10 +116,10 @@ export default function EmployeeRepairTracker() {
       if (res.ok) {
         toast.success("✅ Work order marked as done!");
         fetchWorkOrders();
-      } else toast.error(data.error || "Failed to mark as done"); 
+      } else toast.error(data.error || "Failed to mark as done");
     } catch (err) {
       console.error("Done error:", err);
-      toast.error("Network error."); 
+      toast.error("Network error.");
     } finally {
       setLoadingIds((prev) => {
         const s = new Set(prev);
@@ -128,8 +128,6 @@ export default function EmployeeRepairTracker() {
       });
     }
   };
-
-
 
   // 🖨️ Print Invoice (for completed workOrders)
   const handlePrint = (item) => {
@@ -203,10 +201,10 @@ export default function EmployeeRepairTracker() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           {/* Search */}
           <div className="relative flex-1 ">
-          <Search
-            className="absolute left-3 top-2 md:top-3 text-gray-400"
-            size={18}
-          />
+            <Search
+              className="absolute left-3 top-2 md:top-3 text-gray-400"
+              size={18}
+            />
             <input
               type="text"
               placeholder="Search by customer or service..."
@@ -242,37 +240,37 @@ export default function EmployeeRepairTracker() {
             ))}
           </div>
           <div className=" md:hidden w-full flex flex-col gap-2 flex-wrap justify-end ">
-          {/* Dropdown for small screens */}
-          <div className="md:hidden">
-            <select
-              onChange={(e) => setStatusFilter(e.target.value)}
-              value={statusFilter}
-              className="px-2 py-1 text-xs md:text-sm rounded-lg font-medium bg-white border border-gray-300 hover:bg-gray-200 focus:ring-0 focus:border-blue-500 focus:outline-none transition-colors duration-200"
-            >
-              {[
-                "all",
-                "OPEN",
-                "ASSIGNED",
-                "IN_PROGRESS",
-                "DONE",
-                "COMPLETED",
-                "CANCELLED",
-              ].map((s) => (
-                <option
-                  key={s}
-                  value={s}
-                  className={`${
-                    statusFilter === s
-                      ? "bg-blue-bold text-white"
-                      : "text-gray-500"
-                  }`}
-                >
-                  {s === "all" ? "All" : s.replace("_", " ")}
-                </option>
-              ))}
-            </select>
+            {/* Dropdown for small screens */}
+            <div className="md:hidden">
+              <select
+                onChange={(e) => setStatusFilter(e.target.value)}
+                value={statusFilter}
+                className="px-2 py-1 text-xs md:text-sm rounded-lg font-medium bg-white border border-gray-300 hover:bg-gray-200 focus:ring-0 focus:border-blue-500 focus:outline-none transition-colors duration-200"
+              >
+                {[
+                  "all",
+                  "OPEN",
+                  "ASSIGNED",
+                  "IN_PROGRESS",
+                  "DONE",
+                  "COMPLETED",
+                  "CANCELLED",
+                ].map((s) => (
+                  <option
+                    key={s}
+                    value={s}
+                    className={`${
+                      statusFilter === s
+                        ? "bg-blue-bold text-white"
+                        : "text-gray-500"
+                    }`}
+                  >
+                    {s === "all" ? "All" : s.replace("_", " ")}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
-        </div>
         </div>
       </div>
 
@@ -311,10 +309,10 @@ export default function EmployeeRepairTracker() {
                       setSelectedWO(wo);
                       setViewModal(true);
                     }}
-                    className="px-3 py-1 text-xs rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium"
+                    className="px-3 py-1 text-xs rounded-md flex items-center bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium"
                   >
                     <Eye className="inline w-4 h-4 mr-1" />
-                   <span className="hidden md:block">View</span>
+                    <span className="hidden md:block">View</span>
                   </button>
 
                   {/* Start */}

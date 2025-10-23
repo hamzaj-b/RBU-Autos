@@ -44,16 +44,16 @@ export default function Sidebar({ toggleSidebar }) {
         label: "Pre Booking",
         icon: <LucideBookmarkPlus />,
       },
+      {
+        href: "/manage-booking",
+        label: "Manage Booking",
+        icon: <LucidePencil />,
+      },
       { href: "/diagnostics", label: "Diagnostics", icon: <Lightbulb /> },
       {
         href: "/staff-management",
         label: "Staff Management",
         icon: <SquareUser />,
-      },
-      {
-        href: "/manage-booking",
-        label: "Manage Booking",
-        icon: <LucidePencil />,
       },
       // { href: "/marketing", label: "Marketing", icon: <SquareUser /> },
       { href: "/settings", label: "Settings", icon: <Settings /> },

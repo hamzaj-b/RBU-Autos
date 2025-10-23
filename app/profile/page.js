@@ -319,10 +319,10 @@ export default function ProfilePage() {
               <p>
                 <b>Hourly Rate:</b> $ {profileData.hourlyRate}/hr
               </p>
-              <p>
+              {/* <p>
                 <b>Total Logged Hours:</b> {profileData.totalLoggedHours || 0}{" "}
                 hrs
-              </p>
+              </p> */}
 
               <div className="mt-4">
                 <h4 className="font-semibold mb-2">Recent Sessions:</h4>

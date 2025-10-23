@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Modal, message } from "antd";
 import { useAuth } from "../context/AuthContext"; // ✅ assuming your AuthContext is used app-wide
 import toast, { Toaster } from "react-hot-toast";
+import { Eye } from "lucide-react";
 
 const EmployeeWorkOrder = ({
   data,
@@ -28,19 +29,25 @@ const EmployeeWorkOrder = ({
     const timeOptions = { hour: "2-digit", minute: "2-digit" };
 
     if (sameDay) {
-      return `${start.toLocaleDateString(undefined, dateOptions)} • ${start.toLocaleTimeString(
+      return `${start.toLocaleDateString(
+        undefined,
+        dateOptions
+      )} • ${start.toLocaleTimeString(
         undefined,
         timeOptions
       )} - ${end.toLocaleTimeString(undefined, timeOptions)}`;
     }
 
-    return `${start.toLocaleDateString(undefined, dateOptions)}, ${start.toLocaleTimeString(
+    return `${start.toLocaleDateString(
+      undefined,
+      dateOptions
+    )}, ${start.toLocaleTimeString(
       undefined,
       timeOptions
-    )} → ${end.toLocaleDateString(undefined, dateOptions)}, ${end.toLocaleTimeString(
+    )} → ${end.toLocaleDateString(
       undefined,
-      timeOptions
-    )}`;
+      dateOptions
+    )}, ${end.toLocaleTimeString(undefined, timeOptions)}`;
   };
 
   // 🧩 View Details Handler
@@ -72,7 +79,7 @@ const EmployeeWorkOrder = ({
 
       if (res.ok) {
         toast.success("✅ Work order accepted successfully!");
-await fetchWorkOrders ();
+        await fetchWorkOrders();
         // update local state (hide Accept → show Start)
         // setWorkOrders((prev) =>
         //   prev.map((wo) =>
@@ -82,11 +89,16 @@ await fetchWorkOrders ();
         //   )
         // );
       } else {
-        toast.error(data.error || "Failed to accept work order as you may have already accepted one already.");
+        toast.error(
+          data.error ||
+            "Failed to accept work order as you may have already accepted one already."
+        );
       }
     } catch (err) {
       console.error("💥 Accept WorkOrder Error:", err);
-      toast.error("Failed to accept work order as you may have already accepted one already.");
+      toast.error(
+        "Failed to accept work order as you may have already accepted one already."
+      );
     } finally {
       setLoadingIds((prev) => {
         const newSet = new Set(prev);
@@ -145,35 +157,34 @@ await fetchWorkOrders ();
                         </span>
                       </div>
                     </div>
-
                   </div>
-                    {/* ✅ Action Buttons */}
-                    <div>
-                      {item.status === "OPEN" && (
-                        <button
-                          type="button"
-                          disabled={isLoading}
-                          onClick={() => handleAccept(item)}
-                          className={`px-4 sm:px-5 py-2 rounded-lg !text-white font-medium shadow-md transition-all ${
-                            isLoading
-                              ? "bg-gray-700 cursor-not-allowed"
-                              : "bg-blue-theme hover:bg-blue-bold hover:shadow-lg"
-                          }`}
-                        >
-                          {isLoading ? "Accepting" : "Accept"}
-                        </button>
-                      )}
+                  {/* ✅ Action Buttons */}
+                  <div className="flex justify-end">
+                    {item.status === "OPEN" && (
+                      <button
+                        type="button"
+                        disabled={isLoading}
+                        onClick={() => handleAccept(item)}
+                        className={`px-4 sm:px-5 py-2 rounded-lg !text-white font-medium shadow-md transition-all ${
+                          isLoading
+                            ? "bg-gray-700 cursor-not-allowed"
+                            : "bg-blue-theme hover:bg-blue-bold hover:shadow-lg"
+                        }`}
+                      >
+                        {isLoading ? "Accepting" : "Accept"}
+                      </button>
+                    )}
 
-                      {item.status === "ASSIGNED" && (
-                        <button
-                          type="button"
-                          onClick={() => handleStart(item)}
-                          className="px-4 sm:px-5 py-2 rounded-lg bg-blue-theme hover:bg-blue-bold hover:shadow-lg !text-white font-medium shadow-md  transition-all"
-                        >
-                          Start
-                        </button>
-                      )}
-                    </div>
+                    {item.status === "ASSIGNED" && (
+                      <button
+                        type="button"
+                        onClick={() => handleStart(item)}
+                        className="px-4 sm:px-5 py-2 rounded-lg bg-blue-theme hover:bg-blue-bold hover:shadow-lg !text-white font-medium shadow-md  transition-all"
+                      >
+                        Start
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -185,9 +196,10 @@ await fetchWorkOrders ();
                 <button
                   type="button"
                   onClick={() => handleViewDetails(item)}
-                  className="text-xs sm:text-sm text-gray-600 hover:text-gray-800 bg-gray-100 hover:bg-gray-200 rounded-md px-2 py-1 transition-colors"
+                  className="text-xs sm:text-sm text-gray-600 flex items-center hover:text-gray-800 bg-gray-100 hover:bg-gray-200 rounded-md px-2 py-1 transition-colors"
                 >
-                  View details
+                  <Eye className="inline w-4 h-4 mr-1" />
+                  <span className="hidden md:block">View</span>
                 </button>
               </div>
             </article>

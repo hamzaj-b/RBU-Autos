@@ -206,9 +206,9 @@ export default function StaffManagement() {
                   <span className="text-sm text-gray-600">
                     {new Date(employee.createdAt).toLocaleDateString()}
                   </span>
-                  <span className="text-sm text-gray-600">
+                  {/* <span className="text-sm text-gray-600">
                     {employee.totalLoggedHours || 0} hrs
-                  </span>
+                  </span> */}
 
                   <span
                     className={`text-sm font-medium px-3 py-1 rounded-full ${
@@ -217,9 +217,7 @@ export default function StaffManagement() {
                         : "bg-gray-50 text-gray-400"
                     }`}
                   >
-                    {employee.hourlyRate
-                      ? `₨ ${employee.hourlyRate}/hr`
-                      : "N/A"}
+                    {employee.hourlyRate ? `$${employee.hourlyRate}/hr` : "N/A"}
                   </span>
 
                   <div className="flex gap-2">
@@ -296,7 +294,7 @@ export default function StaffManagement() {
                     Hourly Rate:
                   </span>{" "}
                   {selectedEmployee.hourlyRate
-                    ? `₨ ${selectedEmployee.hourlyRate}/hr`
+                    ? `$ ${selectedEmployee.hourlyRate}/hr`
                     : "N/A"}
                 </p>
                 <p>
