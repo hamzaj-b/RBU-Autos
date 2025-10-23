@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import { PrismaClient, BookingStatus } from "@prisma/client";
 import jwt from "jsonwebtoken";
-import { DateTime } from "luxon"; // for timezone-aware comparisons
+import { DateTime } from "luxon";
+import { pusherServer } from "@/lib/pusher"; // ✅ ADD THIS LINE
 
 const prisma = new PrismaClient();
 const SECRET_KEY = process.env.JWT_SECRET || "supersecret";
 
 export async function POST(req) {
   try {
-    // 🔑 1️⃣ Authenticate (Customer only)
     const authHeader = req.headers.get("authorization");
     if (!authHeader)
       return NextResponse.json({ error: "No token provided" }, { status: 401 });
@@ -38,20 +38,16 @@ export async function POST(req) {
         { status: 400 }
       );
 
-    // 📦 2️⃣ Parse Request Body
     const body = await req.json();
     const { serviceIds, startAt, notes } = body;
-
-    if (!Array.isArray(serviceIds) || serviceIds.length === 0 || !startAt) {
+    if (!Array.isArray(serviceIds) || serviceIds.length === 0 || !startAt)
       return NextResponse.json(
         { error: "Missing required fields (serviceIds or startAt)" },
         { status: 400 }
       );
-    }
 
     const startTime = new Date(startAt);
     const now = new Date();
-
     if (isNaN(startTime.getTime()))
       return NextResponse.json(
         { error: "Invalid start time" },
@@ -63,7 +59,6 @@ export async function POST(req) {
         { status: 400 }
       );
 
-    // ⚙️ 3️⃣ Fetch Business Settings
     const business = await prisma.businessSettings.findFirst();
     if (!business)
       return NextResponse.json(
@@ -72,21 +67,18 @@ export async function POST(req) {
       );
 
     const { timezone, openTime, closeTime, allowCustomerBooking } = business;
-
-    // ❌ Stop if customers not allowed
-    if (!allowCustomerBooking) {
+    if (!allowCustomerBooking)
       return NextResponse.json(
-        { error: "Online booking by customers is currently disabled." },
+        {
+          error: "Online booking by customers is currently disabled.",
+        },
         { status: 403 }
       );
-    }
 
-    // 🧮 4️⃣ Get Service Info
     const services = await prisma.service.findMany({
       where: { id: { in: serviceIds } },
       select: { id: true, durationMinutes: true, basePrice: true },
     });
-
     if (services.length !== serviceIds.length)
       return NextResponse.json(
         { error: "Invalid service IDs" },
@@ -100,7 +92,7 @@ export async function POST(req) {
     const endTime = new Date(startTime.getTime() + totalDuration * 60000);
     const totalPrice = services.reduce((sum, s) => sum + (s.basePrice || 0), 0);
 
-    // 🕒 5️⃣ Validate Against Garage Hours (using Luxon)
+    // Validate working hours
     const open = DateTime.fromFormat(openTime, "HH:mm", { zone: timezone });
     const close = DateTime.fromFormat(closeTime, "HH:mm", { zone: timezone });
     const bookingStart = DateTime.fromJSDate(startTime, { zone: timezone });
@@ -111,7 +103,7 @@ export async function POST(req) {
     const startMinutes = bookingStart.hour * 60 + bookingStart.minute;
     const endMinutes = bookingEnd.hour * 60 + bookingEnd.minute;
 
-    if (startMinutes < openMinutes || endMinutes > closeMinutes) {
+    if (startMinutes < openMinutes || endMinutes > closeMinutes)
       return NextResponse.json(
         {
           error: `Booking time (${bookingStart.toFormat(
@@ -122,9 +114,8 @@ export async function POST(req) {
         },
         { status: 400 }
       );
-    }
 
-    // 🚫 6️⃣ Prevent Overlaps for Same Customer
+    // Prevent overlapping bookings for same customer
     const overlap = await prisma.booking.findFirst({
       where: {
         customerId,
@@ -134,15 +125,13 @@ export async function POST(req) {
         status: { notIn: ["CANCELLED", "DONE"] },
       },
     });
-
-    if (overlap) {
+    if (overlap)
       return NextResponse.json(
         { error: "You already have a booking in this time range" },
         { status: 400 }
       );
-    }
 
-    // 💾 7️⃣ Create Booking Transaction
+    // 💾 Create booking
     const booking = await prisma.$transaction(async (tx) => {
       const newBooking = await tx.booking.create({
         data: {
@@ -168,7 +157,48 @@ export async function POST(req) {
       return newBooking;
     });
 
-    // ✅ 8️⃣ Response
+    // ✅ 🔔 Trigger admin real-time notification
+    // ✅ 🔔 Trigger admin real-time notification
+    try {
+      // 🧩 Fetch readable info from correct collections
+      let customerName = "Unknown Customer";
+      let serviceNames = [];
+
+      try {
+        // 👤 Get customer name from CustomerProfile
+        const customer = await prisma.customerProfile.findUnique({
+          where: { id: customerId },
+          select: { fullName: true },
+        });
+        if (customer) customerName = customer.fullName;
+
+        // 🛠️ Get service names
+        const selectedServices = await prisma.service.findMany({
+          where: { id: { in: serviceIds } },
+          select: { name: true },
+        });
+        serviceNames = selectedServices.map((s) => s.name);
+      } catch (fetchErr) {
+        console.error("⚠️ Failed to fetch customer/services:", fetchErr);
+      }
+
+      // 📡 Send enriched payload to Pusher (always fires)
+      await pusherServer.trigger("admin-channel", "new-booking", {
+        message: "📅 New pre-booking created",
+        booking,
+        customerName,
+        services: serviceNames,
+      });
+
+      console.log(
+        `✅ Pusher: admin notified about new booking from ${customerName} (${serviceNames.join(
+          ", "
+        )})`
+      );
+    } catch (pusherErr) {
+      console.error("⚠️ Pusher trigger failed:", pusherErr);
+    }
+
     return NextResponse.json(
       {
         message: "Pre-booking created successfully. Awaiting admin approval.",
