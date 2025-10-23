@@ -361,7 +361,6 @@ export default function BookingsPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white p-6">
       <div className="w-full mx-auto">
         <Card
-          bordered={false}
           className="shadow-lg rounded-2xl border border-gray-100"
           title={
             <div className="flex items-center gap-2 text-[#0f74b2]">
