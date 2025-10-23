@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { PrismaClient, BookingStatus, WorkOrderStatus } from "@prisma/client";
 import jwt from "jsonwebtoken";
+import { pusherServer } from "@/lib/pusher"; // ✅ add this
 
 const prisma = new PrismaClient();
 const SECRET_KEY = process.env.JWT_SECRET || "supersecret";
 
 export async function PATCH(req, { params }) {
   try {
-    // 🔑 Auth (Admin only)
+    // 🔐 Auth (Admin only)
     const authHeader = req.headers.get("authorization");
     if (!authHeader)
       return NextResponse.json({ error: "No token provided" }, { status: 401 });
@@ -30,8 +31,7 @@ export async function PATCH(req, { params }) {
       );
     }
 
-    // Parse booking id and body
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
     const { action, employeeId, notes } = body;
 
@@ -42,30 +42,28 @@ export async function PATCH(req, { params }) {
       );
     }
 
-    // Fetch booking (with services)
+    // 🔍 Fetch booking
     const booking = await prisma.booking.findUnique({
       where: { id },
       include: {
         bookingServices: { include: { service: true } },
       },
     });
+
     if (!booking)
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
 
-    if (booking.bookingType !== "PREBOOKING") {
+    if (booking.bookingType !== "PREBOOKING")
       return NextResponse.json(
         { error: "This is not a pre-booking" },
         { status: 400 }
       );
-    }
 
-    // 🚫 Already processed
-    if (booking.status !== BookingStatus.PENDING) {
+    if (booking.status !== BookingStatus.PENDING)
       return NextResponse.json(
         { error: `Booking already ${booking.status.toLowerCase()}` },
         { status: 400 }
       );
-    }
 
     // ❌ REJECT
     if (action === "REJECT") {
@@ -77,6 +75,41 @@ export async function PATCH(req, { params }) {
           updatedAt: new Date(),
         },
       });
+
+      // 🔔 Notify the respective customer
+      try {
+        await pusherServer.trigger(
+          `customer-${booking.customerId}`,
+          "booking-status",
+          {
+            type: "REJECTED",
+            message: "❌ Your pre-booking has been rejected by the admin.",
+            bookingId: booking.id,
+            notes: updated.notes,
+          }
+        );
+        console.log(
+          `📢 Notified customer-${booking.customerId} of booking rejection`
+        );
+
+        // 💾 🆕 STORE NOTIFICATION
+        await prisma.notification.create({
+          data: {
+            userId: booking.customerId,
+            title: "Booking Rejected",
+            message: "Your pre-booking has been rejected by the admin.",
+            type: "BOOKING_REJECTED",
+            metadata: {
+              bookingId: booking.id,
+              notes: updated.notes,
+            },
+          },
+        });
+        console.log("🗂️ Notification stored for rejected booking.");
+      } catch (err) {
+        console.error("⚠️ Pusher customer rejection notify failed:", err);
+      }
+
       return NextResponse.json(
         { message: "Pre-booking rejected successfully.", booking: updated },
         { status: 200 }
@@ -113,7 +146,7 @@ export async function PATCH(req, { params }) {
         );
       }
 
-      // 💰 Calculate base revenue from selected services
+      // 💰 Calculate base revenue
       const totalRevenue = booking.bookingServices.reduce(
         (sum, bs) => sum + (bs.service?.basePrice || 0),
         0
@@ -131,18 +164,16 @@ export async function PATCH(req, { params }) {
             },
           });
 
-          // Create WorkOrder with base revenue
           const newWorkOrder = await tx.workOrder.create({
             data: {
               bookingId: booking.id,
               customerId: booking.customerId,
               employeeId,
               status: WorkOrderStatus.ASSIGNED,
-              totalRevenue, // 💰 initial service revenue stored here
+              totalRevenue,
             },
           });
 
-          // Link workOrder → services
           await tx.workOrderService.createMany({
             data: booking.bookingServices.map((s) => ({
               workOrderId: newWorkOrder.id,
@@ -154,7 +185,84 @@ export async function PATCH(req, { params }) {
         }
       );
 
-      // ✅ Response
+      // ✅ Fetch employee name & service names for notification
+      const employee = await prisma.employeeProfile.findUnique({
+        where: { id: employeeId },
+        select: { fullName: true },
+      });
+
+      const bookingWithServices = await prisma.booking.findUnique({
+        where: { id: booking.id },
+        include: {
+          bookingServices: {
+            include: { service: { select: { name: true } } },
+          },
+        },
+      });
+
+      const serviceNames =
+        bookingWithServices.bookingServices.map((bs) => bs.service.name) || [];
+
+      // ✅ Trigger Pusher notification for customer
+      try {
+        await pusherServer.trigger(
+          `customer-${booking.customerId}`,
+          "booking-status",
+          {
+            type: "APPROVED",
+            message: "✅ Your pre-booking has been approved and assigned.",
+            employeeName: employee?.fullName || "Assigned Staff",
+            services: serviceNames,
+            startAt: booking.startAt,
+          }
+        );
+
+        console.log(
+          `📢 Notified customer-${
+            booking.customerId
+          } of booking approval (employee: ${
+            employee?.fullName
+          }, services: ${serviceNames.join(", ")})`
+        );
+
+        // 💾 🆕 STORE NOTIFICATION
+        // 🔍 Find the actual user linked to this customer profile
+        const customerUser = await prisma.user.findFirst({
+          where: { customerProfileId: booking.customerId },
+          select: { id: true },
+        });
+
+        // 💾 🆕 Store notification only if that user exists
+        if (customerUser) {
+          await prisma.notification.create({
+            data: {
+              userId: customerUser.id, // ✅ Correctly linked to User.id
+              title: "Booking Approved",
+              message: `Your booking has been approved and assigned to ${
+                employee?.fullName || "an employee"
+              }. Services: ${serviceNames.join(", ")}.`,
+              type: "BOOKING_APPROVED",
+              metadata: {
+                bookingId: booking.id,
+                employeeId,
+                services: serviceNames,
+                startAt: booking.startAt,
+              },
+            },
+          });
+
+          console.log(`✅ Notification stored for user ${customerUser.id}`);
+        } else {
+          console.warn(
+            `⚠️ No matching User found for CustomerProfile ID ${booking.customerId}`
+          );
+        }
+
+        console.log("🗂️ Notification stored for approved booking.");
+      } catch (err) {
+        console.error("⚠️ Pusher trigger failed:", err);
+      }
+
       return NextResponse.json(
         {
           message: "Pre-booking approved and assigned successfully.",

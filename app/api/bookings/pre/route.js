@@ -2,13 +2,14 @@ import { NextResponse } from "next/server";
 import { PrismaClient, BookingStatus } from "@prisma/client";
 import jwt from "jsonwebtoken";
 import { DateTime } from "luxon";
-import { pusherServer } from "@/lib/pusher"; // ✅ ADD THIS LINE
+import { pusherServer } from "@/lib/pusher";
 
 const prisma = new PrismaClient();
 const SECRET_KEY = process.env.JWT_SECRET || "supersecret";
 
 export async function POST(req) {
   try {
+    // 🔐 Authenticate (Customer only)
     const authHeader = req.headers.get("authorization");
     if (!authHeader)
       return NextResponse.json({ error: "No token provided" }, { status: 401 });
@@ -38,8 +39,10 @@ export async function POST(req) {
         { status: 400 }
       );
 
+    // 📦 Parse request body
     const body = await req.json();
     const { serviceIds, startAt, notes } = body;
+
     if (!Array.isArray(serviceIds) || serviceIds.length === 0 || !startAt)
       return NextResponse.json(
         { error: "Missing required fields (serviceIds or startAt)" },
@@ -59,6 +62,7 @@ export async function POST(req) {
         { status: 400 }
       );
 
+    // ⚙️ Business Settings
     const business = await prisma.businessSettings.findFirst();
     if (!business)
       return NextResponse.json(
@@ -75,9 +79,10 @@ export async function POST(req) {
         { status: 403 }
       );
 
+    // 🧮 Get services
     const services = await prisma.service.findMany({
       where: { id: { in: serviceIds } },
-      select: { id: true, durationMinutes: true, basePrice: true },
+      select: { id: true, name: true, durationMinutes: true, basePrice: true },
     });
     if (services.length !== serviceIds.length)
       return NextResponse.json(
@@ -92,7 +97,7 @@ export async function POST(req) {
     const endTime = new Date(startTime.getTime() + totalDuration * 60000);
     const totalPrice = services.reduce((sum, s) => sum + (s.basePrice || 0), 0);
 
-    // Validate working hours
+    // 🕒 Validate hours
     const open = DateTime.fromFormat(openTime, "HH:mm", { zone: timezone });
     const close = DateTime.fromFormat(closeTime, "HH:mm", { zone: timezone });
     const bookingStart = DateTime.fromJSDate(startTime, { zone: timezone });
@@ -103,7 +108,7 @@ export async function POST(req) {
     const startMinutes = bookingStart.hour * 60 + bookingStart.minute;
     const endMinutes = bookingEnd.hour * 60 + bookingEnd.minute;
 
-    if (startMinutes < openMinutes || endMinutes > closeMinutes)
+    if (startMinutes < openMinutes || endMinutes > closeMinutes) {
       return NextResponse.json(
         {
           error: `Booking time (${bookingStart.toFormat(
@@ -114,8 +119,9 @@ export async function POST(req) {
         },
         { status: 400 }
       );
+    }
 
-    // Prevent overlapping bookings for same customer
+    // 🚫 Prevent overlap
     const overlap = await prisma.booking.findFirst({
       where: {
         customerId,
@@ -131,7 +137,7 @@ export async function POST(req) {
         { status: 400 }
       );
 
-    // 💾 Create booking
+    // 💾 Transaction: Create booking
     const booking = await prisma.$transaction(async (tx) => {
       const newBooking = await tx.booking.create({
         data: {
@@ -157,47 +163,51 @@ export async function POST(req) {
       return newBooking;
     });
 
-    // ✅ 🔔 Trigger admin real-time notification
-    // ✅ 🔔 Trigger admin real-time notification
-    try {
-      // 🧩 Fetch readable info from correct collections
-      let customerName = "Unknown Customer";
-      let serviceNames = [];
+    // 👤 Fetch customer + services for notification
+    const customer = await prisma.customerProfile.findUnique({
+      where: { id: customerId },
+      select: { fullName: true, userId: true },
+    });
+    const customerName = customer?.fullName || "Unknown Customer";
+    const serviceNames = services.map((s) => s.name);
 
-      try {
-        // 👤 Get customer name from CustomerProfile
-        const customer = await prisma.customerProfile.findUnique({
-          where: { id: customerId },
-          select: { fullName: true },
-        });
-        if (customer) customerName = customer.fullName;
+    // ✅ 1️⃣ Pusher: Notify Admins in real-time
+    await pusherServer.trigger("admin-channel", "new-booking", {
+      message: "📅 New pre-booking created",
+      booking,
+      customerName,
+      services: serviceNames,
+    });
 
-        // 🛠️ Get service names
-        const selectedServices = await prisma.service.findMany({
-          where: { id: { in: serviceIds } },
-          select: { name: true },
-        });
-        serviceNames = selectedServices.map((s) => s.name);
-      } catch (fetchErr) {
-        console.error("⚠️ Failed to fetch customer/services:", fetchErr);
-      }
+    // ✅ 2️⃣ Save Notifications (for Admin Panel only)
+    const admins = await prisma.user.findMany({
+      where: { userType: "ADMIN", isActive: true },
+      select: { id: true },
+    });
 
-      // 📡 Send enriched payload to Pusher (always fires)
-      await pusherServer.trigger("admin-channel", "new-booking", {
-        message: "📅 New pre-booking created",
-        booking,
-        customerName,
-        services: serviceNames,
+    if (admins.length > 0) {
+      await prisma.notification.createMany({
+        data: admins.map((admin) => ({
+          userId: admin.id,
+          title: "New Pre-booking Created",
+          message: `${customerName} booked ${serviceNames.join(", ")}.`,
+          type: "NEW_BOOKING",
+          metadata: {
+            bookingId: booking.id,
+            customerId,
+            customerName,
+            startAt: startTime,
+            services: serviceNames,
+          },
+        })),
       });
-
-      console.log(
-        `✅ Pusher: admin notified about new booking from ${customerName} (${serviceNames.join(
-          ", "
-        )})`
-      );
-    } catch (pusherErr) {
-      console.error("⚠️ Pusher trigger failed:", pusherErr);
     }
+
+    console.log(
+      `✅ Booking + Admin notifications stored: ${customerName} (${serviceNames.join(
+        ", "
+      )})`
+    );
 
     return NextResponse.json(
       {

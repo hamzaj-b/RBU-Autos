@@ -1,21 +1,16 @@
 import { NextResponse } from "next/server";
 import { pusherServer } from "@/lib/pusher";
 
-export async function GET() {
-  try {
-    await pusherServer.trigger("admin-channel", "new-booking", {
-      message: "🚀 Test notification from /api/pusher-test",
-      booking: {
-        startAt: new Date().toISOString(),
-        endAt: new Date(Date.now() + 3600000).toISOString(),
-      },
-      customerId: "demo-customer-123",
-    });
-
-    console.log("✅ Manual test notification sent via Pusher");
-    return NextResponse.json({ success: true });
-  } catch (err) {
-    console.error("❌ Pusher test error:", err);
-    return NextResponse.json({ success: false, error: err.message });
-  }
+export async function POST() {
+  await pusherServer.trigger(
+    "customer-68e0c31f153f0482d88e51fd",
+    "booking-status",
+    {
+      type: "APPROVED",
+      message: "🧪 Test notification: Pusher working fine!",
+      bookingId: "TEST-BOOKING-123",
+    }
+  );
+  console.log("✅ Test event triggered for customer-68e0c31f153f0482d88e51fd");
+  return NextResponse.json({ ok: true });
 }

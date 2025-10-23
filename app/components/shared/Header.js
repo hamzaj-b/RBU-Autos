@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import LogoutDialog from "./LogoutModal";
 import { Skeleton } from "antd";
 import { HiMenuAlt3 } from "react-icons/hi";
+import NotificationBell from "../layout/NotificationBell";
 
 export default function Header({ toggleSidebar, className = "" }) {
   const { user, username, logout, loading } = useAuth();
@@ -76,21 +77,7 @@ export default function Header({ toggleSidebar, className = "" }) {
 
         {/* Right Controls */}
         <div className="flex items-center gap-4">
-          {/* Notification */}
-          <button
-            className="relative p-2 rounded-full hover:bg-gray-100 transition group"
-            onClick={() =>
-              showNotification({
-                title: "New Booking!",
-                message: "You have received a new booking 🎉",
-                type: "order",
-              })
-            }
-          >
-            <Bell className="w-5 h-5 text-gray-600 group-hover:text-blue-600 transition" />
-            <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border border-white"></span>
-          </button>
-
+          <NotificationBell />
           {/* Profile Dropdown */}
           <div ref={dropdownRef} className="relative">
             <button
