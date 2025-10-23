@@ -182,7 +182,7 @@ export default function EmployeeRepairTracker() {
             onClick={() => setPage(i + 1)}
             className={`px-3 py-1 text-sm rounded-md ${
               page === i + 1
-                ? "bg-blue-600 text-white"
+                ? "bg-blue-theme !text-white"
                 : "bg-gray-100 hover:bg-gray-200 text-gray-700"
             }`}
           >
@@ -200,18 +200,21 @@ export default function EmployeeRepairTracker() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           {/* Search */}
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-2.5 text-gray-400" />
+          <Search
+            className="absolute left-3 top-2 md:top-3 text-gray-400"
+            size={18}
+          />
             <input
               type="text"
               placeholder="Search by customer or service..."
-              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-400"
+              className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg  focus:outline-none"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
 
           {/* Status Filters */}
-          <div className="flex flex-wrap gap-2">
+          <div className="hidden md:flex gap-2 flex-wrap justify-end">
             {[
               "all",
               "OPEN",
@@ -225,8 +228,8 @@ export default function EmployeeRepairTracker() {
                 onClick={() => setStatusFilter(status)}
                 className={`px-3 py-1.5 rounded-md text-sm font-medium ${
                   statusFilter === status
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    ? "bg-blue-theme !text-white"
+                    : "bg-gray-100 hover:bg-gray-200 text-gray-700"
                 }`}
               >
                 {status === "all"
@@ -235,6 +238,38 @@ export default function EmployeeRepairTracker() {
               </button>
             ))}
           </div>
+          <div className="w-full flex flex-col gap-2 flex-wrap justify-end ">
+          {/* Dropdown for small screens */}
+          <div className="md:hidden">
+            <select
+              onChange={(e) => setStatusFilter(e.target.value)}
+              value={statusFilter}
+              className="px-2 py-1 text-xs md:text-sm rounded-lg font-medium bg-white border border-gray-300 hover:bg-gray-200 focus:ring-0 focus:border-blue-500 focus:outline-none transition-colors duration-200"
+            >
+              {[
+                "all",
+                "OPEN",
+                "ASSIGNED",
+                "IN_PROGRESS",
+                "DONE",
+                "COMPLETED",
+                "CANCELLED",
+              ].map((s) => (
+                <option
+                  key={s}
+                  value={s}
+                  className={`${
+                    statusFilter === s
+                      ? "bg-blue-bold text-white"
+                      : "text-gray-500"
+                  }`}
+                >
+                  {s === "all" ? "All" : s.replace("_", " ")}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
         </div>
       </div>
 
@@ -276,7 +311,7 @@ export default function EmployeeRepairTracker() {
                     className="px-3 py-1 text-xs rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium"
                   >
                     <Eye className="inline w-4 h-4 mr-1" />
-                    View
+                   <span className="hidden md:block">View</span>
                   </button>
 
                   {/* Start */}

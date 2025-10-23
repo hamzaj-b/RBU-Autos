@@ -93,10 +93,10 @@ const fetchWorkOrders = async () => {
               <Search />
             </span>
           </div>
-          <button className="md:py-2 px-2 md:px-4 rounded-lg bg-gray-100 flex items-center text-gray-500">
+          {/* <button className="md:py-2 px-2 md:px-4 rounded-lg bg-gray-100 flex items-center text-gray-500">
             <SlidersHorizontal className="w-4" />
             <span className="hidden md:block px-2">Filters</span>
-          </button>
+          </button> */}
         </div>
       </div>
 
