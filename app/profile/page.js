@@ -215,7 +215,7 @@ export default function ProfilePage() {
 
         {/* ADMIN FIELDS */}
         {user.userType === "ADMIN" && (
-          <Card title="Admin Details" bordered={false}>
+          <Card title="Admin Details">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
                 addonBefore={<Mail />}
@@ -248,7 +248,7 @@ export default function ProfilePage() {
         {/* CUSTOMER FIELDS */}
         {user.userType === "CUSTOMER" && (
           <>
-            <Card title="🏠 Personal Details" bordered={false}>
+            <Card title="🏠 Personal Details">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
                   addonBefore={<PersonStandingIcon />}
@@ -275,7 +275,6 @@ export default function ProfilePage() {
                   🚗 Vehicle Details
                 </span>
               }
-              bordered={false}
             >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
@@ -309,7 +308,7 @@ export default function ProfilePage() {
 
         {/* EMPLOYEE FIELDS */}
         {user.userType === "EMPLOYEE" && (
-          <Card title="👷 Employee Summary" bordered={false}>
+          <Card title="👷 Employee Summary">
             <div className="space-y-4 text-gray-700">
               <p>
                 <b>Name:</b> {profileData.fullName}

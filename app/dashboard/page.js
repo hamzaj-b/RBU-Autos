@@ -8,6 +8,8 @@ import CustomerDashboard from "@/app/components/app/CustomersDashboard";
 export default function DashboardPage() {
   const { user, loading } = useAuth();
 
+//   console.log("🏠 Rendering DashboardPage for user:", user.customerId);
+
   // 🕒 Show loader while auth is being resolved or user is missing
   if (loading || !user) {
     return (

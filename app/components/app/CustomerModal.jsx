@@ -31,7 +31,7 @@ export default function CustomerModal({
       }
     >
       <div className="space-y-6 mt-4">
-        {/* Basic Info */}
+        {/* 👤 Basic Info */}
         <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 shadow-sm">
           <h3 className="text-base font-semibold text-gray-700 mb-3">
             👤 Basic Information
@@ -54,7 +54,7 @@ export default function CustomerModal({
           </div>
         </div>
 
-        {/* Vehicle Info */}
+        {/* 🚗 Vehicle Info */}
         <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 shadow-sm">
           <h3 className="text-base font-semibold text-gray-700 mb-3">
             🚗 Vehicle Details
@@ -79,22 +79,56 @@ export default function CustomerModal({
           </div>
         </div>
 
-        {/* Address */}
+        {/* 🏠 Address (Fixed Structured Inputs) */}
         <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 shadow-sm">
           <h3 className="text-base font-semibold text-gray-700 mb-3">
             🏠 Address
           </h3>
-          <Input.TextArea
-            rows={3}
-            placeholder="Enter address details..."
-            value={formData.addressJson}
-            onChange={(e) =>
-              setFormData((p) => ({ ...p, addressJson: e.target.value }))
-            }
-          />
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              placeholder="City"
+              value={formData.addressJson?.city || ""}
+              onChange={(e) =>
+                setFormData((p) => ({
+                  ...p,
+                  addressJson: { ...p.addressJson, city: e.target.value },
+                }))
+              }
+            />
+            <Input
+              placeholder="Street"
+              value={formData.addressJson?.street || ""}
+              onChange={(e) =>
+                setFormData((p) => ({
+                  ...p,
+                  addressJson: { ...p.addressJson, street: e.target.value },
+                }))
+              }
+            />
+            <Input
+              placeholder="House / Apartment"
+              value={formData.addressJson?.house || ""}
+              onChange={(e) =>
+                setFormData((p) => ({
+                  ...p,
+                  addressJson: { ...p.addressJson, house: e.target.value },
+                }))
+              }
+            />
+            <Input
+              placeholder="State / Region"
+              value={formData.addressJson?.state || ""}
+              onChange={(e) =>
+                setFormData((p) => ({
+                  ...p,
+                  addressJson: { ...p.addressJson, state: e.target.value },
+                }))
+              }
+            />
+          </div>
         </div>
 
-        {/* Notes */}
+        {/* 📝 Notes */}
         <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 shadow-sm">
           <h3 className="text-base font-semibold text-gray-700 mb-3">
             📝 Notes
@@ -109,7 +143,7 @@ export default function CustomerModal({
           />
         </div>
 
-        {/* Save */}
+        {/* 💾 Save */}
         <Button
           onClick={handleSave}
           disabled={loading}

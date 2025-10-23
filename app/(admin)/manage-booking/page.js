@@ -295,11 +295,6 @@ export default function BookingsPage() {
       render: (_, record) => (
         <div className="flex gap-2">
           <Button
-            icon={<Eye size={16} />}
-            onClick={() => viewBooking(record.id)}
-            size="small"
-          />
-          <Button
             icon={<Edit2 size={16} />}
             onClick={() => openEdit(record)}
             size="small"
@@ -366,7 +361,6 @@ export default function BookingsPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white p-6">
       <div className="w-full mx-auto">
         <Card
-          bordered={false}
           className="shadow-lg rounded-2xl border border-gray-100"
           title={
             <div className="flex items-center gap-2 text-[#0f74b2]">

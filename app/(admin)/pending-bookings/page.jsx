@@ -132,6 +132,7 @@ export default function PreBookingsPage() {
   // Approve or Reject
   const handleAction = async () => {
     if (!selectedBooking) return;
+    setLoading(true);
     try {
       const body =
         actionType === "APPROVE"
@@ -156,6 +157,8 @@ export default function PreBookingsPage() {
     } catch (err) {
       console.error(err);
       toast.error(err.message || "Failed to update booking");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -293,11 +296,23 @@ export default function PreBookingsPage() {
       <Modal
         open={actionModal}
         title={
-          actionType === "APPROVE"
+          loading
+            ? actionType === "APPROVE"
+              ? "Approving..."
+              : "Rejecting..."
+            : actionType === "APPROVE"
             ? "Approve Pre-Booking"
             : "Reject Pre-Booking"
         }
-        okText={actionType === "APPROVE" ? "Approve & Assign" : "Reject"}
+        okText={
+          loading
+            ? actionType === "APPROVE"
+              ? "Approving..."
+              : "Rejecting..."
+            : actionType === "APPROVE"
+            ? "Approve & Assign"
+            : "Reject"
+        }
         onOk={handleAction}
         onCancel={() => setActionModal(false)}
         confirmLoading={employeeLoading}
