@@ -295,11 +295,6 @@ export default function BookingsPage() {
       render: (_, record) => (
         <div className="flex gap-2">
           <Button
-            icon={<Eye size={16} />}
-            onClick={() => viewBooking(record.id)}
-            size="small"
-          />
-          <Button
             icon={<Edit2 size={16} />}
             onClick={() => openEdit(record)}
             size="small"
