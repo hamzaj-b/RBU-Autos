@@ -274,7 +274,7 @@ export default function WalkInBookingPage() {
                     className="bg-[#0f74b2] hover:bg-blue-800 border-none text-white"
                     loading={employeeLoading}
                   >
-                    Fetch Available Employees
+                    Check Available Employees
                   </Button>
                 </div>
 
