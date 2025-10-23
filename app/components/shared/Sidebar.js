@@ -84,9 +84,9 @@ export default function Sidebar({ toggleSidebar }) {
   const links = linksByRole[userType] || [];
 
   return (
-    <div className="flex flex-col items-center w-full h-full">
+    <div className="flex flex-col items-center w-full h-full md:min-h-screen">
       {/* Logo & Branding */}
-      <div className="flex flex-col items-center mb-2 md:mb-10">
+      <div className="flex flex-col items-center mb-2 ">
         <div className="flex items-center justify-center">
           <img src="/rbu-logo.png" width={120} alt="Logo" />
         </div>

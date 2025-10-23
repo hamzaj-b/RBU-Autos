@@ -15,7 +15,7 @@ export default function Header({ toggleSidebar, className = "" }) {
   const [open, setOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
   const dropdownRef = useRef(null);
-
+// console.log("header user" , user.userType);
   const handleProfile = () => {
     window.location.href = "/profile";
   };
@@ -147,14 +147,16 @@ export default function Header({ toggleSidebar, className = "" }) {
                       <User className="w-4 h-4 mr-2 text-blue-500" />
                       Profile
                     </button>
+                    {user?.userType === "ADMIN" && (
+  <Link
+    href="/settings"
+    className="flex items-center px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 transition font-medium"
+  >
+    <Settings className="w-4 h-4 mr-2 text-blue-500" />
+    Settings
+  </Link>
+)}
 
-                    <Link
-                      href="/settings"
-                      className="flex items-center px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 transition font-medium"
-                    >
-                      <Settings className="w-4 h-4 mr-2 text-blue-500" />
-                      Settings
-                    </Link>
 
                     <button
                       onClick={() => setLogoutOpen(true)}

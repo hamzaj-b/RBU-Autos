@@ -26,7 +26,7 @@ export default function SignInPage() {
 
   return (
     <section className="bg-blue-theme min-h-screen text-gray-800 flex items-center justify-center">
-      <div className="w-full max-w-md bg-white rounded-lg shadow p-6">
+      <div className="w-full max-w-md bg-white rounded-lg shadow p-6 mx-2">
         <div className="text-center mb-4">
           <img src="/rbu-logo.png" alt="Logo" width={100} className="mx-auto" />
           <h2 className="text-2xl font-extrabold text-gray-800 mt-2">

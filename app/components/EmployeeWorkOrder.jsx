@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Modal, message } from "antd";
 import { useAuth } from "../context/AuthContext"; // ✅ assuming your AuthContext is used app-wide
+import toast, { Toaster } from "react-hot-toast";
 
 const EmployeeWorkOrder = ({
   data,
@@ -70,7 +71,7 @@ const EmployeeWorkOrder = ({
       const data = await res.json();
 
       if (res.ok) {
-        message.success("✅ Work order accepted successfully!");
+        toast.success("✅ Work order accepted successfully!");
 await fetchWorkOrders ();
         // update local state (hide Accept → show Start)
         // setWorkOrders((prev) =>
@@ -81,11 +82,11 @@ await fetchWorkOrders ();
         //   )
         // );
       } else {
-        message.error(data.error || "Failed to accept work order");
+        toast.error(data.error || "Failed to accept work order as you may have already accepted one already.");
       }
     } catch (err) {
       console.error("💥 Accept WorkOrder Error:", err);
-      message.error("Network error. Please try again.");
+      toast.error("Failed to accept work order as you may have already accepted one already.");
     } finally {
       setLoadingIds((prev) => {
         const newSet = new Set(prev);

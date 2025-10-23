@@ -5,6 +5,7 @@ import { Search, Eye, PlayCircle, CheckCircle, Printer } from "lucide-react";
 import { Spin, message, Modal } from "antd";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
+import toast, { Toaster } from "react-hot-toast";
 
 export default function EmployeeRepairTracker() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -84,12 +85,12 @@ export default function EmployeeRepairTracker() {
       });
       const data = await res.json();
       if (res.ok) {
-        message.success("🚀 Work started!");
+        toast.success("🚀 Work started!"); 
         fetchWorkOrders();
-      } else message.error(data.error || "Failed to start work order");
+      } else toast.error(data.error || "Failed to start work order"); 
     } catch (err) {
       console.error("Start error:", err);
-      message.error("Network error.");
+      toast.error("Network error."); 
     } finally {
       setLoadingIds((prev) => {
         const s = new Set(prev);
@@ -99,7 +100,7 @@ export default function EmployeeRepairTracker() {
     }
   };
 
-  // ✅ Mark as Done
+  // // ✅ Mark as Done
   const handleMarkDone = async (item) => {
     setLoadingIds((prev) => new Set([...prev, item.id]));
     try {
@@ -113,12 +114,12 @@ export default function EmployeeRepairTracker() {
       });
       const data = await res.json();
       if (res.ok) {
-        message.success("✅ Work order marked as done!");
+        toast.success("✅ Work order marked as done!");
         fetchWorkOrders();
-      } else message.error(data.error || "Failed to mark as done");
+      } else toast.error(data.error || "Failed to mark as done"); 
     } catch (err) {
       console.error("Done error:", err);
-      message.error("Network error.");
+      toast.error("Network error."); 
     } finally {
       setLoadingIds((prev) => {
         const s = new Set(prev);
@@ -127,6 +128,8 @@ export default function EmployeeRepairTracker() {
       });
     }
   };
+
+
 
   // 🖨️ Print Invoice (for completed workOrders)
   const handlePrint = (item) => {
@@ -199,7 +202,7 @@ export default function EmployeeRepairTracker() {
       <div className="bg-white p-4 rounded-lg mb-5 shadow-sm border border-gray-100">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           {/* Search */}
-          <div className="relative flex-1">
+          <div className="relative flex-1 ">
           <Search
             className="absolute left-3 top-2 md:top-3 text-gray-400"
             size={18}
@@ -214,7 +217,7 @@ export default function EmployeeRepairTracker() {
           </div>
 
           {/* Status Filters */}
-          <div className="hidden md:flex gap-2 flex-wrap justify-end">
+          <div className="hidden md:flex gap-2 flex-wrap">
             {[
               "all",
               "OPEN",
@@ -238,7 +241,7 @@ export default function EmployeeRepairTracker() {
               </button>
             ))}
           </div>
-          <div className="w-full flex flex-col gap-2 flex-wrap justify-end ">
+          <div className=" md:hidden w-full flex flex-col gap-2 flex-wrap justify-end ">
           {/* Dropdown for small screens */}
           <div className="md:hidden">
             <select
