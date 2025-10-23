@@ -67,7 +67,6 @@ export default function Sidebar({ toggleSidebar }) {
         icon: <LucideBookmarkPlus />,
       },
       { href: "/my-bookings", label: "My Bookings ", icon: <CalendarDays /> },
-      { href: "/diagnostics", label: "Diagnostics", icon: <Lightbulb /> },
     ],
 
     EMPLOYEE: [
