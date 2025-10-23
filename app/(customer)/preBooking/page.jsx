@@ -46,12 +46,14 @@ export default function CustomerPreBookingPage() {
         ]);
 
         setServices(
-          servData.data?.map((s) => ({
-            label: `${s.name} (${s.durationMinutes}m • $ ${s.basePrice})`,
-            value: s.id,
-            duration: s.durationMinutes,
-            price: s.basePrice,
-          })) || []
+          servData.data
+            ?.filter((s) => s.isActive) // ✅ Only include active services
+            .map((s) => ({
+              label: `${s.name} (${s.durationMinutes}m • $ ${s.basePrice})`,
+              value: s.id,
+              duration: s.durationMinutes,
+              price: s.basePrice,
+            })) || []
         );
 
         setBusinessSettings(settingsData.settings?.[0] || null);

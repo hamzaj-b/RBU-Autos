@@ -42,27 +42,42 @@ export default function MyBookingsPage() {
   }, [token]);
 
   // 🔹 Cancel booking (PATCH or DELETE based on type)
-  const handleCancel = async (record) => {
+  // 🔹 Cancel booking (DELETE)
+  const handleCancel = (record) => {
     Modal.confirm({
       title: "Cancel this booking?",
+      content: "Are you sure you want to cancel this booking?",
       okText: "Yes, Cancel",
+      cancelText: "No",
       okButtonProps: { danger: true },
-      onOk: async () => {
+      async onOk() {
+        if (!token) {
+          toast.error("Authorization token missing");
+          return;
+        }
+
         try {
-          setCancelLoading(true);
+          setCancelLoading(record.id); // mark only this row as loading
+
           const res = await fetch(`/api/bookings/${record.id}`, {
             method: "DELETE",
             headers: { Authorization: `Bearer ${token}` },
           });
+
           const data = await res.json();
-          if (!res.ok) throw new Error(data.error);
+
+          if (!res.ok) {
+            throw new Error(data.error || "Failed to cancel booking");
+          }
+
           toast.success("Booking cancelled successfully");
-          fetchBookings();
+          // ✅ Optimistic update
+          setBookings((prev) => prev.filter((b) => b.id !== record.id));
         } catch (err) {
-          console.error(err);
+          console.error("❌ Cancel booking error:", err);
           toast.error(err.message || "Failed to cancel booking");
         } finally {
-          setCancelLoading(false);
+          setCancelLoading(null);
         }
       },
     });
@@ -136,12 +151,12 @@ export default function MyBookingsPage() {
             }}
             size="small"
           />
-          {(record.status === "PENDING" ) && (
+          {record.status === "PENDING" && (
             <Button
               danger
               icon={<XCircle size={16} />}
               size="small"
-              loading={cancelLoading}
+              loading={cancelLoading === record.id} // ✅ per-row loading
               onClick={() => handleCancel(record)}
             >
               Cancel

@@ -29,7 +29,6 @@ export default function RootLayout({ children }) {
       >
         <AuthProvider>
           <ClientLayout>{children}</ClientLayout>
-          <GlobalNotificationListener />
         </AuthProvider>
         <Toaster position="bottom-right" reverseOrder={false} />
       </body>

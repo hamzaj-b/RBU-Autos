@@ -58,6 +58,7 @@ export default function WalkInBookingPage() {
             value: s.id,
             duration: s.durationMinutes,
             price: s.basePrice,
+            disabled: !s.isActive, // 👈 disables instead of hiding
           })) || []
         );
       } catch (err) {

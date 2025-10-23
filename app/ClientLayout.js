@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Sidebar from "./components/shared/Sidebar";
 import Header from "./components/shared/Header";
 import { usePathname } from "next/navigation";
+import GlobalNotificationListener from "./components/shared/GlobalNotificationListener";
 
 export default function ClientLayout({ children }) {
   const pathname = usePathname();
@@ -27,14 +28,13 @@ export default function ClientLayout({ children }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Stop scrolling on main content when sidebar is open
+  // 🧠 Stop scrolling on main content when sidebar is open
   useEffect(() => {
     if (isSidebarOpen) {
       mainContentRef.current.style.overflow = "hidden"; // Disable scroll for children
     } else {
       mainContentRef.current.style.overflow = "auto"; // Enable scroll for children
     }
-
     return () => {
       mainContentRef.current.style.overflow = "auto"; // Reset to default when component unmounts
     };
@@ -57,7 +57,10 @@ export default function ClientLayout({ children }) {
 
       <div className="flex-1 flex flex-col">
         {showSidebarAndHeader && (
-          <Header toggleSidebar={toggleSidebar} className={`md:pl-[270px] md:w-full`} />
+          <Header
+            toggleSidebar={toggleSidebar}
+            className={`md:pl-[270px] md:w-full`}
+          />
         )}
 
         <main
@@ -68,6 +71,7 @@ export default function ClientLayout({ children }) {
         >
           {children}
         </main>
+        <GlobalNotificationListener />
       </div>
     </div>
   );
