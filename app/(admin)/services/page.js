@@ -15,16 +15,17 @@ import {
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil, Trash2, RefreshCcw } from "lucide-react";
 import { useAuth } from "@/app/context/AuthContext";
+import toast from "react-hot-toast";
 
 export default function ServicesPage() {
   const { token } = useAuth();
   const [clientReady, setClientReady] = useState(false);
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [search, setSearch] = useState(""); // Search state
-  const [debouncedSearch, setDebouncedSearch] = useState(""); // Debounced search state
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [sortOrder, setSortOrder] = useState("desc");
-  const [statusFilter, setStatusFilter] = useState("all"); // Filter for status
+  const [statusFilter, setStatusFilter] = useState("all");
   const [modalOpen, setModalOpen] = useState(false);
   const [editingService, setEditingService] = useState(null);
   const [formData, setFormData] = useState({
@@ -35,19 +36,13 @@ export default function ServicesPage() {
     basePrice: "",
   });
 
-  // Initialize client
   useEffect(() => setClientReady(true), []);
 
-  // ─── Debounce Search ─────────────────────────────────
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(search); // Set the debounced search after 500ms
-    }, 500); // Adjust debounce delay as needed
+    const timer = setTimeout(() => setDebouncedSearch(search), 500);
+    return () => clearTimeout(timer);
+  }, [search]);
 
-    return () => clearTimeout(timer); // Clear timeout on cleanup
-  }, [search]); // Whenever the search value changes, debounce
-
-  // ─── Fetch Services ─────────────────────────────────
   const fetchServices = async () => {
     try {
       setLoading(true);
@@ -66,16 +61,18 @@ export default function ServicesPage() {
     }
   };
 
-  // Trigger API fetch whenever debounced search or other filters change
   useEffect(() => {
     if (clientReady) fetchServices();
-  }, [clientReady, debouncedSearch, sortOrder, statusFilter]); // Added debouncedSearch as a dependency
+  }, [clientReady, debouncedSearch, sortOrder, statusFilter]);
 
-  // ─── Handle Save / Update ───────────────────────────
+  // ─── Save or Update ───────────────────────────────
   const handleSave = async () => {
     const isEdit = !!editingService;
-    if (!formData.name || !formData.basePrice)
-      return message.warning("Name and Base Price are required");
+    if (!formData.name || !formData.basePrice) {
+      message.warning("Name and Base Price are required");
+      toast.error("Please fill in both Name and Base Price!");
+      return;
+    }
 
     try {
       setLoading(true);
@@ -102,6 +99,12 @@ export default function ServicesPage() {
       const data = await res.json();
       if (res.ok) {
         message.success(isEdit ? "Service updated!" : "Service created!");
+        toast.success(
+          isEdit
+            ? "Service updated successfully!"
+            : "Service created successfully!"
+        );
+
         setModalOpen(false);
         setEditingService(null);
         setFormData({
@@ -114,31 +117,41 @@ export default function ServicesPage() {
         fetchServices();
       } else {
         message.error(data.error || "Failed to save service");
+        toast.error(data.error || "Failed to save service!");
       }
     } catch (err) {
       console.error(err);
       message.error("Unexpected error");
+      toast.error("Unexpected error occurred while saving!");
     } finally {
       setLoading(false);
     }
   };
 
-  // ─── Delete ────────────────────────────────────────
+  // ─── Delete ───────────────────────────────────────
   const handleDelete = async (id) => {
     try {
+      setLoading(true);
       const res = await fetch(`/api/services/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
+
       const data = await res.json();
       if (res.ok) {
         message.success("Service deleted");
+        toast.success("Service deleted successfully!");
         fetchServices();
       } else {
         message.error(data.error || "Failed to delete service");
+        toast.error(data.error || "Failed to delete service!");
       }
     } catch (err) {
       console.error(err);
+      message.error("Network error while deleting");
+      toast.error("Network error while deleting service!");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -163,6 +176,11 @@ export default function ServicesPage() {
       const data = await res.json();
       if (res.ok) {
         message.success(data.message || "Status updated");
+        toast.success(
+          newStatus
+            ? "Service activated successfully!"
+            : "Service deactivated successfully!"
+        );
         setServices((prev) =>
           prev.map((s) =>
             s.id === id ? { ...s, isActive: newStatus, _loading: false } : s
@@ -170,23 +188,26 @@ export default function ServicesPage() {
         );
       } else {
         message.error(data.error || "Failed to update status");
+        toast.error(data.error || "Failed to update status!");
         fetchServices();
       }
     } catch (err) {
       console.error(err);
       message.error("Network error updating status");
+      toast.error("Network error while updating status!");
       fetchServices();
     }
   };
 
-  // ─── Table Columns ─────────────────────────────────
   const columns = [
     {
       title: "Service Name",
       dataIndex: "name",
       render: (text, record) => (
         <span
-          className={`font-semibold ${record.isActive ? "text-gray-800" : "text-gray-400 italic"}`}
+          className={`font-semibold ${
+            record.isActive ? "text-gray-800" : "text-gray-400 italic"
+          }`}
         >
           {text}
         </span>
@@ -201,7 +222,9 @@ export default function ServicesPage() {
       title: "Base Price",
       dataIndex: "basePrice",
       render: (p, record) => (
-        <span className={record.isActive ? "text-gray-800" : "text-gray-400"}>${p?.toFixed(2)}</span>
+        <span className={record.isActive ? "text-gray-800" : "text-gray-400"}>
+          ${p?.toFixed(2)}
+        </span>
       ),
     },
     {
@@ -223,7 +246,7 @@ export default function ServicesPage() {
     {
       title: "Actions",
       render: (_, record) => (
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             size="sm"
             variant="outline"
@@ -263,17 +286,54 @@ export default function ServicesPage() {
     );
 
   return (
-    <div className="w-full min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-8 antialiased transition-all">
+    <div className="w-full min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 md:p-8">
+      {/* Responsive Fix CSS */}
+      <style jsx global>{`
+        @media (max-width: 640px) {
+          .ant-table {
+            border: none !important;
+          }
+          .ant-table-thead {
+            display: none !important;
+          }
+          .ant-table-tbody > tr {
+            display: flex !important;
+            flex-direction: column !important;
+            margin-bottom: 1rem !important;
+            border: 1px solid #e5e7eb !important;
+            border-radius: 0.75rem !important;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            padding: 0.75rem !important;
+            background: #fff;
+          }
+          .ant-table-tbody > tr > td {
+            display: flex !important;
+            justify-content: space-between !important;
+            border: none !important;
+            padding: 0.25rem 0 !important;
+            font-size: 0.9rem;
+          }
+          .ant-table-tbody > tr > td::before {
+            content: attr(data-label);
+            font-weight: 600;
+            color: #4b5563;
+          }
+        }
+      `}</style>
+
       {/* Header */}
-      <div className="flex flex-col md:flex-row items-center justify-start md:justify-between mb-6">
-        <h1 className="text-3xl font-semibold text-gray-800">Service Management</h1>
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <h1 className="text-2xl sm:text-3xl font-semibold text-gray-800">
+          Service Management
+        </h1>
+        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
           <Button
             onClick={fetchServices}
             variant="outline"
-            className="flex items-center gap-2 text-gray-600"
+            className="flex items-center gap-2 text-gray-600 w-1/2 sm:w-auto justify-center"
           >
-            <RefreshCcw className="w-4 h-4" />Refresh
+            <RefreshCcw className="w-4 h-4" />
+            Refresh
           </Button>
           <Button
             onClick={() => {
@@ -287,21 +347,21 @@ export default function ServicesPage() {
                 basePrice: "",
               });
             }}
-            className="bg-white border shadow-xs hover:bg-gray-100 text-white flex items-center gap-2"
+            className="bg-white border shadow-xs hover:bg-gray-100 text-white flex items-center gap-2 w-1/2 sm:w-auto justify-center"
           >
-            <Plus className="w-4 h-4" />New Service
+            <Plus className="w-4 h-4" />
+            New Service
           </Button>
         </div>
       </div>
 
       {/* Search & Filter */}
-      <div className="mb-5 flex flex-col md:flex-row items-start md:items-center justify-start gap-2 md:gap-4">
+      <div className="mb-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-start gap-3 sm:gap-4">
         <Input.Search
           placeholder="Search by service or category..."
           allowClear
           onSearch={(val) => setSearch(val)}
-          className="max-w-sm focus:outline-none focus:ring-0 focus:border-none"
-
+          className="w-full sm:max-w-sm"
         />
         <Select
           value={statusFilter}
@@ -311,32 +371,41 @@ export default function ServicesPage() {
             { label: "Active", value: "active" },
             { label: "Deactivated", value: "inactive" },
           ]}
-          style={{ width: 180 }}
+          className="w-full sm:w-44"
         />
       </div>
 
       {/* Table */}
       <Spin spinning={loading}>
-        <div className="w-auto overflow-x-scroll bg-white rounded-xl shadow-lg p-4">
+        <div className="w-full bg-white rounded-xl shadow-lg p-2 sm:p-4">
           <Table
-            columns={columns}
+            columns={columns.map((col) => ({
+              ...col,
+              onCell: () => ({ "data-label": col.title }),
+            }))}
             dataSource={services}
             rowKey="id"
-            pagination={{ pageSize: 8 }}
-            className="rounded-lg"
+            pagination={{
+              pageSize: 8,
+              showSizeChanger: false,
+              responsive: true,
+            }}
+            className="rounded-lg w-full"
           />
         </div>
       </Spin>
+
+      {/* Modal */}
       <Modal
         open={modalOpen}
         onCancel={() => setModalOpen(false)}
         footer={null}
+        centered
         title={
-          <div className="text-lg font-semibold text-gray-700">
+          <div className="text-lg font-semibold text-gray-700 text-center sm:text-left">
             {editingService ? "Edit Service" : "Create New Service"}
           </div>
         }
-        className="rounded-lg"
       >
         <div className="space-y-4">
           <div>
@@ -351,7 +420,9 @@ export default function ServicesPage() {
           </div>
 
           <div>
-            <label className="text-sm font-medium text-gray-600">Description</label>
+            <label className="text-sm font-medium text-gray-600">
+              Description
+            </label>
             <Input.TextArea
               rows={3}
               value={formData.description}
@@ -362,7 +433,7 @@ export default function ServicesPage() {
             />
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex-1">
               <label className="text-sm font-medium text-gray-600">
                 Duration (min)

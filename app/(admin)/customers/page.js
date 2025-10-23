@@ -3,15 +3,7 @@
 import { useEffect, useState } from "react";
 import { Table, Input, message, Popconfirm, Tooltip, Spin, Tag } from "antd";
 import { Button } from "@/components/ui/button";
-import {
-  Plus,
-  UserPlus,
-  Pencil,
-  Trash2,
-  RefreshCcw,
-  Search,
-  Send,
-} from "lucide-react";
+import { Plus, Pencil, Trash2, RefreshCcw, Search, Send } from "lucide-react";
 import { useAuth } from "@/app/context/AuthContext";
 import CustomerModal from "../../components/app/CustomerModal";
 import InviteModal from "../../components/app/InviteModal";
@@ -46,7 +38,6 @@ export default function CustomerManagement() {
       const data = await res.json();
       if (res.ok) {
         setCustomers(data.customers || []);
-        toast.success("Customers fetched!");
       } else message.error(data.error || "Failed to load customers");
     } catch (err) {
       console.error(err);
@@ -63,8 +54,11 @@ export default function CustomerManagement() {
   // ─── Save or Update ───────────────────────────────
   const handleSave = async () => {
     const isEdit = !!editingCustomer;
-    if (!formData.fullName || !formData.email)
-      return message.warning("Full name and email are required");
+    if (!formData.fullName || !formData.email) {
+      message.warning("Full name and email are required");
+      toast.error("Full name and email are required!");
+      return;
+    }
 
     try {
       setLoading(true);
@@ -85,15 +79,22 @@ export default function CustomerManagement() {
       const data = await res.json();
       if (res.ok) {
         message.success(isEdit ? "Customer updated!" : "Customer created!");
+        toast.success(
+          isEdit
+            ? "Customer updated successfully!"
+            : "Customer created successfully!"
+        );
         setModalOpen(false);
         setEditingCustomer(null);
         fetchCustomers();
       } else {
         message.error(data.error || "Operation failed");
+        toast.error(data.error || "Failed to save customer!");
       }
     } catch (err) {
       console.error("Save customer error:", err);
       message.error("Unexpected error");
+      toast.error("Unexpected error occurred while saving!");
     } finally {
       setLoading(false);
     }
@@ -102,6 +103,7 @@ export default function CustomerManagement() {
   // ─── Delete ───────────────────────────────────────
   const handleDelete = async (id) => {
     try {
+      setLoading(true);
       const res = await fetch(`/api/customers/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
@@ -109,19 +111,28 @@ export default function CustomerManagement() {
       const data = await res.json();
       if (res.ok) {
         message.success("Customer deleted");
+        toast.success("Customer deleted successfully!");
         fetchCustomers();
       } else {
         message.error(data.error || "Failed to delete");
+        toast.error(data.error || "Failed to delete customer!");
       }
     } catch (err) {
+      console.error("Delete error:", err);
       message.error("Network error");
+      toast.error("Network error while deleting!");
+    } finally {
+      setLoading(false);
     }
   };
 
   // ─── Invite ───────────────────────────────────────
   const handleInvite = async () => {
-    if (!formData.fullName || !formData.email)
-      return message.warning("Full name and email required");
+    if (!formData.fullName || !formData.email) {
+      message.warning("Full name and email required");
+      toast.error("Full name and email required to send invite!");
+      return;
+    }
 
     try {
       setLoading(true);
@@ -138,13 +149,17 @@ export default function CustomerManagement() {
       const data = await res.json();
       if (res.ok) {
         message.success("Invite sent successfully!");
+        toast.success("Invite email sent successfully!");
         setInviteModalOpen(false);
         fetchCustomers();
       } else {
         message.error(data.error || "Failed to send invite");
+        toast.error(data.error || "Failed to send customer invite!");
       }
-    } catch {
+    } catch (err) {
+      console.error("Invite error:", err);
       message.error("Unexpected error");
+      toast.error("Unexpected error while sending invite!");
     } finally {
       setLoading(false);
     }
@@ -257,22 +272,57 @@ export default function CustomerManagement() {
     );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 md:p-8">
+      {/* Responsive Fix CSS */}
+      <style jsx global>{`
+        @media (max-width: 640px) {
+          .ant-table {
+            border: none !important;
+          }
+          .ant-table-thead {
+            display: none !important;
+          }
+          .ant-table-tbody > tr {
+            display: flex !important;
+            flex-direction: column !important;
+            margin-bottom: 1rem !important;
+            border: 1px solid #e5e7eb !important;
+            border-radius: 0.75rem !important;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            padding: 0.75rem !important;
+            background: #fff;
+          }
+          .ant-table-tbody > tr > td {
+            display: flex !important;
+            justify-content: space-between !important;
+            border: none !important;
+            padding: 0.25rem 0 !important;
+            font-size: 0.9rem;
+          }
+          .ant-table-tbody > tr > td::before {
+            content: attr(data-label);
+            font-weight: 600;
+            color: #4b5563;
+          }
+        }
+      `}</style>
+
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-semibold text-gray-800">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <h1 className="text-2xl sm:text-3xl font-semibold text-gray-800">
           Customer Management
         </h1>
-        <div className="flex items-center gap-3">
+
+        <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
           <Button
             onClick={fetchCustomers}
             variant="outline"
-            className="flex items-center gap-2 text-gray-600"
+            className="flex items-center gap-2 text-gray-600 w-full sm:w-auto justify-center"
             disabled={loading}
           >
             <RefreshCcw
-              className={`w-4 h-4 ${loading ? "animate-spin" : ""} `}
-            />{" "}
+              className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
+            />
             Refresh
           </Button>
           <Button
@@ -287,9 +337,9 @@ export default function CustomerManagement() {
               });
               setModalOpen(true);
             }}
-            className="bg-blue-theme hover:bg-blue-bold !text-white flex items-center gap-2"
+            className="bg-blue-theme hover:bg-blue-bold !text-white flex items-center gap-2 w-full sm:w-auto justify-center"
           >
-            <Plus className="w-4 h-4 " /> Add Customer
+            <Plus className="w-4 h-4" /> Add Customer
           </Button>
           <Button
             variant="default"
@@ -297,7 +347,7 @@ export default function CustomerManagement() {
               setFormData({ fullName: "", email: "" });
               setInviteModalOpen(true);
             }}
-            className="bg-amber-500 hover:bg-amber-600 text-white flex items-center gap-2"
+            className="bg-amber-500 hover:bg-amber-600 text-white flex items-center gap-2 w-full sm:w-auto justify-center"
           >
             <Send className="w-4 h-4" /> Invite Customer
           </Button>
@@ -305,7 +355,7 @@ export default function CustomerManagement() {
       </div>
 
       {/* Search Bar */}
-      <div className="mb-5 max-w-sm">
+      <div className="mb-5 w-full sm:max-w-sm">
         <Input
           prefix={<Search className="w-4 h-4 text-gray-400" />}
           placeholder="Search customers..."
@@ -317,13 +367,16 @@ export default function CustomerManagement() {
 
       {/* Table */}
       <Spin spinning={loading}>
-        <div className="bg-white rounded-xl shadow-lg p-4">
+        <div className="bg-white rounded-xl shadow-lg p-2 sm:p-4 w-full">
           <Table
-            columns={columns}
+            columns={columns.map((col) => ({
+              ...col,
+              onCell: () => ({ "data-label": col.title }),
+            }))}
             dataSource={customers}
             rowKey="id"
-            pagination={{ pageSize: 8 }}
-            className="rounded-lg"
+            pagination={{ pageSize: 8, showSizeChanger: false }}
+            className="rounded-lg w-full"
           />
         </div>
       </Spin>
