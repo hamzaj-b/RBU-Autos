@@ -248,7 +248,7 @@ export default function UnauthorizedPage() {
             className="flex flex-col sm:flex-row gap-3 justify-center"
           >
             <Link
-              href="/"
+              href="/dashboard"
               className="group relative flex items-center justify-center gap-2 flex-1 bg-white/90 text-blue-900 font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-white/20"
             >
               <motion.span

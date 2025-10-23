@@ -166,7 +166,7 @@ export default function CustomerPreBookingPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white py-10 px-4">
-      <div className="max-w-3xl mx-auto">
+      <div className="mx-auto">
         <Card
           className="shadow-lg rounded-2xl border border-gray-100"
           title={

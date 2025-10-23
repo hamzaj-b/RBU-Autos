@@ -23,9 +23,14 @@ const roleAccess = {
     "/profile",
   ],
 
-  EMPLOYEE: ["/", "/employee/repair-tracker", "/work-order", "/profile"],
+  EMPLOYEE: [
+    "/dashboard",
+    "/employee/repair-tracker",
+    "/work-order",
+    "/profile",
+  ],
 
-  CUSTOMER: ["/", "/my-bookings", "/preBooking", "/profile"],
+  CUSTOMER: ["/dashboard", "/my-bookings", "/preBooking", "/profile"],
 };
 
 export async function middleware(req) {
@@ -100,5 +105,6 @@ export const config = {
     "/preBooking/:path*",
     "/checkout/:path*",
     "/profile/:path*",
+    "/dashboard/:path*",
   ],
 };

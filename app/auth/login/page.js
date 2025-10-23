@@ -21,17 +21,14 @@ export default function SignInPage() {
 
     if (!res.success) {
       setError(res.message);
-      return;
     }
-
-    window.location.href = "/"; // redirect to home or dashboard
   };
 
   return (
     <section className="bg-blue-theme min-h-screen text-gray-800 flex items-center justify-center">
       <div className="w-full max-w-md bg-white rounded-lg shadow p-6">
         <div className="text-center mb-4">
-        <img src="/rbu-logo.png" alt="Logo" width={100} className="mx-auto" />
+          <img src="/rbu-logo.png" alt="Logo" width={100} className="mx-auto" />
           <h2 className="text-2xl font-extrabold text-gray-800 mt-2">
             RBU Autos CRM
           </h2>

@@ -96,6 +96,13 @@ export function AuthProvider({ children }) {
         localStorage.removeItem("sessionId");
       }
 
+      // 🚀 Redirect based on role
+      if (data.user.userType === "ADMIN") {
+        window.location.href = "/";
+      } else {
+        window.location.href = "/dashboard";
+      }
+
       return { success: true };
     } catch (error) {
       console.error("Login error:", error.message);

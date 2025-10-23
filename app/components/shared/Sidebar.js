@@ -60,14 +60,18 @@ export default function Sidebar({ toggleSidebar }) {
     ],
 
     CUSTOMER: [
-      { href: "/", label: "Dashboard", icon: <LayoutDashboard /> },
-      { href: "/preBooking", label: "Request Booking", icon: <LucideBookmarkPlus /> },
+      { href: "/dashboard", label: "Dashboard", icon: <LayoutDashboard /> },
+      {
+        href: "/preBooking",
+        label: "Request Booking",
+        icon: <LucideBookmarkPlus />,
+      },
       { href: "/my-bookings", label: "My Bookings ", icon: <CalendarDays /> },
       { href: "/diagnostics", label: "Diagnostics", icon: <Lightbulb /> },
     ],
 
     EMPLOYEE: [
-      { href: "/", label: "Dashboard", icon: <LayoutDashboard /> },
+      { href: "/dashboard", label: "Dashboard", icon: <LayoutDashboard /> },
       {
         href: "/employee/repair-tracker",
         label: "Repair tracker",
@@ -93,7 +97,10 @@ export default function Sidebar({ toggleSidebar }) {
       </div>
 
       {/* Arrow Icon */}
-      <div className="absolute md:hidden top-4 right-4 cursor-pointer" onClick={toggleSidebar}>
+      <div
+        className="absolute md:hidden top-4 right-4 cursor-pointer"
+        onClick={toggleSidebar}
+      >
         <ChevronLeft className="text-blue-theme" size={30} />
       </div>
 
@@ -113,7 +120,9 @@ export default function Sidebar({ toggleSidebar }) {
               }`}
             >
               <span
-                className={`mr-2 ${isActive ? "text-white" : "text-blue-theme"}`}
+                className={`mr-2 ${
+                  isActive ? "text-white" : "text-blue-theme"
+                }`}
               >
                 {link.icon}
               </span>
