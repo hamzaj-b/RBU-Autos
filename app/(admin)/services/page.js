@@ -21,9 +21,10 @@ export default function ServicesPage() {
   const [clientReady, setClientReady] = useState(false);
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(""); // Search state
+  const [debouncedSearch, setDebouncedSearch] = useState(""); // Debounced search state
   const [sortOrder, setSortOrder] = useState("desc");
-  const [statusFilter, setStatusFilter] = useState("all"); // 👈 new filter
+  const [statusFilter, setStatusFilter] = useState("all"); // Filter for status
   const [modalOpen, setModalOpen] = useState(false);
   const [editingService, setEditingService] = useState(null);
   const [formData, setFormData] = useState({
@@ -34,14 +35,24 @@ export default function ServicesPage() {
     basePrice: "",
   });
 
+  // Initialize client
   useEffect(() => setClientReady(true), []);
 
-  // ─── Fetch Services ────────────────────────────────
+  // ─── Debounce Search ─────────────────────────────────
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search); // Set the debounced search after 500ms
+    }, 500); // Adjust debounce delay as needed
+
+    return () => clearTimeout(timer); // Clear timeout on cleanup
+  }, [search]); // Whenever the search value changes, debounce
+
+  // ─── Fetch Services ─────────────────────────────────
   const fetchServices = async () => {
     try {
       setLoading(true);
       const res = await fetch(
-        `/api/services?search=${search}&sortBy=createdAt&order=${sortOrder}&status=${statusFilter}`,
+        `/api/services?search=${debouncedSearch}&sortBy=createdAt&order=${sortOrder}&status=${statusFilter}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const data = await res.json();
@@ -55,9 +66,10 @@ export default function ServicesPage() {
     }
   };
 
+  // Trigger API fetch whenever debounced search or other filters change
   useEffect(() => {
     if (clientReady) fetchServices();
-  }, [clientReady, search, sortOrder, statusFilter]); // 👈 added statusFilter dependency
+  }, [clientReady, debouncedSearch, sortOrder, statusFilter]); // Added debouncedSearch as a dependency
 
   // ─── Handle Save / Update ───────────────────────────
   const handleSave = async () => {
@@ -174,9 +186,7 @@ export default function ServicesPage() {
       dataIndex: "name",
       render: (text, record) => (
         <span
-          className={`font-semibold ${
-            record.isActive ? "text-gray-800" : "text-gray-400 italic"
-          }`}
+          className={`font-semibold ${record.isActive ? "text-gray-800" : "text-gray-400 italic"}`}
         >
           {text}
         </span>
@@ -191,9 +201,7 @@ export default function ServicesPage() {
       title: "Base Price",
       dataIndex: "basePrice",
       render: (p, record) => (
-        <span className={record.isActive ? "text-gray-800" : "text-gray-400"}>
-          ${p?.toFixed(2)}
-        </span>
+        <span className={record.isActive ? "text-gray-800" : "text-gray-400"}>${p?.toFixed(2)}</span>
       ),
     },
     {
@@ -255,19 +263,17 @@ export default function ServicesPage() {
     );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-8 antialiased transition-all">
+    <div className="w-full min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-8 antialiased transition-all">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-semibold text-gray-800">
-          Service Management
-        </h1>
+      <div className="flex flex-col md:flex-row items-center justify-start md:justify-between mb-6">
+        <h1 className="text-3xl font-semibold text-gray-800">Service Management</h1>
         <div className="flex items-center gap-3">
           <Button
             onClick={fetchServices}
             variant="outline"
             className="flex items-center gap-2 text-gray-600"
           >
-            <RefreshCcw className="w-4 h-4" /> Refresh
+            <RefreshCcw className="w-4 h-4" />Refresh
           </Button>
           <Button
             onClick={() => {
@@ -283,18 +289,19 @@ export default function ServicesPage() {
             }}
             className="bg-white border shadow-xs hover:bg-gray-100 text-white flex items-center gap-2"
           >
-            <Plus className="w-4 h-4" /> New Service
+            <Plus className="w-4 h-4" />New Service
           </Button>
         </div>
       </div>
 
       {/* Search & Filter */}
-      <div className="mb-5 flex items-center gap-4">
+      <div className="mb-5 flex flex-col md:flex-row items-start md:items-center justify-start gap-2 md:gap-4">
         <Input.Search
           placeholder="Search by service or category..."
           allowClear
           onSearch={(val) => setSearch(val)}
-          className="max-w-sm"
+          className="max-w-sm focus:outline-none focus:ring-0 focus:border-none"
+
         />
         <Select
           value={statusFilter}
@@ -310,7 +317,7 @@ export default function ServicesPage() {
 
       {/* Table */}
       <Spin spinning={loading}>
-        <div className="bg-white rounded-xl shadow-lg p-4">
+        <div className="w-auto overflow-x-scroll bg-white rounded-xl shadow-lg p-4">
           <Table
             columns={columns}
             dataSource={services}
@@ -343,11 +350,8 @@ export default function ServicesPage() {
             />
           </div>
 
-
           <div>
-            <label className="text-sm font-medium text-gray-600">
-              Description
-            </label>
+            <label className="text-sm font-medium text-gray-600">Description</label>
             <Input.TextArea
               rows={3}
               value={formData.description}

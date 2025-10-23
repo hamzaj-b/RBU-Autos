@@ -168,7 +168,7 @@ export default function ProfilePage() {
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-center border-b pb-4">
           <div className="flex items-center gap-4">
-            <div className="w-20 h-20 flex items-center justify-center rounded-full bg-blue-500 text-white font-bold text-2xl shadow-lg">
+            <div className="w-16 md:w-20 h-16 md:h-20 flex items-center justify-center rounded-full bg-blue-theme text-white font-bold text-lg md:text-2xl shadow-lg p-1">
               {formData.fullName
                 ?.split(" ")
                 .map((n) => n[0]?.toUpperCase())
@@ -189,7 +189,7 @@ export default function ProfilePage() {
                 <>
                   <Button
                     onClick={handleSave}
-                    className="bg-blue-600 !text-white"
+                    className="bg-blue-bold !text-white"
                   >
                     Save
                   </Button>
@@ -203,7 +203,7 @@ export default function ProfilePage() {
               ) : (
                 <Button
                   onClick={() => setIsEditing(true)}
-                  className="bg-blue-600 !text-white"
+                  className="bg-blue-bold !text-white"
                 >
                   <Edit2 className="w-4 h-4 mr-1" />
                   Edit
@@ -215,7 +215,7 @@ export default function ProfilePage() {
 
         {/* ADMIN FIELDS */}
         {user.userType === "ADMIN" && (
-          <Card title="👑 Admin Details" bordered={false}>
+          <Card title="Admin Details" bordered={false}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
                 addonBefore={<Mail />}

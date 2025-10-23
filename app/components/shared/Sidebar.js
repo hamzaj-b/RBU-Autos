@@ -10,7 +10,9 @@ import {
   SquareUser,
   Users,
   Wrench,
-  ChevronLeft, // <-- Add the arrow icon
+  ChevronLeft,
+  LucideBookmarkPlus,
+  LucidePencil, // <-- Add the arrow icon
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -40,7 +42,7 @@ export default function Sidebar({ toggleSidebar }) {
       {
         href: "/pending-bookings",
         label: "Pre Booking",
-        icon: <CalendarDays />,
+        icon: <LucideBookmarkPlus />,
       },
       { href: "/diagnostics", label: "Diagnostics", icon: <Lightbulb /> },
       {
@@ -51,15 +53,15 @@ export default function Sidebar({ toggleSidebar }) {
       {
         href: "/manage-booking",
         label: "Manage Booking",
-        icon: <SquareUser />,
+        icon: <LucidePencil />,
       },
-      { href: "/marketing", label: "Marketing", icon: <SquareUser /> },
+      // { href: "/marketing", label: "Marketing", icon: <SquareUser /> },
       { href: "/settings", label: "Settings", icon: <Settings /> },
     ],
 
     CUSTOMER: [
       { href: "/", label: "Dashboard", icon: <LayoutDashboard /> },
-      { href: "/preBooking", label: "Request Booking", icon: <CalendarDays /> },
+      { href: "/preBooking", label: "Request Booking", icon: <LucideBookmarkPlus /> },
       { href: "/my-bookings", label: "My Bookings ", icon: <CalendarDays /> },
       { href: "/diagnostics", label: "Diagnostics", icon: <Lightbulb /> },
     ],

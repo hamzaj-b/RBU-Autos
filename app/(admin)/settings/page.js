@@ -103,10 +103,10 @@ export default function BusinessSettingsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-8 text-gray-800 transition-all">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col md:flex-row items-center gap-2 md:gap-0 justify-between mb-8">
         <div className="flex items-center gap-3">
           <Settings2 className="w-8 h-8 text-blue-theme" />
-          <h1 className="text-3xl font-semibold">Business Settings</h1>
+          <h1 className="text-xl md:text-3xl font-semibold">Business Settings</h1>
         </div>
 
         <div className="flex items-center gap-3">

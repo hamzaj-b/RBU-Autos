@@ -283,7 +283,7 @@ export default function RepairTracker() {
             </button>
           ))}
         </div>
-        <div className="flex flex-col gap-2 flex-wrap justify-end items-end">
+        <div className="w-full flex flex-col gap-2 flex-wrap justify-end ">
           {/* Dropdown for small screens */}
           <div className="md:hidden">
             <select
@@ -305,7 +305,7 @@ export default function RepairTracker() {
                   value={s}
                   className={`${
                     statusFilter === s
-                      ? "bg-blue-theme text-white"
+                      ? "bg-blue-bold text-white"
                       : "text-gray-500"
                   }`}
                 >
@@ -318,7 +318,7 @@ export default function RepairTracker() {
       </div>
 
       {/* 📋 Work Orders */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 divide-y">
+      <div className="bg-white w-full rounded-xl shadow-sm border border-gray-100 divide-y">
         {loading ? (
           <div className="flex justify-center py-20">
             <Spin size="large" />
@@ -341,7 +341,7 @@ export default function RepairTracker() {
                 {getStatusTag(wo.status)}
               </div>
 
-              <div className="flex gap-2 mt-3 md:mt-0">
+              <div className="flex gap-2 mt-3 md:mt-0 justify-end">
                 {wo.status === "OPEN" && (
                   <button
                     onClick={() => {
