@@ -80,7 +80,7 @@ export default function NewNetIncomeCard({
             <Skeleton.Input
               active
               size="large"
-              style={{ width: 100, height: 36, borderRadius: 6 }}
+              style={{ width: 50, height: 36, borderRadius: 6 }}
             />
           ) : (
             <div className="text-xl sm:text-[32px] font-bold tracking-tight text-[#0a1733]">

@@ -289,7 +289,7 @@ export default function RepairTracker() {
             <select
               onChange={(e) => setStatusFilter(e.target.value)}
               value={statusFilter}
-              className="px-2 py-1 text-xs md:text-sm rounded-lg font-medium bg-white border border-gray-300 hover:bg-gray-200 focus:ring-0 focus:border-blue-500 focus:outline-none transition-colors duration-200"
+              className="w-full px-2 py-1 text-xs md:text-sm rounded-lg font-medium bg-white border border-gray-300 hover:bg-gray-200 focus:ring-0 focus:border-blue-500 focus:outline-none transition-colors duration-200"
             >
               {[
                 "all",
