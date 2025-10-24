@@ -206,9 +206,9 @@ export default function StaffManagement() {
                   <span className="text-sm text-gray-600">
                     {new Date(employee.createdAt).toLocaleDateString()}
                   </span>
-                  {/* <span className="text-sm text-gray-600">
-                    {employee.totalLoggedHours || 0} hrs
-                  </span> */}
+                  <span className="text-sm text-gray-600">
+                    {employee.totalLoggedTime || 0}
+                  </span>
 
                   <span
                     className={`text-sm font-medium px-3 py-1 rounded-full ${

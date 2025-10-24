@@ -319,29 +319,53 @@ export default function ProfilePage() {
               <p>
                 <b>Hourly Rate:</b> $ {profileData.hourlyRate}/hr
               </p>
-              {/* <p>
-                <b>Total Logged Hours:</b> {profileData.totalLoggedHours || 0}{" "}
-                hrs
-              </p> */}
+              <p>
+                <b>Total Logged Hours:</b> {profileData.totalLoggedTime || 0}{" "}
+              </p>
 
-              <div className="mt-4">
-                <h4 className="font-semibold mb-2">Recent Sessions:</h4>
+              <div className="mt-6">
+                <h4 className="font-semibold mb-3 text-gray-800">
+                  Recent Sessions
+                </h4>
                 {profileData.Sessions?.length ? (
-                  profileData.Sessions.slice(0, 5).map((s) => (
-                    <div
-                      key={s.id}
-                      className="flex justify-between text-sm border-b py-1"
-                    >
-                      <span>{new Date(s.loginAt).toLocaleString()}</span>
-                      <span>
-                        {s.logoutAt
-                          ? new Date(s.logoutAt).toLocaleString()
-                          : "Active"}
-                      </span>
-                    </div>
-                  ))
+                  <div className="divide-y divide-gray-200 border border-gray-200 rounded-lg overflow-hidden text-sm">
+                    {profileData.Sessions.slice(0, 5).map((s, i) => (
+                      <div
+                        key={s.id}
+                        className={`flex items-center justify-between px-3 py-2 transition-colors ${
+                          i % 2 === 0
+                            ? "bg-gray-50 hover:bg-gray-100"
+                            : "bg-white hover:bg-gray-50"
+                        }`}
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-medium text-gray-800">
+                            {new Date(s.loginAt).toLocaleString()}
+                          </span>
+                          <span className="text-xs text-gray-500">Login</span>
+                        </div>
+
+                        <div className="flex flex-col text-right">
+                          {s.logoutAt ? (
+                            <>
+                              <span className="font-medium text-gray-800">
+                                {new Date(s.logoutAt).toLocaleString()}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                Logout
+                              </span>
+                            </>
+                          ) : (
+                            <span className="text-xs font-semibold px-2 py-1 bg-green-100 text-green-700 rounded-md">
+                              Active
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 ) : (
-                  <p className="text-gray-500 text-sm">
+                  <p className="text-gray-500 text-sm italic">
                     No session history found.
                   </p>
                 )}

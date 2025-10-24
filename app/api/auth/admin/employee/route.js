@@ -89,7 +89,7 @@ async function GET(req) {
     }
 
     // ======================================================
-    // 👷 If EMPLOYEE → Fetch Own Profile + Logged Hours
+    // 👷 EMPLOYEE → Fetch Own Profile + Logged Hours
     // ======================================================
     if (decoded.userType === "EMPLOYEE") {
       if (!decoded.employeeId) {
@@ -123,27 +123,47 @@ async function GET(req) {
         );
       }
 
-      // 🕒 Calculate total logged hours
-      const totalMs = employee.Sessions.filter(
-        (s) => s.loginAt && s.logoutAt
-      ).reduce(
-        (sum, s) => sum + (new Date(s.logoutAt) - new Date(s.loginAt)),
-        0
-      );
+      // 🕒 Calculate total logged time (exclude active sessions)
+      const totalMs = employee.Sessions.reduce((sum, s) => {
+        if (!s.loginAt || !s.logoutAt) return sum; // skip active
+        const diff = new Date(s.logoutAt) - new Date(s.loginAt);
+        return sum + Math.max(diff, 0);
+      }, 0);
 
-      const totalHours = +(totalMs / (1000 * 60 * 60)).toFixed(2);
+      const hours = Math.floor(totalMs / (1000 * 60 * 60));
+      const minutes = Math.floor((totalMs % (1000 * 60 * 60)) / (1000 * 60));
+      const totalHoursDecimal = +(totalMs / (1000 * 60 * 60)).toFixed(2);
+      const totalLoggedTime = `${hours}h ${minutes}m`;
+
+      // Find current active session if any
+      const activeSession = employee.Sessions.find((s) => !s.logoutAt) || null;
+      let activeDuration = null;
+      if (activeSession?.loginAt) {
+        const diffMs = new Date() - new Date(activeSession.loginAt);
+        const h = Math.floor(diffMs / (1000 * 60 * 60));
+        const m = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+        activeDuration = `${h}h ${m}m`;
+      }
 
       return NextResponse.json({
         employee: {
           ...employee,
-          totalLoggedHours: totalHours,
+          totalLoggedHours: totalHoursDecimal,
+          totalLoggedTime,
+          activeSession: activeSession
+            ? {
+                id: activeSession.id,
+                loginAt: activeSession.loginAt,
+                activeFor: activeDuration,
+              }
+            : null,
         },
         message: "Employee profile fetched successfully",
       });
     }
 
     // ======================================================
-    // 👑 If ADMIN → List all employees with total logged hours
+    // 👑 ADMIN → List all employees + total logged hours
     // ======================================================
     if (decoded.userType !== "ADMIN") {
       return NextResponse.json(
@@ -185,18 +205,10 @@ async function GET(req) {
         take: limit,
         include: {
           Sessions: {
-            select: {
-              id: true,
-              loginAt: true,
-              logoutAt: true,
-            },
+            select: { id: true, loginAt: true, logoutAt: true },
           },
           User: {
-            select: {
-              email: true,
-              isActive: true,
-              createdAt: true,
-            },
+            select: { email: true, isActive: true, createdAt: true },
           },
         },
         orderBy: { [sortBy]: order },
@@ -206,14 +218,22 @@ async function GET(req) {
 
     // 🕒 Compute total hours for each employee
     const enriched = employees.map((emp) => {
-      const totalMs = emp.Sessions.filter(
-        (s) => s.loginAt && s.logoutAt
-      ).reduce(
-        (sum, s) => sum + (new Date(s.logoutAt) - new Date(s.loginAt)),
-        0
-      );
-      const totalHours = +(totalMs / (1000 * 60 * 60)).toFixed(2);
-      return { ...emp, totalLoggedHours: totalHours };
+      const totalMs = emp.Sessions.reduce((sum, s) => {
+        if (!s.loginAt || !s.logoutAt) return sum; // skip active
+        const diff = new Date(s.logoutAt) - new Date(s.loginAt);
+        return sum + Math.max(diff, 0);
+      }, 0);
+
+      const hours = Math.floor(totalMs / (1000 * 60 * 60));
+      const minutes = Math.floor((totalMs % (1000 * 60 * 60)) / (1000 * 60));
+      const totalHoursDecimal = +(totalMs / (1000 * 60 * 60)).toFixed(2);
+      const totalLoggedTime = `${hours}h ${minutes}m`;
+
+      return {
+        ...emp,
+        totalLoggedHours: totalHoursDecimal,
+        totalLoggedTime,
+      };
     });
 
     return NextResponse.json({
