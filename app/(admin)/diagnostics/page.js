@@ -12,36 +12,41 @@ const { Option } = Select;
 
 export default function ReportsPage() {
   const { token } = useAuth();
-
-  const [mounted, setMounted] = useState(false); // Prevent SSR hydration issues
+  const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
-
   const [report, setReport] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [services, setServices] = useState([]);
-
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [selectedServices, setSelectedServices] = useState([]);
   const [dateRange, setDateRange] = useState([]);
 
-  // 🧮 Compute summary
+  // ✅ Compute all totals (includes Completed Revenue)
   const totals = useMemo(() => {
     const totalOrders = report.length;
     const totalRevenue = report.reduce(
       (sum, r) => sum + (r.totalRevenue || 0),
       0
     );
-    const completed = report.filter((r) => r.status === "COMPLETED").length;
+    const completedOrders = report.filter((r) => r.status === "COMPLETED");
+    const completedCount = completedOrders.length;
+    const completedRevenue = completedOrders.reduce(
+      (sum, r) => sum + (r.totalRevenue || 0),
+      0
+    );
     const inProgress = report.filter((r) => r.status === "IN_PROGRESS").length;
-    return { totalOrders, totalRevenue, completed, inProgress };
+
+    return {
+      totalOrders,
+      totalRevenue,
+      completedCount,
+      completedRevenue,
+      inProgress,
+    };
   }, [report]);
 
-  // 🚫 SSR style mismatch guard
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  useEffect(() => setMounted(true), []);
 
-  // 🧩 Fetch Filters (customers & services)
   useEffect(() => {
     if (!token) return;
     (async () => {
@@ -60,20 +65,8 @@ export default function ReportsPage() {
           servRes.json(),
         ]);
 
-        const cs = Array.isArray(custData?.customers)
-          ? custData.customers
-          : Array.isArray(custData?.data)
-          ? custData.data
-          : [];
-
-        const ss = Array.isArray(servData?.services)
-          ? servData.services
-          : Array.isArray(servData?.data)
-          ? servData.data
-          : [];
-
-        setCustomers(cs);
-        setServices(ss);
+        setCustomers(custData?.customers || custData?.data || []);
+        setServices(servData?.services || servData?.data || []);
       } catch (err) {
         console.error("Filter fetch error:", err);
         message.error("Failed to load filters");
@@ -81,12 +74,10 @@ export default function ReportsPage() {
     })();
   }, [token]);
 
-  // 🧾 Fetch Report Data
   const fetchReport = useCallback(async () => {
     if (!token) return;
     try {
       setLoading(true);
-
       const params = new URLSearchParams();
       if (selectedCustomer) params.append("customerId", selectedCustomer);
       selectedServices.forEach((s) => params.append("serviceIds", s));
@@ -98,7 +89,6 @@ export default function ReportsPage() {
       const res = await fetch(`/api/report?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to load report");
       setReport(Array.isArray(data.report) ? data.report : []);
@@ -109,172 +99,174 @@ export default function ReportsPage() {
     }
   }, [token, selectedCustomer, selectedServices, dateRange]);
 
-  // Load on page mount
   useEffect(() => {
     fetchReport();
   }, [fetchReport]);
 
-  // 📅 Safe date formatter
-  const formatMaybeDate = (val) => {
-    if (!val) return "—";
-    const d = dayjs(val);
-    return d.isValid() ? d.format("YYYY-MM-DD HH:mm") : "—";
-  };
-
-  // 📤 Export CSV
-  const exportCsv = () => {
-    const header = [
-      "Customer",
-      "Employee",
-      "Services",
-      "Status",
-      "Total Revenue",
-      "Opened At",
-      "Closed At",
-    ].join(",");
-
-    const body = report
-      .map((r) =>
-        [
-          safeCsv(r.customerName),
-          safeCsv(r.employeeName),
-          safeCsv(r.services),
-          safeCsv(r.status),
-          r.totalRevenue || 0,
-          formatMaybeDate(r.openedAt),
-          formatMaybeDate(r.closedAt),
-        ].join(",")
-      )
-      .join("\n");
-
-    const blob = new Blob([`${header}\n${body}`], {
-      type: "text/csv;charset=utf-8;",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "work_orders_report.csv";
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+  const formatMaybeDate = (val) =>
+    val ? dayjs(val).format("YYYY-MM-DD HH:mm") : "—";
 
   const safeCsv = (s) => {
     const str = String(s || "");
-    if (str.includes(",") || str.includes('"') || str.includes("\n")) {
-      return `"${str.replace(/"/g, '""')}"`;
-    }
-    return str;
+    return str.includes(",") || str.includes('"') || str.includes("\n")
+      ? `"${str.replace(/"/g, '""')}"`
+      : str;
   };
 
-  // ♻️ Reset Filters
+
   const resetFilters = () => {
     setSelectedCustomer(null);
     setSelectedServices([]);
     setDateRange([]);
   };
 
-  // 📊 Table Columns
+  // --- TABLE COLUMNS with data-labels for mobile ---
   const columns = [
     {
       title: "Customer",
       dataIndex: "customerName",
-      key: "customerName",
-      render: (name) => (
-        <span className="font-medium text-gray-800">{name || "—"}</span>
-      ),
+      render: (v) => v || "—",
+      onCell: () => ({ "data-label": "Customer" }),
     },
     {
       title: "Employee",
       dataIndex: "employeeName",
-      key: "employeeName",
       render: (v) => v || "—",
+      onCell: () => ({ "data-label": "Employee" }),
     },
     {
       title: "Services",
       dataIndex: "services",
-      key: "services",
-      render: (val) => (
-        <span className="text-sm text-gray-600">{val || "—"}</span>
-      ),
+      render: (v) => v || "—",
+      onCell: () => ({ "data-label": "Services" }),
     },
     {
       title: "Status",
       dataIndex: "status",
-      key: "status",
       render: (status) => {
         const colorMap = {
-          COMPLETED: "text-emerald-600",
-          DONE: "text-blue-600",
-          IN_PROGRESS: "text-indigo-600",
-          CANCELLED: "text-rose-600",
-          OPEN: "text-gray-600",
-          ASSIGNED: "text-amber-600",
+          COMPLETED: "bg-emerald-100 text-emerald-700",
+          DONE: "bg-blue-100 text-blue-700",
+          IN_PROGRESS: "bg-indigo-100 text-indigo-700",
+          CANCELLED: "bg-rose-100 text-rose-700",
+          OPEN: "bg-gray-100 text-gray-700",
+          ASSIGNED: "bg-amber-100 text-amber-700",
         };
         return (
           <span
-            className={`font-semibold ${colorMap[status] || "text-gray-600"}`}
+            className={`font-semibold px-2 py-1 rounded-md text-xs ${
+              colorMap[status] || "bg-gray-100 text-gray-700"
+            }`}
           >
             {status}
           </span>
         );
       },
+      onCell: () => ({ "data-label": "Status" }),
     },
     {
       title: "Total Revenue ($)",
       dataIndex: "totalRevenue",
-      key: "totalRevenue",
       render: (amt) => (
         <span className="font-semibold text-blue-700">
           ${Number(amt || 0).toFixed(2)}
         </span>
       ),
+      onCell: () => ({ "data-label": "Total Revenue ($)" }),
     },
     {
       title: "Opened At",
       dataIndex: "openedAt",
-      key: "openedAt",
       render: (date) => formatMaybeDate(date),
+      onCell: () => ({ "data-label": "Opened At" }),
     },
     {
       title: "Closed At",
       dataIndex: "closedAt",
-      key: "closedAt",
       render: (date) => formatMaybeDate(date),
+      onCell: () => ({ "data-label": "Closed At" }),
     },
   ];
 
-  // 🧱 Mount guard for AntD hydration
-  if (!mounted) {
+  if (!mounted)
     return (
       <div className="p-6 bg-gray-50 min-h-screen grid place-items-center">
         <Spin size="large" />
       </div>
     );
-  }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-4 sm:p-6 bg-gray-50 min-h-screen overflow-hidden text-gray-800">
+      {/* Responsive Table Styles */}
+      <style jsx global>{`
+        @media (max-width: 640px) {
+          .ant-table-thead {
+            display: none !important;
+          }
+
+          .ant-table-tbody > tr {
+            display: flex !important;
+            flex-direction: column !important;
+            border: 1px solid #e5e7eb !important;
+            border-radius: 0.75rem !important;
+            margin-bottom: 1rem !important;
+            background: #fff !important;
+            padding: 0.9rem 1rem !important;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+          }
+
+          /* Each cell = one row (label + value side-by-side) */
+          .ant-table-tbody > tr > td {
+            display: flex !important;
+            flex-direction: row !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            border: none !important;
+            padding: 0.45rem 0 !important;
+            border-bottom: 1px dashed #e5e7eb;
+            font-size: 0.9rem !important;
+          }
+
+          /* Remove bottom border from last row */
+          .ant-table-tbody > tr > td:last-child {
+            border-bottom: none !important;
+          }
+
+          /* Label styling */
+          .ant-table-tbody > tr > td::before {
+            content: attr(data-label);
+            font-weight: 600;
+            color: #374151;
+            font-size: 0.9rem;
+            flex: 1;
+            text-align: left;
+            margin-right: 1rem;
+          }
+
+          /* Value styling */
+          .ant-table-tbody > tr > td span,
+          .ant-table-tbody > tr > td div {
+            color: #111827;
+            font-weight: 500;
+            flex: 1;
+            text-align: right;
+            word-break: break-word;
+          }
+        }
+      `}</style>
+
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3">
-        <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-          <FileBarChart2 className="text-blue-700" size={28} />
+      <div className="flex flex-col sm:flex-row justify-between gap-3 mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+          <FileBarChart2 className="text-blue-700" size={26} />
           Work Order Reports
         </h1>
-
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={exportCsv}
-            className="flex items-center gap-2 px-4"
-          >
-            <Download className="w-4 h-4" />
-            Export
-          </Button>
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           <Button
             variant="outline"
             onClick={fetchReport}
             disabled={loading}
-            className="flex items-center gap-2 px-4"
+            className="flex items-center justify-center gap-2 w-full sm:w-auto"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
             Refresh
@@ -283,40 +275,44 @@ export default function ReportsPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-          <div className="text-sm text-gray-500">Total Orders</div>
-          <div className="text-2xl font-bold text-gray-800">
-            {totals.totalOrders}
-          </div>
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+        <div className="p-4 bg-white border rounded-xl text-center md:text-left">
+          <p className="text-sm text-gray-500">Total Orders</p>
+          <p className="text-2xl font-bold">{totals.totalOrders}</p>
         </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-          <div className="text-sm text-gray-500">Total Revenue</div>
-          <div className="text-2xl font-extrabold text-blue-700">
+        <div className="p-4 bg-white border rounded-xl text-center md:text-left">
+          <p className="text-sm text-gray-500">Total Revenue</p>
+          <p className="text-2xl font-bold text-blue-700">
             ${totals.totalRevenue.toFixed(2)}
-          </div>
+          </p>
         </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-          <div className="text-sm text-gray-500">Completed</div>
-          <div className="text-2xl font-bold text-emerald-600">
-            {totals.completed}
-          </div>
+        <div className="p-4 bg-white border rounded-xl text-center md:text-left">
+          <p className="text-sm text-gray-500">Completed Orders</p>
+          <p className="text-2xl font-bold text-emerald-600">
+            {totals.completedCount}
+          </p>
         </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-          <div className="text-sm text-gray-500">In Progress</div>
-          <div className="text-2xl font-bold text-indigo-600">
+        <div className="p-4 bg-white border rounded-xl text-center md:text-left">
+          <p className="text-sm text-gray-500">Completed Revenue</p>
+          <p className="text-2xl font-bold text-emerald-700">
+            ${totals.completedRevenue.toFixed(2)}
+          </p>
+        </div>
+        <div className="p-4 bg-white border rounded-xl text-center md:text-left">
+          <p className="text-sm text-gray-500">In Progress</p>
+          <p className="text-2xl font-bold text-indigo-600">
             {totals.inProgress}
-          </div>
+          </p>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
         <Select
           placeholder="Select Customer"
           allowClear
-          onChange={(val) => setSelectedCustomer(val || null)}
           value={selectedCustomer || undefined}
+          onChange={(val) => setSelectedCustomer(val || null)}
           className="w-full"
           showSearch
           optionFilterProp="children"
@@ -337,7 +333,6 @@ export default function ReportsPage() {
           className="w-full"
           showSearch
           maxTagCount="responsive"
-          optionFilterProp="children"
         >
           {services.map((s) => (
             <Option key={s.id} value={s.id}>
@@ -357,7 +352,7 @@ export default function ReportsPage() {
         <Button
           onClick={fetchReport}
           disabled={loading}
-          className="bg-blue-theme hover:bg-blue-bold !text-white"
+          className="bg-blue-theme hover:bg-blue-bold !text-white w-full"
         >
           Apply Filters
         </Button>
@@ -368,15 +363,14 @@ export default function ReportsPage() {
             resetFilters();
             setTimeout(fetchReport, 0);
           }}
-          className="flex items-center gap-2"
+          className="flex items-center justify-center gap-2 w-full"
         >
-          <XCircle className="w-4 h-4" />
-          Reset
+          <XCircle className="w-4 h-4" /> Reset
         </Button>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-2 sm:p-4 overflow-x-auto">
         {loading ? (
           <div className="flex justify-center py-20">
             <Spin size="large" />
@@ -394,6 +388,7 @@ export default function ReportsPage() {
             columns={columns}
             rowKey="id"
             pagination={{ pageSize: 10, showSizeChanger: true }}
+            scroll={{ x: true }}
           />
         )}
       </div>

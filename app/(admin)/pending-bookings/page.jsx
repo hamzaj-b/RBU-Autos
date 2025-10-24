@@ -218,7 +218,7 @@ export default function PreBookingsPage() {
         record.status === "PENDING" && (
           <div className="flex gap-2">
             <Button
-              type="primary"
+              className="!text-white !bg-blue-theme"
               icon={<CheckCircle size={16} />}
               onClick={() => {
                 setSelectedBooking(record.raw || record);
@@ -248,51 +248,112 @@ export default function PreBookingsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white p-6">
-      <div className="w-full mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white p-4 sm:p-6">
+      <style jsx global>{`
+        /* 📱 Mobile card layout for AntD table */
+        @media (max-width: 640px) {
+          .ant-table-thead {
+            display: none !important;
+          }
+
+          .ant-table-tbody > tr {
+            display: flex !important;
+            flex-direction: column !important;
+            border: 1px solid #e5e7eb !important;
+            border-radius: 0.75rem !important;
+            margin-bottom: 1rem !important;
+            background: #fff !important;
+            padding: 0.9rem 1rem !important;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+          }
+
+          .ant-table-tbody > tr > td {
+            display: flex !important;
+            flex-direction: row !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            border: none !important;
+            padding: 0.45rem 0 !important;
+            border-bottom: 1px dashed #e5e7eb;
+            font-size: 0.9rem !important;
+          }
+
+          .ant-table-tbody > tr > td:last-child {
+            border-bottom: none !important;
+          }
+
+          .ant-table-tbody > tr > td::before {
+            content: attr(data-label);
+            font-weight: 600;
+            color: #374151;
+            font-size: 0.9rem;
+            flex: 1;
+            text-align: left;
+            margin-right: 1rem;
+          }
+
+          .ant-table-tbody > tr > td span,
+          .ant-table-tbody > tr > td div {
+            font-weight: 500;
+            flex: 1;
+            text-align: right;
+            word-break: break-word;
+          }
+        }
+      `}</style>
+
+      <div className="w-full mx-auto max-w-7xl">
         <Card
           className="shadow-lg rounded-2xl border border-gray-100"
           title={
-            <div className="flex items-center gap-2 text-[#0f74b2]">
+            <div className="flex items-center gap-2 text-[#0f74b2] flex-wrap">
               <Calendar className="w-5 h-5" />
               <span className="font-semibold text-lg">Pre-Bookings</span>
             </div>
           }
         >
-          <div className="flex items-center gap-3 mb-4">
+          {/* 🔹 Filters Bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
             <Input
               placeholder="Search by customer or service..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-64 border-gray-200 rounded-lg"
+              className="w-full sm:w-64 border-gray-200 rounded-lg"
             />
-            <Button
-              onClick={fetchBookings}
-              className="border-[#0f74b2] text-[#0f74b2]"
-              disabled={loading}
-            >
-              <RefreshCcw
-                size={16}
-                className={`${loading ? "animate-spin" : ""}`}
-              />{" "}
-              Refresh
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button
+                onClick={fetchBookings}
+                className="border-[#0f74b2] text-[#0f74b2] flex items-center justify-center"
+                disabled={loading}
+              >
+                <RefreshCcw
+                  size={16}
+                  className={`${loading ? "animate-spin" : ""}`}
+                />
+                <span className="ml-2">Refresh</span>
+              </Button>
+            </div>
           </div>
 
+          {/* 🔹 Table or Loader */}
           {loading ? (
             <Skeleton active />
           ) : (
             <Table
               dataSource={preBookings}
-              columns={columns}
+              columns={columns.map((col) => ({
+                ...col,
+                onCell: () => ({ "data-label": col.title }),
+              }))}
               rowKey="id"
               pagination={false}
+              className="rounded-lg bg-white"
             />
           )}
         </Card>
       </div>
 
-      {/* Action Modal */}
+      {/* 🔹 Action Modal */}
       <Modal
         open={actionModal}
         title={
@@ -319,6 +380,9 @@ export default function PreBookingsPage() {
         okButtonProps={{
           disabled: actionType === "APPROVE" && !employeeId,
         }}
+        centered
+        className="!max-w-lg sm:!max-w-xl"
+        bodyStyle={{ maxHeight: "70vh", overflowY: "auto" }}
       >
         <div className="space-y-3">
           {actionType === "APPROVE" && (
@@ -334,11 +398,7 @@ export default function PreBookingsPage() {
                 className="w-full"
                 loading={employeeLoading}
               />
-            </>
-          )}
-          <Divider className="my-4" />
-          {actionType === "APPROVE" && (
-            <>
+              <Divider className="my-4" />
               <div className="text-sm font-medium text-gray-700 mb-1">
                 Busy Employees
               </div>

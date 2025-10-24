@@ -1,28 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  Card,
-  InputNumber,
-  Switch,
-  TimePicker,
-  Select,
-  Spin,
-  message,
-} from "antd";
+import { Card, Switch, TimePicker, Select, Spin, message } from "antd";
 import { Button } from "@/components/ui/button";
 import { RefreshCcw, Settings2, Clock, Globe2 } from "lucide-react";
 import dayjs from "dayjs";
-import timeZones from "@/timeZones.json"; // ✅ imported from root
+import timeZones from "@/timeZones.json";
 
 export default function BusinessSettingsPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState(null);
 
-  // ───────────────────────────────
-  // Fetch settings from API
-  // ───────────────────────────────
   const fetchSettings = async () => {
     setLoading(true);
     try {
@@ -32,7 +21,6 @@ export default function BusinessSettingsPage() {
       if (res.ok && data.settings?.length > 0) {
         setSettings(data.settings[0]);
       } else {
-        // no settings exist yet — initialize defaults
         const defaultZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
         const matchZone = timeZones.find((t) => t.zone === defaultZone);
         setSettings({
@@ -53,9 +41,6 @@ export default function BusinessSettingsPage() {
     }
   };
 
-  // ───────────────────────────────
-  // Save settings (POST/PUT)
-  // ───────────────────────────────
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -67,10 +52,7 @@ export default function BusinessSettingsPage() {
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...settings,
-          utc: settings.utc || "",
-        }),
+        body: JSON.stringify({ ...settings, utc: settings.utc || "" }),
       });
 
       const data = await res.json();
@@ -94,33 +76,36 @@ export default function BusinessSettingsPage() {
 
   if (loading || !settings) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
+      <div className="flex justify-center items-center min-h-screen overflow-x-hidden">
         <Spin size="large" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-8 text-gray-800 transition-all">
+    <div className="min-h-screen w-full overflow-x-hidden bg-gradient-to-br from-gray-50 to-gray-100 px-3 sm:px-6 py-5 text-gray-800">
       {/* Header */}
-      <div className="flex flex-col md:flex-row items-center gap-2 md:gap-0 justify-between mb-8">
-        <div className="flex items-center gap-3">
-          <Settings2 className="w-8 h-8 text-blue-theme" />
-          <h1 className="text-xl md:text-3xl font-semibold">Business Settings</h1>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-5">
+        <div className="flex items-center gap-2">
+          <Settings2 className="w-5 h-5 text-blue-theme" />
+          <h1 className="text-lg sm:text-2xl font-semibold">
+            Business Settings
+          </h1>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           <Button
             variant="outline"
             onClick={fetchSettings}
-            className="flex items-center gap-2 text-gray-600"
+            className="flex items-center justify-center gap-2 text-gray-700 border-gray-300 hover:bg-gray-100 w-full sm:w-auto"
           >
             <RefreshCcw className="w-4 h-4" /> Refresh
           </Button>
+
           <Button
             onClick={handleSave}
             disabled={saving}
-            className={`bg-blue-theme hover:bg-blue-bold !text-white ${
+            className={`bg-blue-theme hover:bg-blue-bold !text-white font-medium w-full sm:w-auto justify-center ${
               saving && "opacity-70"
             }`}
           >
@@ -130,104 +115,109 @@ export default function BusinessSettingsPage() {
       </div>
 
       {/* Main Card */}
-      <Card className="p-8 rounded-2xl shadow-xl border border-gray-200 bg-white mx-auto">
-        <div className="space-y-8">
-          {/* ─── Timezone ─────────────────────────────── */}
-          <section>
-            <div className="flex items-center gap-2 mb-3">
-              <Globe2 className="w-5 h-5 text-blue-theme" />
-              <h2 className="text-lg font-semibold text-gray-800">Timezone</h2>
-            </div>
-
-            <Select
-              showSearch
-              value={settings.timezone}
-              onChange={(val) => {
-                const selected = timeZones.find((t) => t.zone === val);
-                setSettings((prev) => ({
-                  ...prev,
-                  timezone: val,
-                  utc: selected?.utc || "",
-                }));
-              }}
-              options={timeZones.map((t) => ({
-                value: t.zone,
-                label: `${t.utc} - ${t.name}`,
-              }))}
-              className="w-full"
-            />
-
-            <p className="text-sm text-gray-500 mt-2">
-              Current offset:{" "}
-              <span className="font-medium">{settings.utc}</span>
-            </p>
-          </section>
-
-          {/* ─── Business Hours ───────────────────────── */}
-          <section>
-            <div className="flex items-center gap-2 mb-3">
-              <Clock className="w-5 h-5 text-blue-theme" />
-              <h2 className="text-lg font-semibold text-gray-800">
-                Business Hours
-              </h2>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm text-gray-600 font-medium">
-                  Open Time
-                </label>
-                <TimePicker
-                  format="HH:mm"
-                  value={dayjs(settings.openTime, "HH:mm")}
-                  onChange={(val) =>
-                    setSettings((p) => ({
-                      ...p,
-                      openTime: val ? val.format("HH:mm") : "09:00",
-                    }))
-                  }
-                  className="w-full mt-1"
-                />
+      <div className="mx-auto w-full">
+        <Card className="p-4 sm:p-6 rounded-xl shadow-md border border-gray-200 bg-white">
+          <div className="space-y-6">
+            {/* Timezone */}
+            <section>
+              <div className="flex items-center gap-2 mb-2">
+                <Globe2 className="w-4 h-4 text-blue-theme" />
+                <h2 className="text-base font-semibold">Timezone</h2>
               </div>
-              <div>
-                <label className="text-sm text-gray-600 font-medium">
-                  Close Time
-                </label>
-                <TimePicker
-                  format="HH:mm"
-                  value={dayjs(settings.closeTime, "HH:mm")}
-                  onChange={(val) =>
-                    setSettings((p) => ({
-                      ...p,
-                      closeTime: val ? val.format("HH:mm") : "18:00",
-                    }))
-                  }
-                  className="w-full mt-1"
-                />
-              </div>
-            </div>
-          </section>
 
+              <Select
+                showSearch
+                value={settings.timezone}
+                onChange={(val) => {
+                  const selected = timeZones.find((t) => t.zone === val);
+                  setSettings((prev) => ({
+                    ...prev,
+                    timezone: val,
+                    utc: selected?.utc || "",
+                  }));
+                }}
+                options={timeZones.map((t) => ({
+                  value: t.zone,
+                  label: `${t.utc} - ${t.name}`,
+                }))}
+                className="w-full"
+                dropdownStyle={{ maxHeight: 250, overflowY: "auto" }}
+                getPopupContainer={(trigger) => trigger.parentElement}
+              />
 
-          {/* ─── Booking Control ──────────────────────── */}
-          <section className="bg-gray-50 border border-gray-200 rounded-xl p-4 flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-800 mb-1">
-                Allow Customer Bookings
-              </h2>
-              <p className="text-sm text-gray-500">
-                Enable or disable customer access to self-book appointments.
+              <p className="text-sm text-gray-500 mt-2 break-words">
+                Current offset:{" "}
+                <span className="font-medium">{settings.utc}</span>
               </p>
-            </div>
-            <Switch
-              className="bg-blue-bold"
-              checked={settings.allowCustomerBooking}
-              onChange={(val) =>
-                setSettings((p) => ({ ...p, allowCustomerBooking: val }))
-              }
-            />
-          </section>
-        </div>
-      </Card>
+            </section>
+
+            {/* Business Hours */}
+            <section>
+              <div className="flex items-center gap-2 mb-2">
+                <Clock className="w-4 h-4 text-blue-theme" />
+                <h2 className="text-base font-semibold">Business Hours</h2>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm text-gray-600 font-medium">
+                    Open Time
+                  </label>
+                  <TimePicker
+                    format="HH:mm"
+                    value={dayjs(settings.openTime, "HH:mm")}
+                    onChange={(val) =>
+                      setSettings((p) => ({
+                        ...p,
+                        openTime: val ? val.format("HH:mm") : "09:00",
+                      }))
+                    }
+                    className="w-full mt-1"
+                    getPopupContainer={(trigger) => trigger.parentElement}
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm text-gray-600 font-medium">
+                    Close Time
+                  </label>
+                  <TimePicker
+                    format="HH:mm"
+                    value={dayjs(settings.closeTime, "HH:mm")}
+                    onChange={(val) =>
+                      setSettings((p) => ({
+                        ...p,
+                        closeTime: val ? val.format("HH:mm") : "18:00",
+                      }))
+                    }
+                    className="w-full mt-1"
+                    getPopupContainer={(trigger) => trigger.parentElement}
+                  />
+                </div>
+              </div>
+            </section>
+
+            {/* Booking Toggle */}
+            <section className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <h2 className="text-base font-semibold text-gray-800 mb-1">
+                  Allow Customer Bookings
+                </h2>
+                <p className="text-sm text-gray-500 leading-snug">
+                  Enable or disable customer access to self-book appointments.
+                </p>
+              </div>
+
+              <Switch
+                checked={settings.allowCustomerBooking}
+                onChange={(val) =>
+                  setSettings((p) => ({ ...p, allowCustomerBooking: val }))
+                }
+              />
+            </section>
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }

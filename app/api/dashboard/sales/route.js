@@ -20,7 +20,7 @@ export async function GET(req) {
     // 📦 Fetch completed work orders within the range
     const orders = await prisma.workOrder.findMany({
       where: {
-        status: "DONE",
+        status: "COMPLETED",
         closedAt: { gte: startDate, lte: now },
       },
       select: {

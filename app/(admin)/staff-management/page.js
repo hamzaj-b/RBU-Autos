@@ -1,18 +1,16 @@
 "use client";
 
-import { FileDownIcon, Plus, RefreshCcw } from "lucide-react";
+import { FileDownIcon, Plus, RefreshCcw, Pencil, Trash2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { Input, Spin, Empty, message, Tooltip, Popconfirm } from "antd";
 import { Button } from "@/components/ui/button";
 import AdminAddEmployee from "../../components/Modals/AdminAddEmployee";
-import { useAuth } from "../../context/AuthContext";
-import { Pencil, Trash2 } from "lucide-react";
 import EditEmployeeModal from "../../components/Modals/EditEmployeeModal";
+import { useAuth } from "../../context/AuthContext";
 
 export default function StaffManagement() {
   const { token } = useAuth();
 
-  // UI State
   const [clientReady, setClientReady] = useState(false);
   const [employees, setEmployees] = useState([]);
   const [filtered, setFiltered] = useState([]);
@@ -22,13 +20,10 @@ export default function StaffManagement() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Hydration Guard
   useEffect(() => setClientReady(true), []);
 
-  //delete
   const handleDelete = async (employeeId) => {
     if (!employeeId) return;
-
     setLoading(true);
     try {
       const res = await fetch(`/api/auth/admin/employee/${employeeId}`, {
@@ -38,22 +33,11 @@ export default function StaffManagement() {
           Authorization: `Bearer ${token}`,
         },
       });
-
       const data = await res.json();
-
       if (res.ok) {
-        // ✅ Success toast
         message.success("Employee deleted successfully!");
-
-        // Refresh the employee list
         await fetchEmployees();
-
-        // Optional callback for parent component
-        onUpdated && onUpdated(employeeId, "delete");
-      } else {
-        // ❌ Error toast
-        message.error(data.error || "Failed to delete employee");
-      }
+      } else message.error(data.error || "Failed to delete employee");
     } catch (err) {
       console.error(err);
       message.error("Network error while deleting employee");
@@ -62,7 +46,6 @@ export default function StaffManagement() {
     }
   };
 
-  // Fetch Employees
   const fetchEmployees = async () => {
     setLoading(true);
     try {
@@ -70,14 +53,11 @@ export default function StaffManagement() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-
       if (res.ok) {
         setEmployees(data.employees || []);
         setFiltered(data.employees || []);
         if (data.employees?.length > 0) setSelectedEmployee(data.employees[0]);
-      } else {
-        message.error(data.error || "Failed to load employees");
-      }
+      } else message.error(data.error || "Failed to load employees");
     } catch (err) {
       console.error(err);
       message.error("Network error while loading employees");
@@ -90,7 +70,6 @@ export default function StaffManagement() {
     if (token && clientReady) fetchEmployees();
   }, [token, clientReady]);
 
-  // Search Filter
   useEffect(() => {
     if (!search.trim()) setFiltered(employees);
     else
@@ -101,10 +80,6 @@ export default function StaffManagement() {
       );
   }, [search, employees]);
 
-  // Select employee
-  const handleEmployeeClick = (employee) => setSelectedEmployee(employee);
-
-  // Export placeholder
   const handleExport = () => message.info("Export coming soon 📦");
 
   if (!clientReady)
@@ -115,36 +90,36 @@ export default function StaffManagement() {
     );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-8 text-gray-800 transition-all duration-300">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 px-3 sm:px-6 py-6 text-gray-800 overflow-x-hidden transition-all duration-300">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-semibold text-gray-800">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h1 className="text-2xl sm:text-3xl font-semibold text-gray-800">
           Staff Management
         </h1>
 
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-2">
           <Button
             onClick={fetchEmployees}
             variant="outline"
-            className="flex items-center gap-2 text-gray-600"
+            className="flex items-center justify-center gap-2 text-gray-600 w-full sm:w-auto"
           >
             <RefreshCcw
               className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
-            />{" "}
+            />
             Refresh
           </Button>
 
-          <Button
+          {/* <Button
             onClick={handleExport}
             variant="outline"
-            className="flex items-center gap-2 text-gray-600 hover:bg-gray-100"
+            className="flex items-center justify-center gap-2 text-gray-600 w-full sm:w-auto"
           >
             <FileDownIcon className="w-4 h-4" /> Export
-          </Button>
+          </Button> */}
 
           <Button
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 bg-blue-theme !text-white hover:bg-blue-bold"
+            className="flex items-center justify-center gap-2 bg-blue-theme !text-white hover:bg-blue-bold w-full sm:w-auto"
           >
             <Plus className="w-4 h-4" /> Add Employee
           </Button>
@@ -157,75 +132,84 @@ export default function StaffManagement() {
       />
 
       {/* Search */}
-      <div className="max-w-md mb-6">
+      <div className="w-full sm:max-w-md mb-6">
         <Input.Search
           placeholder="Search employees by name..."
           allowClear
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="rounded-lg shadow-sm"
+          className="rounded-lg shadow-sm w-full"
         />
       </div>
 
       {/* Main Layout */}
-      <div className="flex flex-col lg:flex-row gap-8">
+      <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
         {/* Left Section */}
-        <div className="w-full lg:w-3/4 bg-white rounded-xl shadow-lg p-6">
+        <div className="w-full lg:w-3/4 bg-white rounded-xl shadow-lg p-4 sm:p-6 overflow-hidden">
           {loading ? (
-            <div className="flex justify-center py-12">
+            <div className="flex justify-center py-10">
               <Spin size="large" />
             </div>
           ) : filtered.length > 0 ? (
-            <div className="space-y-3 overflow-y-auto max-h-[70vh] pr-2">
+            <div className="space-y-3 overflow-y-auto max-h-[70vh] pr-1 sm:pr-2">
               {filtered.map((employee) => (
                 <div
                   key={employee.id}
-                  onClick={() => handleEmployeeClick(employee)}
-                  className={`flex justify-between items-center p-3 rounded-lg cursor-pointer transition-all border ${
+                  className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 rounded-lg transition-all border cursor-pointer ${
                     selectedEmployee?.id === employee.id
                       ? "bg-blue-bold/20 border-blue-bold"
-                      : "border-transparent hover:bg-gray-50"
+                      : "border-gray-200 hover:bg-gray-50"
                   }`}
+                  onClick={() => setSelectedEmployee(employee)}
                 >
-                  <div className="w-[250px] flex items-center gap-3">
-                    <div className="w-11 h-11 flex items-center justify-center rounded-full bg-gradient-to-tl from-blue-bold to-blue-theme text-white font-semibold text-sm shadow-sm">
+                  {/* Avatar + Name */}
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 flex items-center justify-center rounded-full bg-gradient-to-tl from-blue-bold to-blue-theme text-white font-semibold text-sm shrink-0">
                       {employee.fullName
                         .split(" ")
                         .map((n) => n[0]?.toUpperCase())
                         .join("")
                         .slice(0, 2)}
                     </div>
-                    <div>
-                      <p className="font-medium text-gray-800">
+                    <div className="truncate">
+                      <p className="font-medium text-gray-800 truncate">
                         {employee.fullName}
                       </p>
-                      <p className="text-xs text-gray-500">{employee.title}</p>
+                      <p className="text-xs text-gray-500 truncate">
+                        {employee.title}
+                      </p>
                     </div>
                   </div>
 
-                  <span className="text-sm text-gray-600">
-                    {new Date(employee.createdAt).toLocaleDateString()}
-                  </span>
-                  <span className="text-sm text-gray-600">
-                    {employee.totalLoggedTime || 0}
-                  </span>
+                  {/* Info chips */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-gray-600">
+                    <span>
+                      {new Date(employee.createdAt).toLocaleDateString()}
+                    </span>
+                    <span>{employee.totalLoggedTime || 0}</span>
+                    <span
+                      className={`px-2 py-0.5 rounded-full ${
+                        employee.hourlyRate
+                          ? "bg-gray-100 text-gray-700"
+                          : "bg-gray-50 text-gray-400"
+                      }`}
+                    >
+                      {employee.hourlyRate
+                        ? `$${employee.hourlyRate}/hr`
+                        : "N/A"}
+                    </span>
+                  </div>
 
-                  <span
-                    className={`text-sm font-medium px-3 py-1 rounded-full ${
-                      employee.hourlyRate
-                        ? "bg-gray-100 text-gray-700"
-                        : "bg-gray-50 text-gray-400"
-                    }`}
-                  >
-                    {employee.hourlyRate ? `$${employee.hourlyRate}/hr` : "N/A"}
-                  </span>
-
-                  <div className="flex gap-2">
+                  {/* Actions */}
+                  <div className="flex gap-2 justify-end sm:justify-start">
                     <Tooltip title="Edit Employee">
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => setIsEditModalOpen(true)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsEditModalOpen(true);
+                        }}
                         className="text-blue-600 hover:bg-blue-50"
                       >
                         <Pencil className="w-4 h-4" />
@@ -233,13 +217,17 @@ export default function StaffManagement() {
                     </Tooltip>
                     <Popconfirm
                       title="Delete this employee?"
-                      onConfirm={() => handleDelete(employee.id)}
+                      onConfirm={(e) => {
+                        e.stopPropagation();
+                        handleDelete(employee.id);
+                      }}
                       okText="Yes"
                       cancelText="No"
                     >
                       <Button
                         size="sm"
                         variant="outline"
+                        onClick={(e) => e.stopPropagation()}
                         className="text-red-600 hover:bg-red-50"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -266,11 +254,11 @@ export default function StaffManagement() {
           }}
         />
 
-        {/* Right Section */}
-        <div className="w-full lg:w-1/4 bg-white rounded-xl shadow-lg p-6 flex flex-col items-center justify-start text-center">
+        {/* Right Section (Details) */}
+        <div className="w-full lg:w-1/4 bg-white rounded-xl shadow-lg p-5 flex flex-col items-center text-center">
           {selectedEmployee ? (
             <>
-              <div className="w-15 h-15 flex items-center justify-center rounded-full bg-gradient-to-tl from-blue-bold to-blue-theme text-white font-semibold text-sm shadow-sm">
+              <div className="w-16 h-16 flex items-center justify-center rounded-full bg-gradient-to-tl from-blue-bold to-blue-theme text-white font-semibold text-lg shadow-sm">
                 {selectedEmployee.fullName
                   .split(" ")
                   .map((n) => n[0]?.toUpperCase())
@@ -294,7 +282,7 @@ export default function StaffManagement() {
                     Hourly Rate:
                   </span>{" "}
                   {selectedEmployee.hourlyRate
-                    ? `$ ${selectedEmployee.hourlyRate}/hr`
+                    ? `$${selectedEmployee.hourlyRate}/hr`
                     : "N/A"}
                 </p>
                 <p>
@@ -318,15 +306,11 @@ export default function StaffManagement() {
               </div>
             </>
           ) : (
-            <div className="flex flex-col items-center justify-center h-full text-gray-400">
-              <div className="w-11 h-11 flex items-center justify-center rounded-full bg-gradient-to-tl from-blue-bold to-blue-theme text-white font-semibold text-sm shadow-sm">
-                {"Employee"
-                  .split(" ")
-                  .map((n) => n[0]?.toUpperCase())
-                  .join("")
-                  .slice(0, 2)}
+            <div className="flex flex-col items-center justify-center text-gray-400">
+              <div className="w-12 h-12 flex items-center justify-center rounded-full bg-gradient-to-tl from-blue-bold to-blue-theme text-white font-semibold text-lg shadow-sm">
+                EM
               </div>
-              <p>Select an employee to view details</p>
+              <p className="mt-2 text-sm">Select an employee to view details</p>
             </div>
           )}
         </div>

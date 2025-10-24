@@ -172,35 +172,33 @@ export default function BookingsPage() {
     try {
       // Prepare the request payload
       const payload = {
-        notes: editNotes,    // Notes to be updated
+        notes: editNotes, // Notes to be updated
         startAt: editStartAt, // Start time to be updated
-        endAt: editEndAt,    // End time to be updated
+        endAt: editEndAt, // End time to be updated
         serviceIds: editServiceIds, // Services to be updated
       };
-  
+
       // Send PUT request to update the booking
       const res = await fetch(`/api/bookings/walkin/${selectedBooking.id}`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",  // Ensure content type is application/json
+          "Content-Type": "application/json", // Ensure content type is application/json
         },
-        body: JSON.stringify(payload),  // Sending the updated notes, startAt, endAt, and serviceIds in the body
+        body: JSON.stringify(payload), // Sending the updated notes, startAt, endAt, and serviceIds in the body
       });
-  
-      const data = await res.json();  // Parse the response
-  
-      if (!res.ok) throw new Error(data.error || "Failed to update booking.");  // Handle any API errors
-  
-      toast.success("Booking updated");  // Show success toast
-      setEditModal(false);  // Close the edit modal
-      fetchBookings();  // Fetch updated bookings
+
+      const data = await res.json(); // Parse the response
+
+      if (!res.ok) throw new Error(data.error || "Failed to update booking."); // Handle any API errors
+
+      toast.success("Booking updated"); // Show success toast
+      setEditModal(false); // Close the edit modal
+      fetchBookings(); // Fetch updated bookings
     } catch (err) {
-      toast.error(err.message || "Something went wrong");  // Show error message if request fails
+      toast.error(err.message || "Something went wrong"); // Show error message if request fails
     }
   };
-  
-
 
   const deleteBooking = async (id) => {
     try {
@@ -358,12 +356,47 @@ export default function BookingsPage() {
 
   // 🔹 Render
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white p-6">
-      <div className="w-full mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white p-4 sm:p-6">
+      <style jsx global>{`
+        /* ✅ Responsive improvements — keep headers visible */
+        @media (max-width: 640px) {
+          .ant-table {
+            width: 100%;
+            overflow-x: auto !important;
+            display: block !important;
+          }
+
+          .ant-table-container {
+            overflow-x: auto !important;
+          }
+
+          .ant-table-thead > tr > th {
+            background: #f9fafb !important;
+            color: #374151 !important;
+            font-weight: 600 !important;
+            white-space: nowrap !important;
+            font-size: 0.9rem !important;
+            padding: 0.5rem 0.75rem !important;
+          }
+
+          .ant-table-tbody > tr > td {
+            font-size: 0.85rem !important;
+            white-space: nowrap !important;
+            padding: 0.5rem 0.75rem !important;
+            border-bottom: 1px solid #f1f1f1 !important;
+          }
+
+          .ant-table-tbody > tr:hover {
+            background-color: #f9fafb !important;
+          }
+        }
+      `}</style>
+
+      <div className="w-full mx-auto max-w-7xl">
         <Card
           className="shadow-lg rounded-2xl border border-gray-100"
           title={
-            <div className="flex items-center gap-2 text-[#0f74b2]">
+            <div className="flex items-center gap-2 text-[#0f74b2] flex-wrap">
               <Calendar className="w-5 h-5" />
               <span className="font-semibold text-lg">Bookings</span>
             </div>
@@ -376,43 +409,55 @@ export default function BookingsPage() {
             </div>
           ) : (
             <>
-              <FiltersBar />
-              <Table
-                dataSource={bookings}
-                columns={columns}
-                loading={loading}
-                rowKey="id"
-                scroll={{ x: 900 }}
-                pagination={{
-                  current: pagination.page,
-                  pageSize: pagination.limit,
-                  total: pagination.total,
-                  showSizeChanger: true,
-                  pageSizeOptions: ["10", "20", "50"],
-                  onChange: (page, pageSize) =>
-                    setPagination({
-                      page,
-                      limit: pageSize,
-                      total: pagination.total,
-                    }),
-                }}
-                className="rounded-lg"
-              />
+              {/* ✅ Responsive Filter Bar */}
+              <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="w-full sm:w-auto">
+                  <FiltersBar />
+                </div>
+              </div>
+
+              {/* ✅ Responsive Scroll Table */}
+              <div className="overflow-x-auto rounded-lg bg-white border border-gray-100">
+                <Table
+                  dataSource={bookings}
+                  columns={columns}
+                  loading={loading}
+                  rowKey="id"
+                  pagination={{
+                    current: pagination.page,
+                    pageSize: pagination.limit,
+                    total: pagination.total,
+                    showSizeChanger: true,
+                    pageSizeOptions: ["10", "20", "50"],
+                    onChange: (page, pageSize) =>
+                      setPagination({
+                        page,
+                        limit: pageSize,
+                        total: pagination.total,
+                      }),
+                  }}
+                  className="min-w-[900px]"
+                />
+              </div>
             </>
           )}
         </Card>
       </div>
+
+      {/* ✅ Booking Details Modal */}
       <Modal
         open={detailModal}
         onCancel={() => setDetailModal(false)}
         footer={null}
         title="Booking Details"
         centered
+        className="!max-w-lg sm:!max-w-xl"
+        bodyStyle={{ maxHeight: "70vh", overflowY: "auto" }}
       >
         {!selectedBooking ? (
           <Skeleton active />
         ) : (
-          <div className="space-y-2 text-gray-700">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-gray-700">
             <p>
               <strong>Type:</strong> {selectedBooking.bookingType || "—"}
             </p>
@@ -431,7 +476,7 @@ export default function BookingsPage() {
             <p>
               <strong>Status:</strong> {selectedBooking.status}
             </p>
-            <p>
+            <p className="sm:col-span-2">
               <strong>Services:</strong>{" "}
               {(
                 selectedBooking.bookingServices?.map(
@@ -441,7 +486,7 @@ export default function BookingsPage() {
                 []
               ).join(", ") || "—"}
             </p>
-            <p>
+            <p className="sm:col-span-2">
               <strong>Notes:</strong> {selectedBooking.notes || "—"}
             </p>
             <p>
@@ -462,59 +507,58 @@ export default function BookingsPage() {
         )}
       </Modal>
 
-      {/* Edit Modal */}
+      {/* ✅ Edit Booking Modal */}
       <Modal
-  open={editModal}
-  onCancel={() => setEditModal(false)}
-  onOk={saveEdit}
-  okText="Save Changes"
-  title="Edit Booking"
-  confirmLoading={loading}
->
-  <div className="space-y-3">
-    {/* Editable Notes */}
-    <label className="block text-sm font-medium text-gray-700">Notes</label>
-    <Input.TextArea
-      rows={3}
-      value={editNotes}
-      onChange={(e) => setEditNotes(e.target.value)}
-      placeholder="Update notes..."
-    />
+        open={editModal}
+        onCancel={() => setEditModal(false)}
+        onOk={saveEdit}
+        okText="Save Changes"
+        title="Edit Booking"
+        confirmLoading={loading}
+        centered
+        className="!max-w-lg sm:!max-w-xl"
+        bodyStyle={{ maxHeight: "70vh", overflowY: "auto" }}
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Notes
+            </label>
+            <Input.TextArea
+              rows={3}
+              value={editNotes}
+              onChange={(e) => setEditNotes(e.target.value)}
+              placeholder="Update notes..."
+              className="w-full"
+            />
+          </div>
 
-    {/* Editable Start and End Time */}
-    <div className="flex space-x-3">
-      <div className="w-1/2">
-        <label className="block text-sm font-medium text-gray-700">Start Time</label>
-        <DatePicker
-          showTime
-          value={editStartAt}
-          onChange={(date) => setEditStartAt(date)}
-          className="w-full"
-        />
-      </div>
-      <div className="w-1/2">
-        <label className="block text-sm font-medium text-gray-700">End Time</label>
-        <DatePicker
-          showTime
-          value={editEndAt}
-          onChange={(date) => setEditEndAt(date)}
-          className="w-full"
-        />
-      </div>
-    </div>
-
-    {/* Editable Services
-    <label className="block text-sm font-medium text-gray-700">Services</label>
-    <Select
-      mode="multiple"
-      value={editServiceIds}
-      onChange={setEditServiceIds}
-      className="w-full"
-      options={allServicesOptions} // Assuming you have an array of service options
-    /> */}
-  </div>
-</Modal>
-
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Start Time
+              </label>
+              <DatePicker
+                showTime
+                value={editStartAt}
+                onChange={(date) => setEditStartAt(date)}
+                className="w-full"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                End Time
+              </label>
+              <DatePicker
+                showTime
+                value={editEndAt}
+                onChange={(date) => setEditEndAt(date)}
+                className="w-full"
+              />
+            </div>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

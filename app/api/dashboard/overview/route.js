@@ -16,7 +16,7 @@ export async function GET() {
     // 💰 Total revenue (sum of totalRevenue in completed work orders)
     const revenueSum = await prisma.workOrder.aggregate({
       _sum: { totalRevenue: true },
-      where: { status: "DONE" },
+      where: { status: "COMPLETED" },
     });
 
     const totalRevenue = revenueSum._sum.totalRevenue || 0;
