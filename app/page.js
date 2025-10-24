@@ -10,6 +10,7 @@ import WorkCompletedCard from "./components/dashboard/WorkCompletedCard";
 import OverallSalesCard from "./components/dashboard/SalesCard";
 import ServiceReport from "./components/dashboard/ServicesChart";
 import RecentWorkOrder from "./components/RecentWorkOrder";
+import { getCurrentLocation } from "@/lib/getCurrentLocation";
 
 export default function DashboardPage() {
   const { token } = useAuth();
@@ -28,6 +29,8 @@ export default function DashboardPage() {
 
   // === 1️⃣ Overview API ===
   const fetchOverview = async () => {
+    const location = await getCurrentLocation();
+    console.log("📍 Employee Location:", location);
     if (!token) return;
     try {
       setLoadingOverview(true);
