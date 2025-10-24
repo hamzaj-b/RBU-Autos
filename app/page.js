@@ -29,8 +29,6 @@ export default function DashboardPage() {
 
   // === 1️⃣ Overview API ===
   const fetchOverview = async () => {
-    const location = await getCurrentLocation();
-    console.log("📍 Employee Location:", location);
     if (!token) return;
     try {
       setLoadingOverview(true);
