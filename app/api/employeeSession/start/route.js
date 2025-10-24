@@ -56,10 +56,12 @@ async function POST(req) {
       );
     }
 
-    // 🧠 Parse request body (accepts source + location)
+    // 🧠 Parse request body (accepts source + location + lat/lng)
     const body = await req.json().catch(() => ({}));
     const source = body.source || "web";
     const location = body.location || "unknown";
+    const latitude = body.latitude || null;
+    const longitude = body.longitude || null;
 
     // 🕒 Fetch business settings
     const settings = await prisma.businessSettings.findFirst();
@@ -135,6 +137,8 @@ async function POST(req) {
         loginAt: now,
         source,
         location,
+        latitude,
+        longitude,
       },
     });
 

@@ -209,6 +209,8 @@ model EmployeeSession {
   logoutAt   DateTime?
   source     String?
   location   String?
+  latitude   Float?    @db.Double
+  longitude  Float?    @db.Double
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 
@@ -218,7 +220,6 @@ model EmployeeSession {
   @@index([userId, loginAt])
   @@index([logoutAt])
 }
-
 model BusinessSettings {
   id                   String   @id @default(auto()) @map("_id") @db.ObjectId
   timezone             String

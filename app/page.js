@@ -10,8 +10,6 @@ import WorkCompletedCard from "./components/dashboard/WorkCompletedCard";
 import OverallSalesCard from "./components/dashboard/SalesCard";
 import ServiceReport from "./components/dashboard/ServicesChart";
 import RecentWorkOrder from "./components/RecentWorkOrder";
-import { getCurrentLocation } from "@/lib/getCurrentLocation";
-import LocationFetcher from "./components/locationFinder";
 
 export default function DashboardPage() {
   const { token } = useAuth();
@@ -136,7 +134,6 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <LocationFetcher />
       {/* === Top Cards === */}
       <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <NewNetIncomeCard
