@@ -213,7 +213,14 @@ export default function CustomerPreBookingPage() {
                   Select Date & Time
                 </label>
                 <DatePicker
-                  showTime={{ format: "HH:mm" }}
+                  showTime={{
+                    format: "HH:mm",
+                    hideDisabledOptions: true, // 🔥 hides disabled hours & minutes
+                    disabledHours: () => [
+                      ...Array(9).keys(),
+                      ...Array.from({ length: 5 }, (_, i) => 19 + i),
+                    ],
+                  }}
                   format="YYYY-MM-DD HH:mm"
                   className="w-full"
                   size="large"
