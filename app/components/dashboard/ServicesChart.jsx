@@ -43,10 +43,10 @@ export default function ServiceReport({
       {/* Header */}
       <div className="flex items-center justify-between text-sm font-semibold text-gray-700">
         <span>Service Report</span>
-        <span className="flex items-center gap-1 text-gray-500">
+        {/* <span className="flex items-center gap-1 text-gray-500">
           <Calendar className="w-4 h-4 text-blue-500" />
           {month || "—"}
-        </span>
+        </span> */}
       </div>
 
       {/* Chart Area */}

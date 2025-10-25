@@ -200,7 +200,7 @@ export default function EmployeeRepairTracker() {
       <div className="bg-white p-4 rounded-lg mb-5 shadow-sm border border-gray-100">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           {/* Search */}
-          <div className="relative flex-1 ">
+          <div className="relative w-full md:max-w-3/5 ">
             <Search
               className="absolute left-3 top-2 md:top-3 text-gray-400"
               size={18}
@@ -215,7 +215,7 @@ export default function EmployeeRepairTracker() {
           </div>
 
           {/* Status Filters */}
-          <div className="hidden md:flex gap-2 flex-wrap">
+          {/* <div className="hidden md:flex gap-2 flex-wrap">
             {[
               "all",
               "OPEN",
@@ -238,14 +238,14 @@ export default function EmployeeRepairTracker() {
                   : status.replace("_", " ").toLowerCase()}
               </button>
             ))}
-          </div>
-          <div className=" md:hidden w-full flex flex-col gap-2 flex-wrap justify-end ">
+          </div> */}
+          <div className=" w-full md:max-w-2/5 flex justify-end items-end border">
             {/* Dropdown for small screens */}
-            <div className="md:hidden">
+            <div className="w-full">
               <select
                 onChange={(e) => setStatusFilter(e.target.value)}
                 value={statusFilter}
-                className="px-2 py-1 text-xs md:text-sm rounded-lg font-medium bg-white border border-gray-300 hover:bg-gray-200 focus:ring-0 focus:border-blue-500 focus:outline-none transition-colors duration-200"
+                className=" px-2 py-2 text-xs md:text-sm rounded-lg font-medium bg-white border border-gray-300 hover:bg-gray-200 focus:ring-0 focus:border-blue-500 focus:outline-none transition-colors duration-200"
               >
                 {[
                   "all",
