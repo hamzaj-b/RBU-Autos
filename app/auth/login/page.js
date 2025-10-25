@@ -10,18 +10,12 @@ export default function SignInPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
     setLoading(true);
-
     const res = await login(email, password);
     setLoading(false);
-
-    if (!res.success) {
-      setError(res.message);
-    }
+    if (!res.success) setError(res.message);
   };
 
   return (
@@ -72,10 +66,17 @@ export default function SignInPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-theme !text-white font-bold py-2.5 rounded-lg hover:bg-blue-bold"
+            className="w-full bg-blue-theme !text-white font-bold py-2.5 rounded-lg hover:bg-blue-bold disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "Signing in..." : "Sign in"}
           </button>
+
+          {/* {!isLocationValid && (
+            <p className="text-xs text-yellow-600 text-center">
+              Please allow location access to proceed. Refresh the page to
+              retry.
+            </p>
+          )} */}
 
           <p className="text-sm text-center text-gray-500 mt-3">
             Don’t have an account?{" "}

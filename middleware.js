@@ -19,6 +19,7 @@ const roleAccess = {
     "/work-order",
     "/diagnostics",
     "/repair-tracker",
+    "/sessions",
     "/checkout",
     "/profile",
   ],

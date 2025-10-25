@@ -201,7 +201,22 @@ export default function StaffManagement() {
                   </div>
 
                   {/* Actions */}
+                  {/* Actions */}
                   <div className="flex gap-2 justify-end sm:justify-start">
+                    <Tooltip title="View Sessions">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.location.href = `/sessions/${employee.id}`;
+                        }}
+                        className="text-purple-600 hover:bg-purple-50"
+                      >
+                        <FileDownIcon className="w-4 h-4" />
+                      </Button>
+                    </Tooltip>
+
                     <Tooltip title="Edit Employee">
                       <Button
                         size="sm"
@@ -215,6 +230,7 @@ export default function StaffManagement() {
                         <Pencil className="w-4 h-4" />
                       </Button>
                     </Tooltip>
+
                     <Popconfirm
                       title="Delete this employee?"
                       onConfirm={(e) => {

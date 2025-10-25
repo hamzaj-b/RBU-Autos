@@ -333,12 +333,22 @@ export default function RepairTracker() {
               key={wo.id}
               className="flex flex-col md:flex-row md:justify-between md:items-center p-4 hover:bg-gray-50 transition-all"
             >
-              <div>
-                <h3 className="text-base font-semibold">{wo.customerName}</h3>
-                <p className="text-sm text-gray-500">
-                  {wo.services?.join(", ")} • {wo.employeeName || "Unassigned"}
-                </p>
-                {getStatusTag(wo.status)}
+              <div className="flex items-start gap-2 ">
+                <div className="w-12 h-12 flex items-center justify-center rounded-full bg-gradient-to-tl from-blue-bold to-blue-theme text-white font-semibold text-lg shadow-sm">
+                  {wo.customerName
+                    .split(" ")
+                    .map((n) => n[0]?.toUpperCase())
+                    .join("")
+                    .slice(0, 2)}
+                </div>
+                <div className="">
+                  <h3 className="text-base font-semibold">{wo.customerName}</h3>
+                  <p className="text-sm text-gray-500">
+                    {wo.services?.join(", ")} •{" "}
+                    {wo.employeeName || "Unassigned"}
+                  </p>
+                  {getStatusTag(wo.status)}
+                </div>
               </div>
 
               <div className="flex gap-2 mt-3 md:mt-0 justify-end">
