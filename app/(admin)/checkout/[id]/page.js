@@ -1,32 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
 import { Spin, message } from "antd";
-import {
-  FileText,
-  Printer,
-  Download,
-  Wrench,
-  DollarSign,
-  Car,
-  User,
-  Clock,
-} from "lucide-react";
+import { Printer, Wrench, Car, User, Download } from "lucide-react";
+import html2pdf from "html2pdf.js/dist/html2pdf.bundle.min.js";
 
 export default function InvoicePage() {
   const { id } = useParams();
   const { token } = useAuth();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [pdfLoading, setPdfLoading] = useState(false);
   const [workOrder, setWorkOrder] = useState(null);
+  const [error, setError] = useState("");
+  const invoiceRef = useRef();
 
   useEffect(() => {
     if (!id || !token) return;
 
     const fetchInvoice = async () => {
       try {
-        setLoading(true);
         const res = await fetch(`/api/workOrders/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -34,7 +28,7 @@ export default function InvoicePage() {
         if (!res.ok) throw new Error(data.error || "Failed to load invoice");
         setWorkOrder(data.workOrder || data);
       } catch (err) {
-        message.error(err.message);
+        setError(err.message);
       } finally {
         setLoading(false);
       }
@@ -45,21 +39,20 @@ export default function InvoicePage() {
 
   if (loading)
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Spin size="large" />
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <Spin size="large" tip="Loading Invoice..." />
       </div>
     );
 
-  if (!workOrder)
+  if (error || !workOrder)
     return (
       <div className="text-center py-20 text-gray-400">
-        Error loading invoice or invoice not found.
+        {error || "Invoice not found."}
       </div>
     );
 
   const { raw } = workOrder;
   const customer = raw?.customer;
-  const booking = raw?.booking;
   const total =
     raw.totalRevenue ||
     raw.workOrderServices?.reduce(
@@ -67,41 +60,74 @@ export default function InvoicePage() {
       0
     ) ||
     0;
-
   const issueDate = new Date(
     raw.closedAt || raw.createdAt
   ).toLocaleDateString();
 
   const handlePrint = () => window.print();
 
-  const handleDownload = async () => {
-    message.info("PDF generation coming soon!");
+  const handleDownloadPDF = async () => {
+    if (!invoiceRef.current) {
+      message.error("Invoice content not found.");
+      return;
+    }
+
+    try {
+      setPdfLoading(true);
+      const element = invoiceRef.current;
+
+      const opt = {
+        margin: [10, 10, 20, 10],
+        filename: `Invoice-${raw.id.slice(-6).toUpperCase()}.pdf`,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          letterRendering: true,
+        },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        pagebreak: { mode: ["avoid-all", "css", "legacy"] },
+      };
+
+      await html2pdf().set(opt).from(element).save();
+      message.success("Invoice downloaded successfully!");
+    } catch (err) {
+      console.error("PDF generation error:", err);
+      message.error("Failed to generate PDF. Check console for details.");
+    } finally {
+      setPdfLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 py-10 px-4 flex justify-center">
-      <div className="max-w-4xl w-full bg-white shadow-lg rounded-2xl overflow-hidden print:shadow-none print:rounded-none">
-        {/* Header */}
-        <div className="bg-gradient-to-br from-[#0f74b2] via-sky-800 to-blue-900 text-white p-8 flex justify-between items-start">
+    <div className="min-h-screen bg-gray-100 py-10 px-4 flex justify-center print:bg-white print:p-0">
+      <div
+        ref={invoiceRef}
+        className="max-w-4xl w-full bg-white shadow-lg rounded-2xl overflow-hidden print:shadow-none print:rounded-none print:border-none"
+      >
+        {/* HEADER */}
+        <div className="bg-gradient-to-l from-[#2A7BAE] to-sky-900 text-white p-8 flex justify-between items-start print:bg-white print:text-white print:border-b print:border-gray-300">
           <div>
-            <h1 className="text-2xl font-bold">RBU Autos Garage</h1>
-            <p className="text-sm text-blue-100">
+            <h1 className="text-2xl font-bold print:text-white">
+              RBU Autos Garage
+            </h1>
+            <p className="text-sm text-blue-100 print:text-gray-100">
               Professional Auto Repair & Service
             </p>
           </div>
           <div className="text-right">
-            <p className="text-sm opacity-80">Invoice</p>
-            <h2 className="text-xl font-semibold mt-1">
+            <p className="text-sm opacity-80 print:text-gray-100">Invoice</p>
+            <h2 className="text-xl font-semibold mt-1 print:text-white">
               #{raw.id.slice(-6).toUpperCase()}
             </h2>
           </div>
         </div>
 
-        {/* Customer & Vehicle Info */}
-        <div className="p-8 grid md:grid-cols-2 gap-6 border-b">
+        {/* CUSTOMER / VEHICLE */}
+        <div className="p-8 grid md:grid-cols-2 gap-6 border-b border-gray-200 print:border-gray-300">
           <div>
             <h3 className="text-lg font-semibold text-gray-800 mb-2 flex items-center gap-2">
-              <User className="w-4 h-4 text-blue-500" /> Customer
+              <User className="w-4 h-4 text-[#2A7BAE]" /> Customer
             </h3>
             <p className="text-gray-700 font-medium">{customer?.fullName}</p>
             <p className="text-sm text-gray-500 mt-1">
@@ -111,12 +137,13 @@ export default function InvoicePage() {
 
           <div>
             <h3 className="text-lg font-semibold text-gray-800 mb-2 flex items-center gap-2">
-              <Car className="w-4 h-4 text-blue-500" /> Vehicle
+              <Car className="w-4 h-4 text-[#2A7BAE]" /> Vehicle
             </h3>
             {customer?.vehicleJson ? (
               <div className="text-gray-700 font-medium">
                 {customer.vehicleJson.make} {customer.vehicleJson.model} (
-                {customer.vehicleJson.year}) <br />
+                {customer.vehicleJson.year})
+                <br />
                 <span className="text-gray-500 text-sm">
                   Reg#: {customer.vehicleJson.regNo}
                 </span>
@@ -127,13 +154,13 @@ export default function InvoicePage() {
           </div>
         </div>
 
-        {/* Services */}
+        {/* SERVICES */}
         <div className="p-8">
           <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <Wrench className="w-4 h-4 text-blue-500" /> Services Performed
+            <Wrench className="w-4 h-4 text-[#2A7BAE]" /> Services Performed
           </h3>
-          <table className="w-full border border-gray-200 text-sm rounded-lg overflow-hidden">
-            <thead className="bg-gray-50 text-gray-600 text-left">
+          <table className="w-full border border-gray-200 text-sm rounded-lg overflow-hidden print:border-gray-300">
+            <thead className="bg-gray-50 text-gray-600 text-left print:bg-gray-100">
               <tr>
                 <th className="py-2 px-4">Description</th>
                 <th className="py-2 px-4">Category</th>
@@ -142,7 +169,10 @@ export default function InvoicePage() {
             </thead>
             <tbody>
               {raw.workOrderServices?.map((s) => (
-                <tr key={s.id} className="border-t">
+                <tr
+                  key={s.id}
+                  className="border-t border-gray-200 print:border-gray-300 odd:bg-white even:bg-gray-50 break-inside-avoid"
+                >
                   <td className="py-2 px-4">{s.service.name}</td>
                   <td className="py-2 px-4 text-gray-500">
                     {s.service.category}
@@ -152,9 +182,10 @@ export default function InvoicePage() {
                   </td>
                 </tr>
               ))}
+
               {raw.partsUsed?.length > 0 && (
                 <>
-                  <tr className="bg-gray-100">
+                  <tr className="bg-gray-100 print:bg-gray-200">
                     <td
                       colSpan={3}
                       className="font-semibold text-gray-700 py-2 px-4"
@@ -163,7 +194,10 @@ export default function InvoicePage() {
                     </td>
                   </tr>
                   {raw.partsUsed.map((p, idx) => (
-                    <tr key={idx} className="border-t">
+                    <tr
+                      key={idx}
+                      className="border-t border-gray-200 print:border-gray-300 odd:bg-white even:bg-gray-50 break-inside-avoid"
+                    >
                       <td className="py-2 px-4">{p.name}</td>
                       <td className="py-2 px-4 text-gray-500">
                         {p.qty} × ${p.price}
@@ -175,9 +209,10 @@ export default function InvoicePage() {
                   ))}
                 </>
               )}
+
               {raw.laborEntries?.length > 0 && (
                 <>
-                  <tr className="bg-gray-100">
+                  <tr className="bg-gray-100 print:bg-gray-200">
                     <td
                       colSpan={3}
                       className="font-semibold text-gray-700 py-2 px-4"
@@ -186,7 +221,10 @@ export default function InvoicePage() {
                     </td>
                   </tr>
                   {raw.laborEntries.map((l, idx) => (
-                    <tr key={idx} className="border-t">
+                    <tr
+                      key={idx}
+                      className="border-t border-gray-200 print:border-gray-300 odd:bg-white even:bg-gray-50 break-inside-avoid"
+                    >
                       <td className="py-2 px-4">{l.task}</td>
                       <td className="py-2 px-4 text-gray-500">
                         {l.hours} hr × ${l.rate}
@@ -201,10 +239,10 @@ export default function InvoicePage() {
             </tbody>
           </table>
 
-          {/* Totals */}
-          <div className="mt-8 flex justify-end">
-            <div className="bg-gray-50 p-4 rounded-lg border text-right w-64">
-              <div className="text-gray-700 font-medium mb-1">GrandTotal</div>
+          {/* TOTALS */}
+          <div className="mt-8 flex justify-end break-before-avoid">
+            <div className="bg-gray-50 p-4 rounded-lg border text-right w-64 print:bg-transparent print:border-gray-300">
+              <div className="text-gray-700 font-medium mb-1">Grand Total</div>
               <div className="text-lg font-semibold text-gray-800">
                 ${total.toFixed(2)}
               </div>
@@ -215,28 +253,68 @@ export default function InvoicePage() {
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="border-t p-6 bg-gray-50 flex flex-wrap items-center justify-between">
-          <p className="text-gray-500 text-sm">
+        {/* FOOTER */}
+        <div className="border-t p-6 bg-gray-50 flex flex-wrap items-center justify-between print:bg-transparent print:border-none">
+          <p className="text-gray-500 text-sm print:hidden">
             Thank you for choosing RBU Autos Garage!
           </p>
 
           <div className="flex gap-3 print:hidden">
             <button
               onClick={handlePrint}
-              className="flex items-center gap-2 bg-blue-theme !text-white px-4 py-2 rounded-md hover:bg-blue-bold transition"
+              className="flex items-center gap-2 bg-[#2A7BAE] !text-white px-4 py-2 rounded-md hover:bg-[#246b97] transition"
             >
               <Printer className="w-4 h-4" /> Print
             </button>
+
             {/* <button
-              onClick={handleDownload}
-              className="flex items-center gap-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition"
+              onClick={handleDownloadPDF}
+              disabled={pdfLoading}
+              className="flex items-center gap-2 bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300 transition disabled:opacity-60"
             >
-              <Download className="w-4 h-4" /> Download PDF
+              <Download className="w-4 h-4" />
+              {pdfLoading ? "Generating..." : "Download PDF"}
             </button> */}
           </div>
         </div>
+
+        {/* PRINT FOOTER (CENTERED THANK YOU) */}
+        <div className="hidden print:flex justify-center items-end h-24 text-gray-600 text-sm">
+          Thank you for choosing RBU Autos Garage!
+        </div>
       </div>
+
+      {/* PRINT STYLES */}
+      <style jsx global>{`
+        @media print {
+          @page {
+            margin: 20mm;
+          }
+          body {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            background: white !important;
+          }
+          table,
+          tr,
+          td,
+          th {
+            page-break-inside: avoid !important;
+          }
+          .break-inside-avoid {
+            page-break-inside: avoid !important;
+          }
+          .break-before-avoid {
+            page-break-before: avoid !important;
+          }
+          .print\\:hidden {
+            display: none !important;
+          }
+          .print\\:flex {
+            display: flex !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

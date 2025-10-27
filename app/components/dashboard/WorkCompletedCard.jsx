@@ -26,7 +26,7 @@ function MiniBars({ data = [78, 34, 96, 58], accentIndex = 0 }) {
         const barH = Math.round((v / max) * (h - 12));
         const y = h - barH;
         const isAccent = i === accentIndex;
-        const fill = isAccent ? "#0D1426" : "#2A7BAE";
+        const fill = isAccent ? "#1B2B45" : "#2A7BAE";
         return (
           <rect
             key={i}
@@ -49,7 +49,7 @@ export default function WorkCompletedCard({
   amount,
   loading = false,
   bars = [78, 36, 98, 60],
-  accentIndex = 0,
+  accentIndex = 3,
 }) {
   return (
     <div className="w-full rounded-[18px] bg-white p-4 sm:p-5 shadow-sm ring-1 ring-gray-200/70 flex flex-col justify-between transition-all hover:shadow-md">

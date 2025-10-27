@@ -26,7 +26,7 @@ function MiniBars({ data = [78, 34, 96, 58], accentIndex = 0 }) {
         const barH = Math.round((v / max) * (h - 12));
         const y = h - barH;
         const isAccent = i === accentIndex;
-        const fill = isAccent ? "#0D1426" : "#2A7BAE";
+        const fill = isAccent ? "#1B2B45" : "#2A7BAE";
         return (
           <rect
             key={i}

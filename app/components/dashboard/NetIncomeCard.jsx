@@ -26,7 +26,7 @@ function MiniBars({ data = [54, 22, 96, 44], accentIndex = 1 }) {
         const barH = Math.round((v / max) * (h - 12));
         const y = h - barH;
         const isAccent = i === accentIndex;
-        const fill = isAccent ? "#0d1426" : "#2A7BAE";
+        const fill = isAccent ? "#1B2B45" : "#2A7BAE";
         return (
           <rect
             key={i}
@@ -55,7 +55,7 @@ export default function NewNetIncomeCard({
   amount,
   loading = false,
   bars = [62, 28, 95, 46],
-  accentIndex = 1,
+  accentIndex = 2,
 }) {
   return (
     <div className="w-full rounded-[18px] bg-white p-4 sm:p-5 shadow-sm ring-1 ring-gray-200/70 flex flex-col justify-between transition-all hover:shadow-md">
