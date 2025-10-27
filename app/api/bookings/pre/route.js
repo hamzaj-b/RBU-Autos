@@ -51,11 +51,13 @@ export async function POST(req) {
 
     const startTime = new Date(startAt);
     const now = new Date();
+
     if (isNaN(startTime.getTime()))
       return NextResponse.json(
         { error: "Invalid start time" },
         { status: 400 }
       );
+
     if (startTime <= now)
       return NextResponse.json(
         { error: "Pre-booking time must be in the future" },
@@ -70,7 +72,7 @@ export async function POST(req) {
         { status: 500 }
       );
 
-    const { timezone, openTime, closeTime, allowCustomerBooking } = business;
+    const { openTime, closeTime, allowCustomerBooking } = business;
     if (!allowCustomerBooking)
       return NextResponse.json(
         {
@@ -84,6 +86,7 @@ export async function POST(req) {
       where: { id: { in: serviceIds } },
       select: { id: true, name: true, durationMinutes: true, basePrice: true },
     });
+
     if (services.length !== serviceIds.length)
       return NextResponse.json(
         { error: "Invalid service IDs" },
@@ -97,11 +100,11 @@ export async function POST(req) {
     const endTime = new Date(startTime.getTime() + totalDuration * 60000);
     const totalPrice = services.reduce((sum, s) => sum + (s.basePrice || 0), 0);
 
-    // 🕒 Validate hours
-    const open = DateTime.fromFormat(openTime, "HH:mm", { zone: timezone });
-    const close = DateTime.fromFormat(closeTime, "HH:mm", { zone: timezone });
-    const bookingStart = DateTime.fromJSDate(startTime, { zone: timezone });
-    const bookingEnd = DateTime.fromJSDate(endTime, { zone: timezone });
+    // 🕒 Validate business hours (local zone only)
+    const open = DateTime.fromFormat(openTime, "HH:mm");
+    const close = DateTime.fromFormat(closeTime, "HH:mm");
+    const bookingStart = DateTime.fromJSDate(startTime);
+    const bookingEnd = DateTime.fromJSDate(endTime);
 
     const openMinutes = open.hour * 60 + open.minute;
     const closeMinutes = close.hour * 60 + close.minute;
@@ -121,7 +124,7 @@ export async function POST(req) {
       );
     }
 
-    // 🚫 Prevent overlap
+    // 🚫 Prevent overlap for same customer
     const overlap = await prisma.booking.findFirst({
       where: {
         customerId,
@@ -131,13 +134,14 @@ export async function POST(req) {
         status: { notIn: ["CANCELLED", "DONE"] },
       },
     });
+
     if (overlap)
       return NextResponse.json(
         { error: "You already have a booking in this time range" },
         { status: 400 }
       );
 
-    // 💾 Transaction: Create booking
+    // 💾 Transaction: Create booking + services
     const booking = await prisma.$transaction(async (tx) => {
       const newBooking = await tx.booking.create({
         data: {
@@ -163,15 +167,16 @@ export async function POST(req) {
       return newBooking;
     });
 
-    // 👤 Fetch customer + services for notification
+    // 👤 Fetch customer info for notifications
     const customer = await prisma.customerProfile.findUnique({
       where: { id: customerId },
       select: { fullName: true, userId: true },
     });
+
     const customerName = customer?.fullName || "Unknown Customer";
     const serviceNames = services.map((s) => s.name);
 
-    // ✅ 1️⃣ Pusher: Notify Admins in real-time
+    // ✅ 1️⃣ Notify Admins (Pusher)
     await pusherServer.trigger("admin-channel", "new-booking", {
       message: "📅 New pre-booking created",
       booking,
@@ -179,7 +184,7 @@ export async function POST(req) {
       services: serviceNames,
     });
 
-    // ✅ 2️⃣ Save Notifications (for Admin Panel only)
+    // ✅ 2️⃣ Save notifications for Admins
     const admins = await prisma.user.findMany({
       where: { userType: "ADMIN", isActive: true },
       select: { id: true },
