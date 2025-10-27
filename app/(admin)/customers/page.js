@@ -272,7 +272,7 @@ export default function CustomerManagement() {
     );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 md:p-8">
+    <div className="min-h-screen p-4 sm:p-6 md:p-8">
       {/* Responsive Fix CSS */}
       <style jsx global>{`
         @media (max-width: 640px) {

@@ -83,7 +83,7 @@ export default function BusinessSettingsPage() {
   }
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden bg-gradient-to-br from-gray-50 to-gray-100 px-3 sm:px-6 py-5 text-gray-800">
+    <div className="min-h-screen w-full overflow-x-hidden px-3 sm:px-6 py-5 text-gray-800">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-5">
         <div className="flex items-center gap-2">

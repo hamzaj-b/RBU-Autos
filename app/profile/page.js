@@ -163,7 +163,7 @@ export default function ProfilePage() {
   // 🌟 UI START
   // =====================================================
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+    <div className="min-h-screen  p-6">
       <div className="max-w-5xl mx-auto bg-white rounded-2xl shadow-lg p-8 space-y-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-center border-b pb-4">

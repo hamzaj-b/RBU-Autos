@@ -90,7 +90,7 @@ export default function StaffManagement() {
     );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 px-3 sm:px-6 py-6 text-gray-800 overflow-x-hidden transition-all duration-300">
+    <div className="min-h-screen px-3 sm:px-6 py-6 text-gray-800 overflow-x-hidden transition-all duration-300">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 className="text-2xl sm:text-3xl font-semibold text-gray-800">

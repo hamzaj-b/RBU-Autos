@@ -47,7 +47,7 @@ export default function EmployeeSessionsPage() {
   }, [id, token]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 px-3 sm:px-6 py-6 text-gray-800">
+    <div className="min-h-screen  px-3 sm:px-6 py-6 text-gray-800">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-3">

@@ -44,7 +44,7 @@ export default function Header({ toggleSidebar, className = "" }) {
   return (
     <>
       <header
-        className={`w-full bg-white flex items-center justify-between px-4 md:px-6 py-3 shadow-sm border-b border-gray-100 ${className}`}
+        className={`w-full bg-white flex items-center justify-between px-4 md:px-6 py-3 border-b border-gray-100 ${className}`}
       >
         {/* Sidebar Toggle */}
         <HiMenuAlt3

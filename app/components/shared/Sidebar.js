@@ -12,7 +12,7 @@ import {
   Wrench,
   ChevronLeft,
   LucideBookmarkPlus,
-  LucidePencil, // <-- Add the arrow icon
+  LucidePencil,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -55,7 +55,6 @@ export default function Sidebar({ toggleSidebar }) {
         label: "Staff Management",
         icon: <SquareUser />,
       },
-      // { href: "/marketing", label: "Marketing", icon: <SquareUser /> },
       { href: "/settings", label: "Settings", icon: <Settings /> },
     ],
 
@@ -83,6 +82,20 @@ export default function Sidebar({ toggleSidebar }) {
   // Select correct links or empty array
   const links = linksByRole[userType] || [];
 
+  const handleLinkClick = (e, href) => {
+    // Check if screen width is less than 768px (for small screens)
+    if (window.innerWidth < 768) {
+      e.preventDefault(); // Prevent default navigation
+      toggleSidebar(); // Toggle the sidebar
+      setTimeout(() => {
+        window.location.href = href; // Manually trigger navigation after a delay
+      }, 300); // Optional delay to allow sidebar toggle animation (adjust as needed)
+    } else {
+      // For large screens, just navigate as usual
+      window.location.href = href;
+    }
+  };
+
   return (
     <div className="flex flex-col items-center w-full h-full md:min-h-screen">
       {/* Logo & Branding */}
@@ -109,9 +122,10 @@ export default function Sidebar({ toggleSidebar }) {
           const isActive = pathname === link.href;
 
           return (
-            <Link
+            <a
               key={index}
               href={link.href}
+              onClick={(e) => handleLinkClick(e, link.href)} // Use the handleLinkClick function
               className={`flex items-center px-4 py-3 mx-6 ${
                 isActive
                   ? "bg-blue-theme text-white font-semibold rounded-lg"
@@ -119,14 +133,12 @@ export default function Sidebar({ toggleSidebar }) {
               }`}
             >
               <span
-                className={`mr-2 ${
-                  isActive ? "text-white" : "text-blue-theme"
-                }`}
+                className={`mr-2 ${isActive ? "text-white" : "text-blue-theme"}`}
               >
                 {link.icon}
               </span>
               {link.label}
-            </Link>
+            </a>
           );
         })}
       </nav>
