@@ -264,7 +264,7 @@ export default function EmployeeRepairTracker() {
                 }}
                 className={`px-3 py-2 text-sm cursor-pointer transition-colors ${
                   active
-                    ? "bg-blue-500 text-white"
+                    ? "bg-blue-theme text-white"
                     : "hover:bg-blue-50 text-gray-700"
                 }`}
               >

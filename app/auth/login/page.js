@@ -82,7 +82,7 @@ export default function SignInPage() {
             Don’t have an account?{" "}
             <Link
               href="/auth/signup"
-              className="text-blue-600 font-semibold hover:underline"
+              className="text-blue-bold font-semibold hover:underline"
             >
               Get Started
             </Link>

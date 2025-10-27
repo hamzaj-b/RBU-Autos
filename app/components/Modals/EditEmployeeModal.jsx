@@ -173,7 +173,7 @@ export default function EditEmployeeModal({ isOpen, onClose, employeeId, onUpdat
               <Button
                 type="button"
                 onClick={handleSave}
-                className="w-1/2 bg-blue-theme text-white hover:bg-blue-bold"
+                className="w-1/2 bg-blue-theme !text-white hover:bg-blue-bold"
                 disabled={loading}
               >
                 {loading ? "Saving..." : "Save"}

@@ -90,7 +90,7 @@ export default function NotificationBell() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, height: 0 }}
                   transition={{ duration: 0.15 }}
-                  className="flex items-start gap-2 p-3 border-b last:border-0 hover:bg-gray-50 transition bg-blue-50"
+                  className="flex items-start gap-2 p-3 border-b last:border-0 hover:bg-blue-50 transition bg-white"
                 >
                   <div className="flex-1">
                     <p className="text-sm font-medium text-gray-800">
