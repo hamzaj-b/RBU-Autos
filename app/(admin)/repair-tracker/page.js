@@ -19,6 +19,7 @@ import Select from "react-select";
 import { useAuth } from "@/app/context/AuthContext";
 import ConfirmDialog from "@/app/components/shared/ConfirmModal";
 import { useRouter } from "next/navigation";
+import { ChevronDown } from "lucide-react";
 
 export default function RepairTracker() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -36,10 +37,19 @@ export default function RepairTracker() {
   const [laborEntries, setLaborEntries] = useState([]);
   const [partsUsed, setPartsUsed] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+    const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
 
   const { token, logout } = useAuth();
-
+   const statuses = [
+    "all",
+    "OPEN",
+    "ASSIGNED",
+    "IN_PROGRESS",
+    "DONE",
+    "COMPLETED",
+    "CANCELLED",
+  ];
   // 🔄 Debounce Search
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchTerm), 500);
@@ -246,8 +256,9 @@ export default function RepairTracker() {
   return (
     <div className="container mx-auto p-6 space-y-6 text-gray-900">
       {/* 🔍 Filters */}
-      <div className="bg-white p-4 rounded-lg shadow border border-gray-100 flex flex-wrap gap-3 items-center justify-between">
-        <div className="relative flex-1 min-w-[250px]">
+      <div className="bg-white p-4 rounded-lg mb-5 shadow-sm border border-gray-100">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="relative w-full md:w-4/5 ">
           <Search
             className="absolute left-3 top-2 md:top-3 text-gray-400"
             size={18}
@@ -260,7 +271,7 @@ export default function RepairTracker() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div className="hidden md:flex gap-2 flex-wrap justify-end">
+        {/* <div className="hidden md:flex gap-2 flex-wrap justify-end">
           {[
             "all",
             "OPEN",
@@ -282,40 +293,59 @@ export default function RepairTracker() {
               {s === "all" ? "All" : s.replace("_", " ")}
             </button>
           ))}
-        </div>
-        <div className="w-full flex flex-col gap-2 flex-wrap justify-end ">
-          {/* Dropdown for small screens */}
-          <div className="md:hidden">
-            <select
-              onChange={(e) => setStatusFilter(e.target.value)}
-              value={statusFilter}
-              className="w-full px-2 py-1 text-xs md:text-sm rounded-lg font-medium bg-white border border-gray-300 hover:bg-gray-200 focus:ring-0 focus:border-blue-500 focus:outline-none transition-colors duration-200"
-            >
-              {[
-                "all",
-                "OPEN",
-                "ASSIGNED",
-                "IN_PROGRESS",
-                "DONE",
-                "COMPLETED",
-                "CANCELLED",
-              ].map((s) => (
-                <option
-                  key={s}
-                  value={s}
-                  className={`${
-                    statusFilter === s
-                      ? "bg-blue-bold text-white"
-                      : "text-gray-500"
+        </div> */}
+       
+        <div className=" w-full md:w-1/5 flex justify-end items-end">
+                    <div className="relative w-full">
+              {/* Selected button */}
+              <button
+                onClick={() => setIsOpen((prev) => !prev)}
+                className="w-full flex justify-between items-center px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium
+                  hover:border-blue-400 focus:ring-2 focus:ring-blue-500 transition-all"
+              >
+                <span>
+                  {statusFilter === "all"
+                    ? "All"
+                    : statusFilter.replace("_", " ")}
+                </span>
+                <ChevronDown
+                  className={`w-4 h-4 transform transition-transform ${
+                    isOpen ? "rotate-180" : ""
                   }`}
+                />
+              </button>
+        
+              {/* Dropdown menu */}
+              {isOpen && (
+                <div
+                  className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden animate-in fade-in slide-in-from-top-1"
                 >
-                  {s === "all" ? "All" : s.replace("_", " ")}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+                  {statuses.map((s) => {
+                    const active = s === statusFilter;
+                    return (
+                      <div
+                        key={s}
+                        onClick={() => {
+                          setStatusFilter(s);
+                          setIsOpen(false);
+                        }}
+                        className={`px-3 py-2 text-sm cursor-pointer transition-colors ${
+                          active
+                            ? "bg-blue-500 text-white"
+                            : "hover:bg-blue-50 text-gray-700"
+                        }`}
+                      >
+                        {s === "all" ? "All" : s.replace("_", " ")}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+                  </div>
       </div>
+      </div>
+
 
       {/* 📋 Work Orders */}
       <div className="bg-white w-full rounded-xl shadow-sm border border-gray-100 divide-y">
@@ -334,6 +364,7 @@ export default function RepairTracker() {
               className="flex flex-col md:flex-row md:justify-between md:items-center p-4 hover:bg-gray-50 transition-all"
             >
               <div className="flex items-start gap-2 ">
+                <div className="w-[55px]">
                 <div className="w-12 h-12 flex items-center justify-center rounded-full bg-gradient-to-tl from-blue-bold to-blue-theme text-white font-semibold text-lg shadow-sm">
                   {wo.customerName
                     .split(" ")
@@ -341,9 +372,10 @@ export default function RepairTracker() {
                     .join("")
                     .slice(0, 2)}
                 </div>
+                </div>
                 <div className="">
                   <h3 className="text-base font-semibold">{wo.customerName}</h3>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-500 flex flex-wrap">
                     {wo.services?.join(", ")} •{" "}
                     {wo.employeeName || "Unassigned"}
                   </p>

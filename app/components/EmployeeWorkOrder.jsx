@@ -54,6 +54,7 @@ const EmployeeWorkOrder = ({
   const handleViewDetails = (item) => {
     setSelectedWO(item);
     setViewModal(true);
+    console.log("selectedWO" ,selectedWO);
   };
 
   // ✅ Accept Work Order API call
@@ -112,7 +113,7 @@ const EmployeeWorkOrder = ({
   const handleStart = (item) => {
     message.info(`Starting work order #${item.id}...`);
   };
-
+console.log("workOrdersworkOrders" , workOrders);
   return (
     <div className={containerWidth}>
       <h2 className="text-lg sm:text-[22px] px-3 sm:px-4 py-2 sm:py-3 text-gray-500 font-semibold mb-2 sm:mb-4">
@@ -132,7 +133,7 @@ const EmployeeWorkOrder = ({
                 <div className="flex flex-col gap-3 sm:gap-4 md:flex-row md:items-center md:justify-between">
                   {/* Customer Info */}
                   <div className="flex items-center justify-between gap-3 min-w-0">
-                    <div className="w-11 h-11 flex items-center justify-center rounded-full bg-gradient-to-tl from-blue-700 to-blue-500 text-white font-semibold text-sm shadow-sm">
+                    <div className="w-12 h-12 flex items-center justify-center rounded-full bg-gradient-to-tl from-blue-700 to-blue-500 text-white font-semibold text-sm shadow-sm">
                       {item?.customerName
                         ?.split(" ")
                         .map((n) => n[0]?.toUpperCase())
@@ -141,19 +142,26 @@ const EmployeeWorkOrder = ({
                     </div>
 
                     <div className="min-w-0">
-                      <p className="text-gray-800 text-sm md:text-lg font-semibold truncate">
-                        {item.bookingTitle}
-                      </p>
-                      <p className="text-gray-700 text-sm md:text-base font-medium truncate">
+                      <p className="text-gray-700 text-sm md:text-base font-medium">
                         {item.customerName}
                       </p>
+                      <p className="flex flex-wrap items-center gap-2">
+  {item.services?.map((service, idx) => (
+    <span
+      key={idx}
+      className="bg-blue-bold border text-white px-2 py-0.5 rounded-md text-sm"
+    >
+      {service}
+    </span>
+  ))}
+</p>
                       <div className="flex flex-col md:flex-row flex-wrap items-start md:items-center gap-x-2 text-xs sm:text-sm">
                         <span className="text-gray-600 truncate">
                           {formatDateRange(item.startAt, item.endAt)}
                         </span>
                         <span className="hidden md:block text-gray-400">•</span>
                         <span className="text-gray-500 truncate">
-                          {item.estimatedTime} Min
+                          {item.details?.booking?.slotMinutes} Min
                         </span>
                       </div>
                     </div>
@@ -221,16 +229,24 @@ const EmployeeWorkOrder = ({
       >
         {selectedWO && (
           <div className="space-y-2 text-sm text-gray-700">
-            <p>
-              <strong>Service:</strong> {selectedWO.bookingTitle}
-            </p>
+            <p className="flex flex-wrap items-center gap-2">
+  <strong className="mr-1">Service:</strong>
+  {selectedWO.services?.map((service, idx) => (
+    <span
+      key={idx}
+      className="bg-blue-bold border text-white px-2 py-0.5 rounded-md text-sm"
+    >
+      {service}
+    </span>
+  ))}
+</p>
             <p>
               <strong>Description:</strong>{" "}
-              {selectedWO.details?.workOrder?.service?.description || "N/A"}
+              {selectedWO.notes || "N/A"}
             </p>
             <p>
-              <strong>Category:</strong>{" "}
-              {selectedWO.details?.workOrder?.service?.category || "N/A"}
+              <strong>Estimate Time:</strong>{" "}
+              {selectedWO.estimatedTime || "N/A"} <span>min</span>
             </p>
             <p>
               <strong>Customer:</strong> {selectedWO.customerName}

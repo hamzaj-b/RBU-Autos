@@ -6,6 +6,7 @@ import { Spin, message, Modal } from "antd";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
 import toast, { Toaster } from "react-hot-toast";
+import { ChevronDown } from "lucide-react";
 
 export default function EmployeeRepairTracker() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -21,10 +22,21 @@ export default function EmployeeRepairTracker() {
   const [selectedWO, setSelectedWO] = useState(null);
   const [viewModal, setViewModal] = useState(false);
   const [loadingIds, setLoadingIds] = useState(new Set());
+  const [isOpen, setIsOpen] = useState(false);
 
   const { token, logout } = useAuth();
   const router = useRouter();
 
+
+   const statuses = [
+    "all",
+    "OPEN",
+    "ASSIGNED",
+    "IN_PROGRESS",
+    "DONE",
+    "COMPLETED",
+    "CANCELLED",
+  ];
   // 🔄 Debounce search
   useEffect(() => {
     const handler = setTimeout(() => setDebouncedSearch(searchTerm), 500);
@@ -71,6 +83,9 @@ export default function EmployeeRepairTracker() {
   useEffect(() => {
     fetchWorkOrders();
   }, [fetchWorkOrders]);
+
+
+ 
 
   // 🚀 Start WorkOrder
   const handleStart = async (item) => {
@@ -200,7 +215,7 @@ export default function EmployeeRepairTracker() {
       <div className="bg-white p-4 rounded-lg mb-5 shadow-sm border border-gray-100">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           {/* Search */}
-          <div className="relative w-full md:max-w-3/5 ">
+          <div className="relative w-full md:w-4/5 ">
             <Search
               className="absolute left-3 top-2 md:top-3 text-gray-400"
               size={18}
@@ -213,63 +228,53 @@ export default function EmployeeRepairTracker() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+          <div className=" w-full md:w-1/5 flex justify-end items-end">
+            <div className="relative w-full">
+      {/* Selected button */}
+      <button
+        onClick={() => setIsOpen((prev) => !prev)}
+        className="w-full flex justify-between items-center px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium
+          hover:border-blue-400 focus:ring-2 focus:ring-blue-500 transition-all"
+      >
+        <span>
+          {statusFilter === "all"
+            ? "All"
+            : statusFilter.replace("_", " ")}
+        </span>
+        <ChevronDown
+          className={`w-4 h-4 transform transition-transform ${
+            isOpen ? "rotate-180" : ""
+          }`}
+        />
+      </button>
 
-          {/* Status Filters */}
-          {/* <div className="hidden md:flex gap-2 flex-wrap">
-            {[
-              "all",
-              "OPEN",
-              "ASSIGNED",
-              "IN_PROGRESS",
-              "DONE",
-              "COMPLETED",
-            ].map((status) => (
-              <button
-                key={status}
-                onClick={() => setStatusFilter(status)}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium ${
-                  statusFilter === status
-                    ? "bg-blue-theme !text-white"
-                    : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+      {/* Dropdown menu */}
+      {isOpen && (
+        <div
+          className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden animate-in fade-in slide-in-from-top-1"
+        >
+          {statuses.map((s) => {
+            const active = s === statusFilter;
+            return (
+              <div
+                key={s}
+                onClick={() => {
+                  setStatusFilter(s);
+                  setIsOpen(false);
+                }}
+                className={`px-3 py-2 text-sm cursor-pointer transition-colors ${
+                  active
+                    ? "bg-blue-500 text-white"
+                    : "hover:bg-blue-50 text-gray-700"
                 }`}
               >
-                {status === "all"
-                  ? "All"
-                  : status.replace("_", " ").toLowerCase()}
-              </button>
-            ))}
-          </div> */}
-          <div className=" w-full md:max-w-2/5 flex justify-end items-end border">
-            {/* Dropdown for small screens */}
-            <div className="w-full">
-              <select
-                onChange={(e) => setStatusFilter(e.target.value)}
-                value={statusFilter}
-                className=" px-2 py-2 text-xs md:text-sm rounded-lg font-medium bg-white border border-gray-300 hover:bg-gray-200 focus:ring-0 focus:border-blue-500 focus:outline-none transition-colors duration-200"
-              >
-                {[
-                  "all",
-                  "OPEN",
-                  "ASSIGNED",
-                  "IN_PROGRESS",
-                  "DONE",
-                  "COMPLETED",
-                  "CANCELLED",
-                ].map((s) => (
-                  <option
-                    key={s}
-                    value={s}
-                    className={`${
-                      statusFilter === s
-                        ? "bg-blue-bold text-white"
-                        : "text-gray-500"
-                    }`}
-                  >
-                    {s === "all" ? "All" : s.replace("_", " ")}
-                  </option>
-                ))}
-              </select>
-            </div>
+                {s === "all" ? "All" : s.replace("_", " ")}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
           </div>
         </div>
       </div>
@@ -292,15 +297,25 @@ export default function EmployeeRepairTracker() {
                 key={wo.id}
                 className="flex justify-between items-center border-b py-3 px-3 hover:bg-gray-50 transition"
               >
-                <div className="flex flex-col">
-                  <p className="font-semibold text-gray-800">
-                    {wo.services?.join(", ") || "—"}
-                  </p>
-                  <p className="text-xs text-gray-500">
+              <div className="flex items-start gap-2 ">
+                <div className="w-[55px]">
+                <div className="w-12 h-12 flex items-center justify-center rounded-full bg-gradient-to-tl from-blue-bold to-blue-theme text-white font-semibold text-lg shadow-sm">
+                  {wo.customerName
+                    .split(" ")
+                    .map((n) => n[0]?.toUpperCase())
+                    .join("")
+                    .slice(0, 2)}
+                </div>
+                </div>
+                <div className="">
+                  <h3 className="text-base font-semibold">
+                    {wo.services?.join(", ") || "—"}</h3>
+                  <p className="text-sm text-gray-500 flex flex-wrap">
                     {wo.customerName} • {wo.employeeName || "Unassigned"}
                   </p>
-                  <div className="mt-1">{getStatusTag(wo.status)}</div>
+                  {getStatusTag(wo.status)}
                 </div>
+              </div>
 
                 <div className="flex gap-2 items-center">
                   {/* View */}
@@ -346,7 +361,7 @@ export default function EmployeeRepairTracker() {
                   )}
 
                   {/* Print */}
-                  {wo.status === "COMPLETED" && (
+                  {/* {wo.status === "COMPLETED" && (
                     <div
                       onClick={() => handlePrint(wo)}
                       className="text-xs bg-gradient-to-br from-[#0f74b2] via-sky-800 to-blue-900 
@@ -355,7 +370,7 @@ export default function EmployeeRepairTracker() {
                     >
                       <Printer size={15} /> Print
                     </div>
-                  )}
+                  )} */}
                 </div>
               </div>
             );
