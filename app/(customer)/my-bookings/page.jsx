@@ -13,8 +13,6 @@ export default function MyBookingsPage() {
   const [loading, setLoading] = useState(true);
   const [detailModal, setDetailModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
-
-  // Confirmation Dialog State
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [bookingToCancel, setBookingToCancel] = useState(null);
   const [cancelLoading, setCancelLoading] = useState(false);
@@ -40,7 +38,7 @@ export default function MyBookingsPage() {
     fetchBookings();
   }, [token]);
 
-  // 🔹 Handle cancel
+  // Cancel Confirmation
   const handleCancelConfirm = (record) => {
     setBookingToCancel(record);
     setConfirmOpen(true);
@@ -50,12 +48,10 @@ export default function MyBookingsPage() {
     if (!bookingToCancel || !token) return;
     try {
       setCancelLoading(true);
-
       const res = await fetch(`/api/bookings/${bookingToCancel.id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
-
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to cancel booking");
 
@@ -76,11 +72,6 @@ export default function MyBookingsPage() {
 
   const columns = [
     {
-      title: "Type",
-      dataIndex: "bookingType",
-      render: (v) => <Tag color={v === "WALKIN" ? "blue" : "purple"}>{v}</Tag>,
-    },
-    {
       title: "Services",
       dataIndex: "services",
       render: (list) =>
@@ -89,6 +80,7 @@ export default function MyBookingsPage() {
             {s}
           </Tag>
         )),
+      onCell: () => ({ "data-label": "Services" }),
     },
     {
       title: "Date / Time",
@@ -100,12 +92,14 @@ export default function MyBookingsPage() {
           hour: "2-digit",
           minute: "2-digit",
         }),
+      onCell: () => ({ "data-label": "Date / Time" }),
     },
     {
       title: "Status",
       dataIndex: "status",
       render: (v) => (
         <Tag
+          className="w-fit"
           color={
             v === "PENDING"
               ? "gold"
@@ -119,19 +113,22 @@ export default function MyBookingsPage() {
           {v}
         </Tag>
       ),
+      onCell: () => ({ "data-label": "Status" }),
     },
     {
       title: "Actions",
       render: (_, record) => (
-        <div className="flex gap-2">
+        <div className="flex gap-2 justify-end md:justify-start">
           <Button
-            icon={<Eye size={16} />}
-            size="small"
+            className="items-center"
+            size="medium"
             onClick={() => {
               setSelectedBooking(record);
               setDetailModal(true);
             }}
-          />
+          >
+            <Eye className="" size={16} />
+          </Button>
           {record.status === "PENDING" && (
             <Button
               danger
@@ -144,18 +141,67 @@ export default function MyBookingsPage() {
           )}
         </div>
       ),
+      onCell: () => ({ "data-label": "Actions" }),
     },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white p-6">
-      <div className="w-full mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white p-4 sm:p-6">
+      {/* 📱 Responsive Styles */}
+      <style jsx global>{`
+        @media (max-width: 640px) {
+          .ant-table-thead {
+            display: none !important;
+          }
+          .ant-table-tbody > tr {
+            display: flex !important;
+            flex-direction: column !important;
+            border: 1px solid #e5e7eb !important;
+            border-radius: 0.75rem !important;
+            margin-bottom: 1rem !important;
+            background: #fff !important;
+            padding: 0.9rem 1rem !important;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+          }
+          .ant-table-tbody > tr > td {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            border: none !important;
+            padding: 0.45rem 0 !important;
+            border-bottom: 1px dashed #e5e7eb;
+            font-size: 0.9rem !important;
+          }
+          .ant-table-tbody > tr > td:last-child {
+            border-bottom: none !important;
+          }
+          .ant-table-tbody > tr > td::before {
+            content: attr(data-label);
+            font-weight: 600;
+            color: #374151;
+            font-size: 0.9rem;
+            flex: 1;
+            text-align: left;
+            margin-right: 1rem;
+          }
+          .ant-table-tbody > tr > td span,
+          .ant-table-tbody > tr > td div {
+            font-weight: 500;
+            text-align: right;
+            word-break: break-word;
+          }
+        }
+      `}</style>
+
+      <div className="w-full mx-auto max-w-7xl">
         <Card
           className="shadow-lg rounded-2xl border border-gray-100"
           title={
             <div className="flex items-center gap-2 text-[#0f74b2]">
               <Calendar className="w-5 h-5" />
-              <span className="font-semibold text-lg">My Bookings</span>
+              <span className="font-semibold text-lg sm:text-xl">
+                My Bookings
+              </span>
             </div>
           }
         >
@@ -164,24 +210,28 @@ export default function MyBookingsPage() {
               <Skeleton active />
               <Skeleton active />
             </div>
+          ) : bookings.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              No bookings found.
+            </div>
           ) : (
             <Table
               dataSource={bookings}
               columns={columns}
               rowKey="id"
               pagination={{ pageSize: 8, showSizeChanger: false }}
-              className="rounded-lg"
+              className="rounded-lg bg-white"
             />
           )}
         </Card>
       </div>
 
-      {/* 🔹 Custom Confirmation Dialog */}
+      {/* 🔹 Confirmation Dialog */}
       <ConfirmDialog
         open={confirmOpen}
         type="danger"
         title="Cancel Booking"
-        message={`Are you sure you want to cancel this booking?`}
+        message="Are you sure you want to cancel this booking?"
         loading={cancelLoading}
         onCancel={() => setConfirmOpen(false)}
         onConfirm={confirmCancelBooking}
