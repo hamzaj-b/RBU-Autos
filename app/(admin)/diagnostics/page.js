@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { DatePicker, Select, Spin, Table, message, Empty } from "antd";
+import { DatePicker, Select, Spin, Table, message, Empty, Input } from "antd"; // ✅ Added Input
 import { FileBarChart2, RefreshCw, Download, XCircle } from "lucide-react";
 import { useAuth } from "@/app/context/AuthContext";
 import dayjs from "dayjs";
@@ -18,8 +18,10 @@ export default function ReportsPage() {
   const [customers, setCustomers] = useState([]);
   const [services, setServices] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [SelectedStatus, setSelectedStatus] = useState(null);
   const [selectedServices, setSelectedServices] = useState([]);
   const [dateRange, setDateRange] = useState([]);
+  const [employeeName, setEmployeeName] = useState(""); // ✅ New state
 
   // ✅ Compute all totals (includes Completed Revenue)
   const totals = useMemo(() => {
@@ -80,6 +82,8 @@ export default function ReportsPage() {
       setLoading(true);
       const params = new URLSearchParams();
       if (selectedCustomer) params.append("customerId", selectedCustomer);
+      if (SelectedStatus) params.append("status", SelectedStatus);
+      if (employeeName) params.append("employeeName", employeeName.trim()); // ✅ Added
       selectedServices.forEach((s) => params.append("serviceIds", s));
       if (dateRange?.length === 2) {
         params.append("dateFrom", dayjs(dateRange[0]).format("YYYY-MM-DD"));
@@ -97,7 +101,14 @@ export default function ReportsPage() {
     } finally {
       setLoading(false);
     }
-  }, [token, selectedCustomer, selectedServices, dateRange]);
+  }, [
+    token,
+    selectedCustomer,
+    selectedServices,
+    dateRange,
+    SelectedStatus,
+    employeeName, // ✅ dependency added
+  ]);
 
   useEffect(() => {
     fetchReport();
@@ -113,11 +124,12 @@ export default function ReportsPage() {
       : str;
   };
 
-
   const resetFilters = () => {
     setSelectedCustomer(null);
     setSelectedServices([]);
     setDateRange([]);
+    setSelectedStatus(null);
+    setEmployeeName(""); // ✅ Reset employee field
   };
 
   // --- TABLE COLUMNS with data-labels for mobile ---
@@ -215,7 +227,6 @@ export default function ReportsPage() {
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
           }
 
-          /* Each cell = one row (label + value side-by-side) */
           .ant-table-tbody > tr > td {
             display: flex !important;
             flex-direction: row !important;
@@ -227,12 +238,10 @@ export default function ReportsPage() {
             font-size: 0.9rem !important;
           }
 
-          /* Remove bottom border from last row */
           .ant-table-tbody > tr > td:last-child {
             border-bottom: none !important;
           }
 
-          /* Label styling */
           .ant-table-tbody > tr > td::before {
             content: attr(data-label);
             font-weight: 600;
@@ -243,7 +252,6 @@ export default function ReportsPage() {
             margin-right: 1rem;
           }
 
-          /* Value styling */
           .ant-table-tbody > tr > td span,
           .ant-table-tbody > tr > td div {
             color: #111827;
@@ -307,7 +315,7 @@ export default function ReportsPage() {
       </div>
 
       {/* Filters */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 mb-6">
         <Select
           placeholder="Select Customer"
           allowClear
@@ -323,6 +331,31 @@ export default function ReportsPage() {
             </Option>
           ))}
         </Select>
+
+        {/* ✅ Status Filter */}
+        <Select
+          placeholder="Select Status"
+          allowClear
+          onChange={(val) => setSelectedStatus(val || null)}
+          value={SelectedStatus}
+          className="w-full"
+          showSearch
+        >
+          <Option value="OPEN">Open</Option>
+          <Option value="ASSIGNED">Assigned</Option>
+          <Option value="IN_PROGRESS">In Progress</Option>
+          <Option value="COMPLETED">Completed</Option>
+          <Option value="CANCELLED">Cancelled</Option>
+        </Select>
+
+        {/* ✅ Employee Name Filter */}
+        <Input
+          placeholder="Search Employee Name"
+          value={employeeName}
+          onChange={(e) => setEmployeeName(e.target.value)}
+          className="w-full"
+          allowClear
+        />
 
         <Select
           placeholder="Select Services"
@@ -348,13 +381,13 @@ export default function ReportsPage() {
           format="YYYY-MM-DD"
           allowClear
         />
-
+        <div className="flex items-center justify-center gap-2">
         <Button
           onClick={fetchReport}
           disabled={loading}
-          className="bg-blue-theme hover:bg-blue-bold !text-white w-full"
+          className="bg-blue-theme hover:bg-blue-bold !text-white w-[100px]"
         >
-          Apply Filters
+          Filter
         </Button>
 
         <Button
@@ -363,10 +396,10 @@ export default function ReportsPage() {
             resetFilters();
             setTimeout(fetchReport, 0);
           }}
-          className="flex items-center justify-center gap-2 w-full"
-        >
-          <XCircle className="w-4 h-4" /> Reset
+          className="flex items-center justify-center gap-2 w-[100px]"
+        > Reset
         </Button>
+      </div>
       </div>
 
       {/* Table */}

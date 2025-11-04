@@ -3,6 +3,7 @@
 import React from "react";
 import { MoreVertical, Tag } from "lucide-react";
 import { Skeleton } from "antd";
+import { useRouter } from "next/navigation";
 
 /* --- Micro bar chart --- */
 function MiniBars({ data = [78, 34, 96, 58], accentIndex = 0 }) {
@@ -51,8 +52,11 @@ export default function WorkCompletedCard({
   bars = [78, 36, 98, 60],
   accentIndex = 3,
 }) {
+  const router = useRouter();
   return (
-    <div className="w-full rounded-[18px] bg-white p-4 sm:p-5 shadow-sm ring-1 ring-gray-200/70 flex flex-col justify-between transition-all hover:shadow-md">
+    <div onClick={() => router.push("/repair-tracker")}>
+
+    <div className=" cursor-pointer w-full rounded-[18px] bg-white p-4 sm:p-5 shadow-sm ring-1 ring-gray-200/70 flex flex-col justify-between transition-all hover:shadow-md">
       {/* === Header === */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-2 sm:gap-3">
@@ -88,6 +92,7 @@ export default function WorkCompletedCard({
           <MiniBars data={bars} accentIndex={accentIndex} />
         </div>
       </div>
+    </div>
     </div>
   );
 }

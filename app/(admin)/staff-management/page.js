@@ -129,6 +129,7 @@ export default function StaffManagement() {
       <AdminAddEmployee
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+        fetchEmployees={fetchEmployees}
       />
 
       {/* Search */}

@@ -49,7 +49,7 @@ export default function Sidebar({ toggleSidebar }) {
         label: "Manage Booking",
         icon: <LucidePencil />,
       },
-      { href: "/diagnostics", label: "Diagnostics", icon: <Lightbulb /> },
+      { href: "/diagnostics", label: "Work Order Reports", icon: <Lightbulb /> },
       {
         href: "/staff-management",
         label: "Staff Management",
@@ -126,7 +126,7 @@ export default function Sidebar({ toggleSidebar }) {
               key={index}
               href={link.href}
               onClick={(e) => handleLinkClick(e, link.href)} // Use the handleLinkClick function
-              className={`flex items-center px-4 py-3 mx-6 ${
+              className={`flex items-center px-2 py-3 mx-6 ${
                 isActive
                   ? "bg-blue-theme text-white font-semibold rounded-lg"
                   : "text-gray-600 hover:bg-gray-100 rounded"

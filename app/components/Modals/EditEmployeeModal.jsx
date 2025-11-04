@@ -12,6 +12,7 @@ export default function EditEmployeeModal({ isOpen, onClose, employeeId, onUpdat
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
+    password: "",
     title: "",
     hourlyRate: "",
     isActive: true,
@@ -29,9 +30,11 @@ export default function EditEmployeeModal({ isOpen, onClose, employeeId, onUpdat
         });
         const data = await res.json();
         if (res.ok) {
+          console.log(data);
           setFormData({
             fullName: data.employee.fullName || "",
             email: data.employee.User?.[0]?.email || "",
+            password: data.employee.User?.[0]?.password || "",
             title: data.employee.title || "",
             hourlyRate: data.employee.hourlyRate || "",
             isActive: data.employee.User?.[0]?.isActive ?? true,
@@ -130,6 +133,15 @@ export default function EditEmployeeModal({ isOpen, onClose, employeeId, onUpdat
                 value={formData.email}
                 disabled
                 placeholder="Email"
+              />
+            </div>
+            <div>
+              <label className="block text-gray-700 font-medium mb-1">Password</label>
+              <Input
+                name="password"
+                value={formData.password}
+                disabled
+                placeholder="password"
               />
             </div>
 
