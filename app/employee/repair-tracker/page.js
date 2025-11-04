@@ -44,6 +44,12 @@ export default function EmployeeRepairTracker() {
   }, [searchTerm]);
 
   // 📦 Fetch WorkOrders
+  const minutesToHoursString = (minutes) => {
+  if (!minutes || isNaN(minutes)) return "0h 0m";
+  const hrs = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return `${hrs}h ${mins}m`;
+};
   const fetchWorkOrders = useCallback(async () => {
     if (!token) return;
     try {
@@ -70,6 +76,7 @@ export default function EmployeeRepairTracker() {
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
+      console.log("data" , data);
       setWorkOrders(data.workOrders || []);
       setTotalPages(data.totalPages || 1);
     } catch (err) {
@@ -311,7 +318,7 @@ export default function EmployeeRepairTracker() {
                   <h3 className="text-base font-semibold">
                     {wo.services?.join(", ") || "—"}</h3>
                   <p className="text-sm text-gray-500 flex flex-wrap">
-                    {wo.customerName} • {wo.employeeName || "Unassigned"}
+                    {wo.customerName} • {minutesToHoursString(wo.raw.booking.slotMinutes)}
                   </p>
                   {getStatusTag(wo.status)}
                 </div>
@@ -323,6 +330,7 @@ export default function EmployeeRepairTracker() {
                     onClick={() => {
                       setSelectedWO(wo);
                       setViewModal(true);
+                      console.log("selectedWO", wo);
                     }}
                     className="px-3 py-1 text-xs rounded-md flex items-center bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium"
                   >
@@ -405,7 +413,13 @@ export default function EmployeeRepairTracker() {
               <strong>Status:</strong> {getStatusTag(selectedWO.status)}
             </p>
             <p>
+              <strong>Vehicle:</strong> {selectedWO.raw.customer.vehicleJson.make || "—"} • {selectedWO.raw.customer.vehicleJson.model || "—"} • {selectedWO.raw.customer.vehicleJson.info|| "—"} • {selectedWO.raw.customer.vehicleJson.variant || "—"}
+            </p>
+            <p>
               <strong>Booking Time:</strong> {selectedWO.bookingTime || "—"}
+            </p>
+            <p>
+              <strong>Total Time:</strong> {minutesToHoursString(selectedWO.raw.booking.slotMinutes) || "—"}
             </p>
             {selectedWO.notes && (
               <p>

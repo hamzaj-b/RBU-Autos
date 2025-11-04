@@ -50,6 +50,13 @@ const EmployeeWorkOrder = ({
     )}, ${end.toLocaleTimeString(undefined, timeOptions)}`;
   };
 
+const minutesToHoursString = (minutes) => {
+  if (!minutes || isNaN(minutes)) return "0h 0m";
+  const hrs = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return `${hrs}h ${mins}m`;
+};
+
   // 🧩 View Details Handler
   const handleViewDetails = (item) => {
     setSelectedWO(item);
@@ -161,7 +168,7 @@ console.log("workOrdersworkOrders" , workOrders);
                         </span>
                         <span className="hidden md:block text-gray-400">•</span>
                         <span className="text-gray-500 truncate">
-                          {item.details?.booking?.slotMinutes} Min
+                          {minutesToHoursString(item.details?.booking?.slotMinutes)}
                         </span>
                       </div>
                     </div>
@@ -246,7 +253,7 @@ console.log("workOrdersworkOrders" , workOrders);
             </p>
             <p>
               <strong>Estimate Time:</strong>{" "}
-              {selectedWO.estimatedTime || "N/A"} <span>min</span>
+             {minutesToHoursString(selectedWO.details?.booking?.slotMinutes) || "N/A"}
             </p>
             <p>
               <strong>Customer:</strong> {selectedWO.customerName}

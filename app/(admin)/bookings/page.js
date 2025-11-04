@@ -46,6 +46,12 @@ export default function WalkInBookingPage() {
     setModalOpen(false);
   };
 
+  const minutesToHoursString = (minutes) => {
+  if (!minutes || isNaN(minutes)) return "0h 0m";
+  const hrs = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return `${hrs}h ${mins}m`;
+};
 
   // 🔹 Fetch Customers & Services
   useEffect(() => {
@@ -76,7 +82,7 @@ export default function WalkInBookingPage() {
 
         setServices(
           servData.data?.map((s) => ({
-            label: `${s.name} (${s.durationMinutes}m • $ ${s.basePrice})`,
+            label: `${s.name} • (${minutesToHoursString(s.durationMinutes)}) • $ ${s.basePrice})`,
             value: s.id,
             duration: s.durationMinutes,
             price: s.basePrice,

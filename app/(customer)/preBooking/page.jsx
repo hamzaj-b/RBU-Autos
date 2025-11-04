@@ -24,7 +24,12 @@ export default function CustomerPreBookingPage() {
   const [submitLoading, setSubmitLoading] = useState(false);
 
   const [businessSettings, setBusinessSettings] = useState(null);
-
+  const minutesToHoursString = (minutes) => {
+  if (!minutes || isNaN(minutes)) return "0h 0m";
+  const hrs = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return `${hrs}h ${mins}m`;
+};
   // 🔹 Fetch Services & Business Settings
   useEffect(() => {
     if (!token) return;
@@ -49,7 +54,7 @@ export default function CustomerPreBookingPage() {
           servData.data
             ?.filter((s) => s.isActive) // ✅ Only include active services
             .map((s) => ({
-              label: `${s.name} (${s.durationMinutes}m • $ ${s.basePrice})`,
+              label: `${s.name} • (${minutesToHoursString(s.durationMinutes)})`,
               value: s.id,
               duration: s.durationMinutes,
               price: s.basePrice,
@@ -237,7 +242,7 @@ export default function CustomerPreBookingPage() {
                   <Clock className="w-4 h-4 text-blue-600" />
                   <span className="font-medium">
                     Duration:{" "}
-                    <span className="text-[#0f74b2]">{totalDuration}</span> min
+                    <span className="text-[#0f74b2]">{minutesToHoursString(totalDuration)}</span>
                   </span>
                 </div>
                 <div className="font-semibold text-[#0f74b2]">

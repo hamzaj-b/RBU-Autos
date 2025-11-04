@@ -17,6 +17,19 @@ import { Plus, Pencil, Trash2, RefreshCcw } from "lucide-react";
 import { useAuth } from "@/app/context/AuthContext";
 import toast from "react-hot-toast";
 
+// 🔧 Helper functions
+const hoursToMinutes = (hours) => {
+  if (!hours || isNaN(hours)) return 0;
+  return Math.round(parseFloat(hours) * 60);
+};
+
+const minutesToHoursString = (minutes) => {
+  if (!minutes || isNaN(minutes)) return "0h 0m";
+  const hrs = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return `${hrs}h ${mins}m`;
+};
+
 export default function ServicesPage() {
   const { token } = useAuth();
   const [clientReady, setClientReady] = useState(false);
@@ -37,7 +50,6 @@ export default function ServicesPage() {
   });
 
   useEffect(() => setClientReady(true), []);
-
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 500);
     return () => clearTimeout(timer);
@@ -91,7 +103,7 @@ export default function ServicesPage() {
           name: formData.name,
           category: formData.category,
           description: formData.description,
-          durationMinutes: parseInt(formData.durationMinutes) || null,
+          durationMinutes: hoursToMinutes(formData.durationMinutes), // convert before sending
           basePrice: parseFloat(formData.basePrice) || 0,
         }),
       });
@@ -216,7 +228,7 @@ export default function ServicesPage() {
     {
       title: "Duration",
       dataIndex: "durationMinutes",
-      render: (t) => (t ? `${t} mins` : "N/A"),
+      render: (t) => (t ? minutesToHoursString(t) + ` (${t} mins)` : "N/A"),
     },
     {
       title: "Base Price",
@@ -252,7 +264,11 @@ export default function ServicesPage() {
             variant="outline"
             onClick={() => {
               setEditingService(record);
-              setFormData(record);
+              // Convert backend minutes → hours for UI field
+              setFormData({
+                ...record,
+                durationMinutes: (record.durationMinutes / 60).toFixed(2),
+              });
               setModalOpen(true);
             }}
             className="flex items-center gap-1 text-blue-600 hover:bg-blue-100"
@@ -287,40 +303,6 @@ export default function ServicesPage() {
 
   return (
     <div className="w-full min-h-screen p-4 sm:p-6 md:p-8">
-      {/* Responsive Fix CSS */}
-      <style jsx global>{`
-        @media (max-width: 640px) {
-          .ant-table {
-            border: none !important;
-          }
-          .ant-table-thead {
-            display: none !important;
-          }
-          .ant-table-tbody > tr {
-            display: flex !important;
-            flex-direction: column !important;
-            margin-bottom: 1rem !important;
-            border: 1px solid #e5e7eb !important;
-            border-radius: 0.75rem !important;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-            padding: 0.75rem !important;
-            background: #fff;
-          }
-          .ant-table-tbody > tr > td {
-            display: flex !important;
-            justify-content: space-between !important;
-            border: none !important;
-            padding: 0.25rem 0 !important;
-            font-size: 0.9rem;
-          }
-          .ant-table-tbody > tr > td::before {
-            content: attr(data-label);
-            font-weight: 600;
-            color: #4b5563;
-          }
-        }
-      `}</style>
-
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <h1 className="text-2xl sm:text-3xl font-semibold text-gray-800">
@@ -436,10 +418,11 @@ export default function ServicesPage() {
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex-1">
               <label className="text-sm font-medium text-gray-600">
-                Duration (min)
+                Duration (hours)
               </label>
               <Input
                 type="number"
+                step="0.25"
                 value={formData.durationMinutes}
                 onChange={(e) =>
                   setFormData((p) => ({
@@ -447,7 +430,7 @@ export default function ServicesPage() {
                     durationMinutes: e.target.value,
                   }))
                 }
-                placeholder="e.g., 60"
+                placeholder="e.g., 1.5 (for 1h 30m)"
               />
             </div>
             <div className="flex-1">

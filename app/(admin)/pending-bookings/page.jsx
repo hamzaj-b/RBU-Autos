@@ -52,6 +52,12 @@ export default function PreBookingsPage() {
     return () => clearTimeout(timeout);
   }, [searchTerm, statusFilter]);
 
+  const minutesToHoursString = (minutes) => {
+  if (!minutes || isNaN(minutes)) return "0h 0m";
+  const hrs = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return `${hrs}h ${mins}m`;
+};
   // Fetch Pre-Bookings
   const fetchBookings = async () => {
     if (!token) return;
@@ -197,7 +203,7 @@ export default function PreBookingsPage() {
       title: "Duration",
       dataIndex: "totalDuration",
       key: "duration",
-      render: (v) => `${v || 0} min`,
+      render: (v) => `${minutesToHoursString(v) || 0}`,
     },
     {
       title: "Status",

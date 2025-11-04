@@ -133,12 +133,6 @@ export default function EmployeeDashboard() {
           <Tag color="green" className="text-xs sm:text-sm whitespace-nowrap">
             Active
           </Tag>
-          <div className="text-gray-600 text-sm sm:text-base whitespace-nowrap">
-            Hourly Rate:{" "}
-            <span className="font-semibold text-blue-700">
-              ${employee.hourlyRate || 0}/hr
-            </span>
-          </div>
         </div>
       </div>
 
