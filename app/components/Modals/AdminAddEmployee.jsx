@@ -1,16 +1,43 @@
 "use client";
 import React, { useState } from "react";
 import { useAuth } from "@/app/context/AuthContext";
+import { Eye, EyeOff } from "lucide-react"; // 👁️ Import icons
 
-export default function AdminAddEmployee({ isOpen, onClose }) {
-  const [fullName, setFullName] = useState("");
+// ✅ Helper function: builds the API payload
+const buildEmployeePayload = ({
+  token,
+  firstName,
+  lastName,
+  email,
+  password,
+  title,
+  hourlyRate,
+  phoneNumber, // ✅ Added phone number
+}) => {
+  const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
+  return {
+    token,
+    email,
+    password,
+    fullName,
+    title,
+    phoneNumber,
+    hourlyRate: Number(hourlyRate),
+  };
+};
+
+export default function AdminAddEmployee({ isOpen, onClose, fetchEmployees }) {
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [title, setTitle] = useState("");
   const [hourlyRate, setHourlyRate] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState(""); // ✅ New state
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false); // ✅ Toggle state
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
-  const { token } = useAuth(); // 👈 Admin token comes from AuthContext
+  const { token } = useAuth();
 
   if (!isOpen) return null;
 
@@ -20,29 +47,39 @@ export default function AdminAddEmployee({ isOpen, onClose }) {
     setMessage(null);
 
     try {
+      // ✅ Build payload using helper
+      const payload = buildEmployeePayload({
+        token,
+        firstName,
+        lastName,
+        email,
+        password,
+        title,
+        hourlyRate,
+        phoneNumber,
+      });
+
       const res = await fetch("/api/auth/admin/employee", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          token,
-          email,
-          password,
-          fullName,
-          title,
-          hourlyRate: Number(hourlyRate),
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
-      console.log("API Response:", data); // Check API response
+      console.log("API Response:", data);
 
       if (res.ok) {
         setMessage("✅ Employee created!");
-        setFullName("");
+        onClose();
+        fetchEmployees();
+        // Reset fields
+        setFirstName("");
+        setLastName("");
         setEmail("");
         setPassword("");
         setTitle("");
         setHourlyRate("");
+        setPhoneNumber("");
       } else {
         setMessage(`❌ ${data.error || "Failed to create employee"}`);
       }
@@ -57,7 +94,7 @@ export default function AdminAddEmployee({ isOpen, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-md">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 relative">
-        {/* ✖ Close Button (top-right) */}
+        {/* ✖ Close Button */}
         <button
           type="button"
           onClick={onClose}
@@ -71,19 +108,51 @@ export default function AdminAddEmployee({ isOpen, onClose }) {
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* ✅ First Name */}
           <div>
             <label className="block text-gray-700 font-medium mb-1">
-              Full Name
+              First Name
             </label>
             <input
               type="text"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
               required
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
+          {/* ✅ Last Name */}
+          <div>
+            <label className="block text-gray-700 font-medium mb-1">
+              Last Name
+            </label>
+            <input
+              type="text"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* ✅ Phone Number */}
+          <div>
+            <label className="block text-gray-700 font-medium mb-1">
+              Phone Number
+            </label>
+            <input
+              type="tel"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              required
+              pattern="[0-9+\s()-]*"
+              placeholder="e.g. +44 7123 456789"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* Email */}
           <div>
             <label className="block text-gray-700 font-medium mb-1">
               Email
@@ -96,22 +165,30 @@ export default function AdminAddEmployee({ isOpen, onClose }) {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-          <div>
+
+          {/* ✅ Password with Eye Toggle */}
+          <div className="relative">
             <label className="block text-gray-700 font-medium mb-1">
               Password
             </label>
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-[32px] md:top-[30px] text-gray-500 hover:text-gray-700"
+            >
+              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
           </div>
+
           <div>
-            <label className="block text-gray-700 font-medium mb-1">
-              Title
-            </label>
+            <label className="block text-gray-700 font-medium mb-1">Title</label>
             <input
               type="text"
               value={title}
@@ -120,6 +197,7 @@ export default function AdminAddEmployee({ isOpen, onClose }) {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+
           <div>
             <label className="block text-gray-700 font-medium mb-1">
               Hourly Rate
@@ -155,7 +233,7 @@ export default function AdminAddEmployee({ isOpen, onClose }) {
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 w-1/2 bg-blue-bold text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition"
+              className="px-4 py-2 w-1/2 bg-blue-bold !text-white rounded-lg hover:bg-blue-theme disabled:opacity-50 transition"
             >
               {loading ? "Submitting..." : "Submit"}
             </button>

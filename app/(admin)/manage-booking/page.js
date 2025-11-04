@@ -520,6 +520,11 @@ export default function BookingsPage() {
         bodyStyle={{ maxHeight: "70vh", overflowY: "auto" }}
       >
         <div className="space-y-4">
+        {selectedBooking?.status && selectedBooking.status !== "PENDING" && (
+  <p className="text-sm text-gray-500 py-2 px-4 bg-blue-theme/10 rounded-md">
+    The booking status is {selectedBooking.status}, please do not change details.
+  </p>
+)}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Notes
@@ -545,7 +550,7 @@ export default function BookingsPage() {
                 className="w-full"
               />
             </div>
-            <div>
+            {/* <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 End Time
               </label>
@@ -555,7 +560,7 @@ export default function BookingsPage() {
                 onChange={(date) => setEditEndAt(date)}
                 className="w-full"
               />
-            </div>
+            </div> */}
           </div>
         </div>
       </Modal>
