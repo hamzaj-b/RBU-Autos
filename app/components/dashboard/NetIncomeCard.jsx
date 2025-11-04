@@ -83,14 +83,14 @@ export default function NewNetIncomeCard({
               style={{ width: 50, height: 36, borderRadius: 6 }}
             />
           ) : (
-            <div className="text-xl sm:text-[32px] font-bold tracking-tight text-[#0a1733]">
+            <div className="border w-1/3 text-xl sm:text-[32px] font-bold tracking-tight text-[#0a1733]">
               {formatCurrency(amount)}
             </div>
           )}
         </div>
 
         {/* Micro Chart */}
-        <div className="shrink-0 rounded-2xl bg-white pr-1">
+        <div className="w-2/3 shrink-0 rounded-2xl bg-white pr-1">
           <MiniBars data={bars} accentIndex={accentIndex} />
         </div>
       </div>

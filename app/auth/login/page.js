@@ -78,7 +78,7 @@ export default function SignInPage() {
             </p>
           )} */}
 
-          <p className="text-sm text-center text-gray-500 mt-3">
+          {/* <p className="text-sm text-center text-gray-500 mt-3">
             Don’t have an account?{" "}
             <Link
               href="/auth/signup"
@@ -86,7 +86,7 @@ export default function SignInPage() {
             >
               Get Started
             </Link>
-          </p>
+          </p> */}
         </form>
       </div>
     </section>
