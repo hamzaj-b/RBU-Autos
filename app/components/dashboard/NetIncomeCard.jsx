@@ -74,8 +74,8 @@ export default function NewNetIncomeCard({
       </div>
 
       {/* === Value & MiniChart === */}
-      <div className="mt-3 sm:mt-4 flex items-end justify-between">
-        <div>
+      <div className="mt-3 sm:mt-4 flex items-end justify-between gap-2 px-2">
+        <div className="w-2/3">
           {loading ? (
             <Skeleton.Input
               active
@@ -83,14 +83,14 @@ export default function NewNetIncomeCard({
               style={{ width: 50, height: 36, borderRadius: 6 }}
             />
           ) : (
-            <div className="border w-1/3 text-xl sm:text-[32px] font-bold tracking-tight text-[#0a1733]">
+            <div className=" text-xl sm:text-[32px] font-bold tracking-tight text-[#0a1733] ">
               {formatCurrency(amount)}
             </div>
           )}
         </div>
 
         {/* Micro Chart */}
-        <div className="w-2/3 shrink-0 rounded-2xl bg-white pr-1">
+        <div className="flex justify-end w-1/3 shrink-0 rounded-2xl bg-white pr-1">
           <MiniBars data={bars} accentIndex={accentIndex} />
         </div>
       </div>

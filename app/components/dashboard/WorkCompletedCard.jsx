@@ -73,7 +73,7 @@ export default function WorkCompletedCard({
 
       {/* === Value & Mini Chart === */}
       <div className="mt-3 sm:mt-4 flex items-end justify-between">
-        <div>
+        <div className="w-2/3">
           {loading ? (
             <Skeleton.Input
               active
@@ -88,7 +88,7 @@ export default function WorkCompletedCard({
         </div>
 
         {/* Mini bar chart */}
-        <div className="shrink-0 rounded-2xl bg-white pr-1">
+        <div className="flex justify-end w-1/3 shrink-0 rounded-2xl bg-white pr-1">
           <MiniBars data={bars} accentIndex={accentIndex} />
         </div>
       </div>
