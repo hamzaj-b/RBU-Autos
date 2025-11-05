@@ -13,6 +13,7 @@ import {
   User,
   DollarSign,
   Printer,
+  ClockFading,
 } from "lucide-react";
 import { Spin, message, Tag, Modal, Input } from "antd";
 import Select from "react-select";
@@ -37,11 +38,11 @@ export default function RepairTracker() {
   const [laborEntries, setLaborEntries] = useState([]);
   const [partsUsed, setPartsUsed] = useState([]);
   const [submitting, setSubmitting] = useState(false);
-    const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
 
   const { token, logout } = useAuth();
-   const statuses = [
+  const statuses = [
     "all",
     "OPEN",
     "ASSIGNED",
@@ -258,20 +259,20 @@ export default function RepairTracker() {
       {/* 🔍 Filters */}
       <div className="bg-white p-4 rounded-lg mb-5 shadow-sm border border-gray-100">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="relative w-full md:w-4/5 ">
-          <Search
-            className="absolute left-3 top-2 md:top-3 text-gray-400"
-            size={18}
-          />
-          <input
-            type="text"
-            placeholder="Search by customer or service..."
-            className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg  focus:outline-none"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        {/* <div className="hidden md:flex gap-2 flex-wrap justify-end">
+          <div className="relative w-full md:w-4/5 ">
+            <Search
+              className="absolute left-3 top-2 md:top-3 text-gray-400"
+              size={18}
+            />
+            <input
+              type="text"
+              placeholder="Search by customer or service..."
+              className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg  focus:outline-none"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          {/* <div className="hidden md:flex gap-2 flex-wrap justify-end">
           {[
             "all",
             "OPEN",
@@ -294,9 +295,9 @@ export default function RepairTracker() {
             </button>
           ))}
         </div> */}
-       
-        <div className=" w-full md:w-1/5 flex justify-end items-end">
-                    <div className="relative w-full">
+
+          <div className=" w-full md:w-1/5 flex justify-end items-end">
+            <div className="relative w-full">
               {/* Selected button */}
               <button
                 onClick={() => setIsOpen((prev) => !prev)}
@@ -314,12 +315,10 @@ export default function RepairTracker() {
                   }`}
                 />
               </button>
-        
+
               {/* Dropdown menu */}
               {isOpen && (
-                <div
-                  className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden animate-in fade-in slide-in-from-top-1"
-                >
+                <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden animate-in fade-in slide-in-from-top-1">
                   {statuses.map((s) => {
                     const active = s === statusFilter;
                     return (
@@ -342,10 +341,9 @@ export default function RepairTracker() {
                 </div>
               )}
             </div>
-                  </div>
+          </div>
+        </div>
       </div>
-      </div>
-
 
       {/* 📋 Work Orders */}
       <div className="bg-white w-full rounded-xl shadow-sm border border-gray-100 divide-y">
@@ -365,19 +363,33 @@ export default function RepairTracker() {
             >
               <div className="flex items-start gap-2 ">
                 <div className="w-[55px]">
-                <div className="w-12 h-12 flex items-center justify-center rounded-full bg-gradient-to-tl from-blue-bold to-blue-theme text-white font-semibold text-lg shadow-sm">
-                  {wo.customerName
-                    .split(" ")
-                    .map((n) => n[0]?.toUpperCase())
-                    .join("")
-                    .slice(0, 2)}
-                </div>
+                  <div className="w-12 h-12 flex items-center justify-center rounded-full bg-gradient-to-tl from-blue-bold to-blue-theme text-white font-semibold text-lg shadow-sm">
+                    {wo.customerName
+                      .split(" ")
+                      .map((n) => n[0]?.toUpperCase())
+                      .join("")
+                      .slice(0, 2)}
+                  </div>
                 </div>
                 <div className="">
                   <h3 className="text-base font-semibold">{wo.customerName}</h3>
-                  <p className="text-sm text-gray-500 flex flex-wrap">
+                  <p className="text-sm text-gray-500 flex flex-wrap !mb-1">
                     {wo.services?.join(", ")} •{" "}
                     {wo.employeeName || "Unassigned"}
+                  </p>
+                  <p className="text-sm text-gray-500 flex flex-col !mb-0">
+                    {(wo.status === "DONE" || wo.status === "COMPLETED") && (
+                      <>
+                        <span className="block">
+                          <strong>Start At:</strong>{" "}
+                          {new Date(wo.openedAt).toLocaleString()}
+                        </span>
+                        <span className="block">
+                          <strong>Close At:</strong>{" "}
+                          {new Date(wo.closedAt).toLocaleString()}
+                        </span>
+                      </>
+                    )}
                   </p>
                   {getStatusTag(wo.status)}
                 </div>
@@ -475,11 +487,6 @@ export default function RepairTracker() {
         footer={null}
         centered
         width={850}
-        bodyStyle={{
-          background: "#f9fafb",
-          borderRadius: "0.75rem",
-          padding: "1.5rem",
-        }}
         title={
           <div className="flex items-center justify-between">
             <div className="text-xl font-semibold text-gray-800 flex items-center gap-2">
@@ -509,7 +516,7 @@ export default function RepairTracker() {
                   </p>
                 </div>
                 {selectedWO.raw?.customer?.vehicleJson && (
-                  <div className="md:col-span-2">
+                  <div className="md:col-span-1">
                     <p className="text-gray-500 flex items-center gap-1">
                       <Car size={15} /> Vehicle
                     </p>
@@ -521,6 +528,22 @@ export default function RepairTracker() {
                     </p>
                   </div>
                 )}
+
+                <div className="md:col-span-1">
+                  <p className="text-gray-500 flex items-center gap-1">
+                    <ClockFading size={15} /> Time Span
+                  </p>
+                  <p className="">
+                    <span className="block">
+                      <strong>Start At:</strong>{" "}
+                      {new Date(selectedWO.raw.openedAt).toLocaleString()}
+                    </span>
+                    <span className="block">
+                      <strong>Close At:</strong>{" "}
+                      {new Date(selectedWO.raw.closedAt).toLocaleString()}
+                    </span>
+                  </p>
+                </div>
               </div>
             </div>
 

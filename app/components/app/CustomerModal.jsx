@@ -13,23 +13,38 @@ export default function CustomerModal({
   loading,
   editingCustomer,
 }) {
-  // Ensure vehicleJson is an array
   const vehicles = Array.isArray(formData.vehicleJson)
     ? formData.vehicleJson
-    : [formData.vehicleJson || { make: "", model: "", variant: "", info: "" , color: "" }];
+    : [
+        formData.vehicleJson || {
+          make: "",
+          model: "",
+          variant: "",
+          year: "",
+          vin: "",
+          color: "",
+          info: "",
+        },
+      ];
 
-  // ✅ Add another vehicle block
   const addVehicle = () => {
     setFormData((p) => ({
       ...p,
       vehicleJson: [
         ...(Array.isArray(p.vehicleJson) ? p.vehicleJson : []),
-        { make: "", model: "", variant: "", info: "" , color: "" },
+        {
+          make: "",
+          model: "",
+          variant: "",
+          year: "",
+          vin: "",
+          color: "",
+          info: "",
+        },
       ],
     }));
   };
 
-  // ✅ Remove a specific vehicle
   const removeVehicle = (index) => {
     setFormData((p) => ({
       ...p,
@@ -37,14 +52,21 @@ export default function CustomerModal({
     }));
   };
 
-  // ✅ Update specific vehicle field
   const handleVehicleChange = (index, key, value) => {
-    setFormData((p) => ({
-      ...p,
-      vehicleJson: p.vehicleJson.map((veh, i) =>
-        i === index ? { ...veh, [key]: value } : veh
-      ),
-    }));
+    setFormData((p) => {
+      const vehicles = Array.isArray(p.vehicleJson)
+        ? p.vehicleJson
+        : p.vehicleJson
+        ? [p.vehicleJson]
+        : [];
+
+      return {
+        ...p,
+        vehicleJson: vehicles.map((veh, i) =>
+          i === index ? { ...veh, [key]: value } : veh
+        ),
+      };
+    });
   };
 
   return (
@@ -74,10 +96,17 @@ export default function CustomerModal({
           </h3>
           <div className="grid grid-cols-2 gap-4">
             <Input
-              placeholder="Full Name"
-              value={formData.fullName}
+              placeholder="First Name"
+              value={formData.firstName}
               onChange={(e) =>
-                setFormData((p) => ({ ...p, fullName: e.target.value }))
+                setFormData((p) => ({ ...p, firstName: e.target.value }))
+              }
+            />
+            <Input
+              placeholder="Last Name"
+              value={formData.lastName}
+              onChange={(e) =>
+                setFormData((p) => ({ ...p, lastName: e.target.value }))
               }
             />
             <Input
@@ -88,10 +117,10 @@ export default function CustomerModal({
               }
             />
             <Input
-              placeholder="Phone number"
-              value={formData.number}
+              placeholder="Phone Number"
+              value={formData.phone}
               onChange={(e) =>
-                setFormData((p) => ({ ...p, number: e.target.value }))
+                setFormData((p) => ({ ...p, phone: e.target.value }))
               }
             />
           </div>
@@ -118,21 +147,22 @@ export default function CustomerModal({
             </h3>
 
             <div className="grid grid-cols-2 gap-4">
-              {["make", "model", "variant", "info" , "color"].map((key) => (
-                <Input
-                  key={key}
-                  placeholder={key.charAt(0).toUpperCase() + key.slice(1)}
-                  value={vehicle[key] || ""}
-                  onChange={(e) =>
-                    handleVehicleChange(index, key, e.target.value)
-                  }
-                />
-              ))}
+              {["make", "model", "variant", "year", "vin", "color", "info"].map(
+                (key) => (
+                  <Input
+                    key={key}
+                    placeholder={key.toUpperCase()}
+                    value={vehicle[key] || ""}
+                    onChange={(e) =>
+                      handleVehicleChange(index, key, e.target.value)
+                    }
+                  />
+                )
+              )}
             </div>
           </div>
         ))}
 
-        {/* ➕ Add Another Vehicle */}
         <div className="flex justify-end">
           <Button
             type="button"
@@ -150,46 +180,19 @@ export default function CustomerModal({
             🏠 Address
           </h3>
           <div className="grid grid-cols-2 gap-4">
-            <Input
-              placeholder="City"
-              value={formData.addressJson?.city || ""}
-              onChange={(e) =>
-                setFormData((p) => ({
-                  ...p,
-                  addressJson: { ...p.addressJson, city: e.target.value },
-                }))
-              }
-            />
-            <Input
-              placeholder="Street"
-              value={formData.addressJson?.street || ""}
-              onChange={(e) =>
-                setFormData((p) => ({
-                  ...p,
-                  addressJson: { ...p.addressJson, street: e.target.value },
-                }))
-              }
-            />
-            <Input
-              placeholder="House / Apartment"
-              value={formData.addressJson?.house || ""}
-              onChange={(e) =>
-                setFormData((p) => ({
-                  ...p,
-                  addressJson: { ...p.addressJson, house: e.target.value },
-                }))
-              }
-            />
-            <Input
-              placeholder="State / Region"
-              value={formData.addressJson?.state || ""}
-              onChange={(e) =>
-                setFormData((p) => ({
-                  ...p,
-                  addressJson: { ...p.addressJson, state: e.target.value },
-                }))
-              }
-            />
+            {["city", "street", "house", "state"].map((key) => (
+              <Input
+                key={key}
+                placeholder={key.charAt(0).toUpperCase() + key.slice(1)}
+                value={formData.addressJson?.[key] || ""}
+                onChange={(e) =>
+                  setFormData((p) => ({
+                    ...p,
+                    addressJson: { ...p.addressJson, [key]: e.target.value },
+                  }))
+                }
+              />
+            ))}
           </div>
         </div>
 

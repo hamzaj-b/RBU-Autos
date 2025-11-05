@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { DatePicker, Select, Spin, Table, message, Empty, Input } from "antd"; // ✅ Added Input
-import { FileBarChart2, RefreshCw, Download, XCircle } from "lucide-react";
+import { DatePicker, Select, Spin, Table, message, Empty } from "antd";
+import { FileBarChart2, RefreshCw } from "lucide-react";
 import { useAuth } from "@/app/context/AuthContext";
 import dayjs from "dayjs";
 import { Button } from "@/components/ui/button";
@@ -12,18 +12,21 @@ const { Option } = Select;
 
 export default function ReportsPage() {
   const { token } = useAuth();
+
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [services, setServices] = useState([]);
-  const [selectedCustomer, setSelectedCustomer] = useState(null);
-  const [SelectedStatus, setSelectedStatus] = useState(null);
-  const [selectedServices, setSelectedServices] = useState([]);
-  const [dateRange, setDateRange] = useState([]);
-  const [employeeName, setEmployeeName] = useState(""); // ✅ New state
+  const [employees, setEmployees] = useState([]);
 
-  // ✅ Compute all totals (includes Completed Revenue)
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [selectedStatus, setSelectedStatus] = useState(null);
+  const [selectedServices, setSelectedServices] = useState([]);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [dateRange, setDateRange] = useState([]);
+
+  // 🔹 Totals Summary
   const totals = useMemo(() => {
     const totalOrders = report.length;
     const totalRevenue = report.reduce(
@@ -49,26 +52,32 @@ export default function ReportsPage() {
 
   useEffect(() => setMounted(true), []);
 
+  // 🔹 Load Filter Lists (Customers, Services, Employees)
   useEffect(() => {
     if (!token) return;
     (async () => {
       try {
-        const [custRes, servRes] = await Promise.all([
+        const [custRes, servRes, empRes] = await Promise.all([
           fetch("/api/customers", {
             headers: { Authorization: `Bearer ${token}` },
           }),
           fetch("/api/services", {
             headers: { Authorization: `Bearer ${token}` },
           }),
+          fetch("/api/auth/admin/employee", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
         ]);
 
-        const [custData, servData] = await Promise.all([
+        const [custData, servData, empData] = await Promise.all([
           custRes.json(),
           servRes.json(),
+          empRes.json(),
         ]);
 
         setCustomers(custData?.customers || custData?.data || []);
         setServices(servData?.services || servData?.data || []);
+        setEmployees(empData?.employees || empData?.data || []);
       } catch (err) {
         console.error("Filter fetch error:", err);
         message.error("Failed to load filters");
@@ -76,14 +85,17 @@ export default function ReportsPage() {
     })();
   }, [token]);
 
+  // 🔹 Fetch Report
   const fetchReport = useCallback(async () => {
     if (!token) return;
+
     try {
       setLoading(true);
       const params = new URLSearchParams();
+
       if (selectedCustomer) params.append("customerId", selectedCustomer);
-      if (SelectedStatus) params.append("status", SelectedStatus);
-      if (employeeName) params.append("employeeName", employeeName.trim()); // ✅ Added
+      if (selectedEmployee) params.append("employeeId", selectedEmployee);
+      if (selectedStatus) params.append("status", selectedStatus);
       selectedServices.forEach((s) => params.append("serviceIds", s));
       if (dateRange?.length === 2) {
         params.append("dateFrom", dayjs(dateRange[0]).format("YYYY-MM-DD"));
@@ -93,10 +105,13 @@ export default function ReportsPage() {
       const res = await fetch(`/api/report?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to load report");
+
       setReport(Array.isArray(data.report) ? data.report : []);
     } catch (err) {
+      console.error(err);
       message.error(err.message || "Failed to load report");
     } finally {
       setLoading(false);
@@ -104,35 +119,28 @@ export default function ReportsPage() {
   }, [
     token,
     selectedCustomer,
+    selectedEmployee,
+    selectedStatus,
     selectedServices,
     dateRange,
-    SelectedStatus,
-    employeeName, // ✅ dependency added
   ]);
 
   useEffect(() => {
     fetchReport();
   }, [fetchReport]);
 
-  const formatMaybeDate = (val) =>
-    val ? dayjs(val).format("YYYY-MM-DD HH:mm") : "—";
-
-  const safeCsv = (s) => {
-    const str = String(s || "");
-    return str.includes(",") || str.includes('"') || str.includes("\n")
-      ? `"${str.replace(/"/g, '""')}"`
-      : str;
-  };
-
   const resetFilters = () => {
     setSelectedCustomer(null);
     setSelectedServices([]);
-    setDateRange([]);
     setSelectedStatus(null);
-    setEmployeeName(""); // ✅ Reset employee field
+    setSelectedEmployee(null);
+    setDateRange([]);
   };
 
-  // --- TABLE COLUMNS with data-labels for mobile ---
+  const formatMaybeDate = (val) =>
+    val ? dayjs(val).format("YYYY-MM-DD HH:mm") : "—";
+
+  // 🔹 Table Columns
   const columns = [
     {
       title: "Customer",
@@ -284,38 +292,34 @@ export default function ReportsPage() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
-        <div className="p-4 bg-white border rounded-xl text-center md:text-left">
-          <p className="text-sm text-gray-500">Total Orders</p>
-          <p className="text-2xl font-bold">{totals.totalOrders}</p>
-        </div>
-        <div className="p-4 bg-white border rounded-xl text-center md:text-left">
-          <p className="text-sm text-gray-500">Total Revenue</p>
-          <p className="text-2xl font-bold text-blue-700">
-            ${totals.totalRevenue.toFixed(2)}
-          </p>
-        </div>
-        <div className="p-4 bg-white border rounded-xl text-center md:text-left">
-          <p className="text-sm text-gray-500">Completed Orders</p>
-          <p className="text-2xl font-bold text-emerald-600">
-            {totals.completedCount}
-          </p>
-        </div>
-        <div className="p-4 bg-white border rounded-xl text-center md:text-left">
-          <p className="text-sm text-gray-500">Completed Revenue</p>
-          <p className="text-2xl font-bold text-emerald-700">
-            ${totals.completedRevenue.toFixed(2)}
-          </p>
-        </div>
-        <div className="p-4 bg-white border rounded-xl text-center md:text-left">
-          <p className="text-sm text-gray-500">In Progress</p>
-          <p className="text-2xl font-bold text-indigo-600">
-            {totals.inProgress}
-          </p>
-        </div>
+        {[
+          ["Total Orders", totals.totalOrders, ""],
+          [
+            "Total Revenue",
+            `$${totals.totalRevenue.toFixed(2)}`,
+            "text-blue-700",
+          ],
+          ["Completed Orders", totals.completedCount, "text-emerald-600"],
+          [
+            "Completed Revenue",
+            `$${totals.completedRevenue.toFixed(2)}`,
+            "text-emerald-700",
+          ],
+          ["In Progress", totals.inProgress, "text-indigo-600"],
+        ].map(([title, value, color], i) => (
+          <div
+            key={i}
+            className="p-4 bg-white border rounded-xl text-center md:text-left"
+          >
+            <p className="text-sm text-gray-500">{title}</p>
+            <p className={`text-2xl font-bold ${color}`}>{value}</p>
+          </div>
+        ))}
       </div>
 
       {/* Filters */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 mb-6">
+        {/* Customer */}
         <Select
           placeholder="Select Customer"
           allowClear
@@ -332,14 +336,13 @@ export default function ReportsPage() {
           ))}
         </Select>
 
-        {/* ✅ Status Filter */}
+        {/* Status */}
         <Select
           placeholder="Select Status"
           allowClear
           onChange={(val) => setSelectedStatus(val || null)}
-          value={SelectedStatus}
+          value={selectedStatus}
           className="w-full"
-          showSearch
         >
           <Option value="OPEN">Open</Option>
           <Option value="ASSIGNED">Assigned</Option>
@@ -348,15 +351,24 @@ export default function ReportsPage() {
           <Option value="CANCELLED">Cancelled</Option>
         </Select>
 
-        {/* ✅ Employee Name Filter */}
-        <Input
-          placeholder="Search Employee Name"
-          value={employeeName}
-          onChange={(e) => setEmployeeName(e.target.value)}
-          className="w-full"
+        {/* Employee */}
+        <Select
+          placeholder="Select Employee"
           allowClear
-        />
+          value={selectedEmployee || undefined}
+          onChange={(val) => setSelectedEmployee(val || null)}
+          className="w-full"
+          showSearch
+          optionFilterProp="children"
+        >
+          {employees.map((e) => (
+            <Option key={e.id} value={e.id}>
+              {e.fullName}
+            </Option>
+          ))}
+        </Select>
 
+        {/* Services */}
         <Select
           placeholder="Select Services"
           mode="multiple"
@@ -374,6 +386,7 @@ export default function ReportsPage() {
           ))}
         </Select>
 
+        {/* Date Range */}
         <RangePicker
           className="w-full"
           value={dateRange}
@@ -381,25 +394,28 @@ export default function ReportsPage() {
           format="YYYY-MM-DD"
           allowClear
         />
-        <div className="flex items-center justify-center gap-2">
-        <Button
-          onClick={fetchReport}
-          disabled={loading}
-          className="bg-blue-theme hover:bg-blue-bold !text-white w-[100px]"
-        >
-          Filter
-        </Button>
 
-        <Button
-          variant="outline"
-          onClick={() => {
-            resetFilters();
-            setTimeout(fetchReport, 0);
-          }}
-          className="flex items-center justify-center gap-2 w-[100px]"
-        > Reset
-        </Button>
-      </div>
+        {/* Filter / Reset Buttons */}
+        <div className="flex items-center justify-center gap-2">
+          <Button
+            onClick={fetchReport}
+            disabled={loading}
+            className="bg-blue-theme hover:bg-blue-bold !text-white w-[100px]"
+          >
+            Filter
+          </Button>
+
+          <Button
+            variant="outline"
+            onClick={() => {
+              resetFilters();
+              setTimeout(fetchReport, 0);
+            }}
+            className="flex items-center justify-center gap-2 w-[100px]"
+          >
+            Reset
+          </Button>
+        </div>
       </div>
 
       {/* Table */}

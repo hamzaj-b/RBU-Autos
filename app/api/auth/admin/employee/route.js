@@ -6,12 +6,21 @@ const jwt = require("jsonwebtoken");
 const prisma = new PrismaClient();
 const SECRET_KEY = process.env.JWT_SECRET || "supersecret";
 
+// 🟢 CREATE Employee (Admin only)
 async function POST(req) {
   try {
     const body = await req.json();
-    const { token, email, password, fullName, title, hourlyRate } = body;
+    const {
+      token,
+      email,
+      password,
+      fullName,
+      title,
+      hourlyRate,
+      phone, // ✅ new field
+    } = body;
 
-    // verify admin token
+    // 🔐 Verify admin token
     let decoded;
     try {
       decoded = jwt.verify(token, SECRET_KEY);
@@ -25,7 +34,7 @@ async function POST(req) {
       );
     }
 
-    // check if exists
+    // 🧩 Check if user already exists
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
       return NextResponse.json(
@@ -34,18 +43,20 @@ async function POST(req) {
       );
     }
 
+    // 🔑 Encrypt password
     const encrypted = encryptPassword(password);
 
-    // Step 1: create user
+    // 🧱 Step 1: Create user
     const user = await prisma.user.create({
       data: {
         email,
+        phone: phone || null, // ✅ Added
         passwordEncrypted: encrypted,
         userType: "EMPLOYEE",
       },
     });
 
-    // Step 2: create employee profile linked to userId
+    // 🧱 Step 2: Create employee profile linked to userId
     const profile = await prisma.employeeProfile.create({
       data: {
         userId: user.id,
@@ -55,24 +66,30 @@ async function POST(req) {
       },
     });
 
-    // Step 3: update user to connect employeeProfileId
+    // 🧱 Step 3: Link profile to user
     await prisma.user.update({
       where: { id: user.id },
       data: { employeeProfileId: profile.id },
     });
 
-    return NextResponse.json({ message: "Employee created", user, profile });
+    return NextResponse.json({
+      message: "✅ Employee created successfully",
+      user,
+      profile,
+    });
   } catch (err) {
-    console.error(err);
+    console.error("❌ Employee creation error:", err);
     return NextResponse.json(
       { error: "Failed to create employee" },
       { status: 500 }
     );
   }
 }
+
+// 🟢 GET Employees (Admin + Employee Self)
 async function GET(req) {
   try {
-    // 🔐 1️⃣ Authenticate
+    // 🔐 Authenticate
     const authHeader = req.headers.get("authorization");
     if (!authHeader)
       return NextResponse.json({ error: "No token provided" }, { status: 401 });
@@ -88,21 +105,25 @@ async function GET(req) {
       );
     }
 
-    // ======================================================
-    // 👷 EMPLOYEE → Fetch Own Profile + Logged Hours
-    // ======================================================
+    // 👷 EMPLOYEE → fetch self
     if (decoded.userType === "EMPLOYEE") {
-      if (!decoded.employeeId) {
+      if (!decoded.employeeId)
         return NextResponse.json(
           { error: "Employee ID missing in token" },
           { status: 403 }
         );
-      }
 
       const employee = await prisma.employeeProfile.findUnique({
         where: { id: decoded.employeeId },
         include: {
-          User: { select: { email: true, isActive: true, createdAt: true } },
+          User: {
+            select: {
+              email: true,
+              phone: true,
+              isActive: true,
+              createdAt: true,
+            },
+          },
           Sessions: {
             select: {
               id: true,
@@ -116,12 +137,11 @@ async function GET(req) {
         },
       });
 
-      if (!employee) {
+      if (!employee)
         return NextResponse.json(
           { error: "Employee profile not found" },
           { status: 404 }
         );
-      }
 
       // 🕒 Calculate total logged time (exclude active sessions)
       const totalMs = employee.Sessions.reduce((sum, s) => {
@@ -162,9 +182,7 @@ async function GET(req) {
       });
     }
 
-    // ======================================================
-    // 👑 ADMIN → List all employees + total logged hours
-    // ======================================================
+    // 👑 ADMIN → list all employees
     if (decoded.userType !== "ADMIN") {
       return NextResponse.json(
         { error: "Access denied. Only Admin or Employee allowed." },
@@ -172,7 +190,6 @@ async function GET(req) {
       );
     }
 
-    // 📄 Handle query params
     const { searchParams } = new URL(req.url);
     const search = searchParams.get("search") || "";
     const page = parseInt(searchParams.get("page") || "1");
@@ -189,7 +206,10 @@ async function GET(req) {
             {
               User: {
                 some: {
-                  email: { contains: search, mode: "insensitive" },
+                  OR: [
+                    { email: { contains: search, mode: "insensitive" } },
+                    { phone: { contains: search, mode: "insensitive" } }, // ✅ Search by phone too
+                  ],
                 },
               },
             },
@@ -208,7 +228,12 @@ async function GET(req) {
             select: { id: true, loginAt: true, logoutAt: true },
           },
           User: {
-            select: { email: true, isActive: true, createdAt: true },
+            select: {
+              email: true,
+              isActive: true,
+              phone: true,
+              createdAt: true,
+            },
           },
         },
         orderBy: { [sortBy]: order },
@@ -246,7 +271,7 @@ async function GET(req) {
       },
     });
   } catch (err) {
-    console.error("❌ GET /api/auth/admin/employee error:", err);
+    console.error("❌ GET employees error:", err);
     return NextResponse.json(
       { error: err.message || "Failed to fetch employees" },
       { status: 500 }

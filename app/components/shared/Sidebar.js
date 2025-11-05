@@ -13,6 +13,7 @@ import {
   ChevronLeft,
   LucideBookmarkPlus,
   LucidePencil,
+  ChartLine,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -49,7 +50,7 @@ export default function Sidebar({ toggleSidebar }) {
         label: "Manage Booking",
         icon: <LucidePencil />,
       },
-      { href: "/diagnostics", label: "Work Order Reports", icon: <Lightbulb /> },
+      { href: "/diagnostics", label: "Work Order Reports", icon: <ChartLine /> },
       {
         href: "/staff-management",
         label: "Staff Management",
@@ -133,7 +134,9 @@ export default function Sidebar({ toggleSidebar }) {
               }`}
             >
               <span
-                className={`mr-2 ${isActive ? "text-white" : "text-blue-theme"}`}
+                className={`mr-2 ${
+                  isActive ? "text-white" : "text-blue-theme"
+                }`}
               >
                 {link.icon}
               </span>

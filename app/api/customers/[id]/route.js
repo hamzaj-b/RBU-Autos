@@ -44,9 +44,9 @@ async function PUT(req, context) {
     const decoded = jwt.verify(token, SECRET_KEY);
 
     const body = await req.json();
-    const { fullName, addressJson, vehicleJson, notes, isActive } = body;
+    const { fullName, phone, addressJson, vehicleJson, notes, isActive } = body;
 
-    // 🔹 1. Admin flow — can edit any customer fully
+    // 🔹 1. Admin flow — can edit any customer fully (including phone)
     if (decoded.userType === "ADMIN") {
       const updated = await prisma.customerProfile.update({
         where: { id },
@@ -55,20 +55,33 @@ async function PUT(req, context) {
           addressJson:
             typeof addressJson === "string"
               ? { raw: addressJson }
-              : addressJson,
+              : addressJson || {},
           vehicleJson:
             typeof vehicleJson === "string"
               ? { raw: vehicleJson }
-              : vehicleJson,
+              : vehicleJson || {},
           notes,
           User: {
             updateMany: {
-              where: { customerProfileId: id }, // 👈 added
-              data: { isActive: isActive ?? true },
+              where: { customerProfileId: id },
+              data: {
+                isActive: isActive ?? true,
+                ...(phone ? { phone } : {}), // ✅ update phone if provided
+              },
             },
           },
         },
-        include: { User: true },
+        include: {
+          User: {
+            select: {
+              id: true,
+              email: true,
+              phone: true,
+              isActive: true,
+              userType: true,
+            },
+          },
+        },
       });
 
       return NextResponse.json({
@@ -90,11 +103,27 @@ async function PUT(req, context) {
         where: { id },
         data: {
           fullName,
-          addressJson,
-          vehicleJson,
+          addressJson:
+            typeof addressJson === "string"
+              ? { raw: addressJson }
+              : addressJson || {},
+          vehicleJson:
+            typeof vehicleJson === "string"
+              ? { raw: vehicleJson }
+              : vehicleJson || {},
           notes,
         },
-        include: { User: true },
+        include: {
+          User: {
+            select: {
+              id: true,
+              email: true,
+              phone: true,
+              isActive: true,
+              userType: true,
+            },
+          },
+        },
       });
 
       return NextResponse.json({

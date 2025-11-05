@@ -1,4 +1,3 @@
-// app/api/auth/admin/employee/[id]/route.js
 const { NextResponse } = require("next/server");
 const { PrismaClient } = require("@prisma/client");
 const jwt = require("jsonwebtoken");
@@ -20,22 +19,27 @@ async function GET(req, context) {
     if (decoded.userType !== "ADMIN")
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
+    // 🔹 Fetch employee with phone from linked User
     const employee = await prisma.employeeProfile.findUnique({
       where: { id },
       include: {
         Sessions: true,
         User: {
-          select: { email: true, isActive: true },
+          select: {
+            email: true,
+            phone: true, // ✅ include phone
+            isActive: true,
+            createdAt: true,
+          },
         },
       },
     });
 
-    if (!employee) {
+    if (!employee)
       return NextResponse.json(
         { error: "Employee not found" },
         { status: 404 }
       );
-    }
 
     return NextResponse.json({ employee });
   } catch (err) {
@@ -61,33 +65,38 @@ async function PUT(req, context) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
     const body = await req.json();
-    const { fullName, title, hourlyRate, isActive } = body;
+    const { fullName, title, hourlyRate, phone, isActive } = body;
 
-    // 1️⃣ Update Employee profile fields
+    // ✅ 1️⃣ Update employee profile fields
     const updatedEmployee = await prisma.employeeProfile.update({
       where: { id },
-      data: {
-        fullName,
-        title,
-        hourlyRate,
-      },
+      data: { fullName, title, hourlyRate },
       include: { User: true },
     });
 
-    // 2️⃣ Update linked User status (if isActive provided)
-    if (isActive !== undefined) {
+    // ✅ 2️⃣ Update linked user info (phone & active status)
+    const userUpdateData = {};
+    if (phone !== undefined) userUpdateData.phone = phone;
+    if (isActive !== undefined) userUpdateData.isActive = isActive;
+
+    if (Object.keys(userUpdateData).length > 0) {
       await prisma.user.updateMany({
         where: { employeeProfileId: id },
-        data: { isActive },
+        data: userUpdateData,
       });
     }
 
-    // 3️⃣ Fetch updated record with user info
+    // ✅ 3️⃣ Fetch updated record
     const refreshedEmployee = await prisma.employeeProfile.findUnique({
       where: { id },
       include: {
         User: {
-          select: { email: true, isActive: true, createdAt: true },
+          select: {
+            email: true,
+            phone: true,
+            isActive: true,
+            createdAt: true,
+          },
         },
       },
     });
@@ -118,15 +127,15 @@ async function DELETE(req, context) {
     if (decoded.userType !== "ADMIN")
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
-    // delete employee and linked user
+    // 🧾 Verify employee exists
     const employee = await prisma.employeeProfile.findUnique({ where: { id } });
-    if (!employee) {
+    if (!employee)
       return NextResponse.json(
         { error: "Employee not found" },
         { status: 404 }
       );
-    }
 
+    // Delete linked user first, then employee profile
     await prisma.user.deleteMany({ where: { employeeProfileId: id } });
     await prisma.employeeProfile.delete({ where: { id } });
 

@@ -1,8 +1,16 @@
 "use client";
 
-import { FileDownIcon, Plus, RefreshCcw, Pencil, Trash2 } from "lucide-react";
+import { Plus, RefreshCcw, Pencil, Trash2, FileDownIcon } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import { Input, Spin, Empty, message, Tooltip, Popconfirm } from "antd";
+import {
+  Input,
+  Spin,
+  Empty,
+  message,
+  Tooltip,
+  Popconfirm,
+  Divider,
+} from "antd";
 import { Button } from "@/components/ui/button";
 import AdminAddEmployee from "../../components/Modals/AdminAddEmployee";
 import EditEmployeeModal from "../../components/Modals/EditEmployeeModal";
@@ -19,34 +27,13 @@ export default function StaffManagement() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   useEffect(() => setClientReady(true), []);
 
-  const handleDelete = async (employeeId) => {
-    if (!employeeId) return;
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/auth/admin/employee/${employeeId}`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      const data = await res.json();
-      if (res.ok) {
-        message.success("Employee deleted successfully!");
-        await fetchEmployees();
-      } else message.error(data.error || "Failed to delete employee");
-    } catch (err) {
-      console.error(err);
-      message.error("Network error while deleting employee");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // 🔹 Fetch Employees
   const fetchEmployees = async () => {
+    if (!token) return;
     setLoading(true);
     try {
       const res = await fetch("/api/auth/admin/employee", {
@@ -56,10 +43,10 @@ export default function StaffManagement() {
       if (res.ok) {
         setEmployees(data.employees || []);
         setFiltered(data.employees || []);
-        if (data.employees?.length > 0) setSelectedEmployee(data.employees[0]);
+        if (data.employees?.length > 0 && !selectedEmployee)
+          setSelectedEmployee(data.employees[0]);
       } else message.error(data.error || "Failed to load employees");
     } catch (err) {
-      console.error(err);
       message.error("Network error while loading employees");
     } finally {
       setLoading(false);
@@ -70,17 +57,53 @@ export default function StaffManagement() {
     if (token && clientReady) fetchEmployees();
   }, [token, clientReady]);
 
+  // 🔹 Search Filtering
   useEffect(() => {
     if (!search.trim()) setFiltered(employees);
-    else
+    else {
+      const lower = search.toLowerCase();
       setFiltered(
-        employees.filter((emp) =>
-          emp.fullName.toLowerCase().includes(search.toLowerCase())
-        )
+        employees.filter((emp) => emp.fullName.toLowerCase().includes(lower))
       );
+    }
   }, [search, employees]);
 
-  const handleExport = () => message.info("Export coming soon 📦");
+  // 🔹 Delete Employee
+  const handleDelete = async (employeeId) => {
+    if (!employeeId) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/auth/admin/employee/${employeeId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        message.success("Employee deleted successfully!");
+        await fetchEmployees();
+      } else message.error(data.error || "Failed to delete employee");
+    } catch (err) {
+      message.error("Error deleting employee");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 🔹 Auto-refresh after Add
+  const handleEmployeeAdded = async () => {
+    setIsModalOpen(false);
+    await fetchEmployees();
+  };
+
+  // 🔹 Handle Edit Click (shows loading state)
+  const openEditModal = async (employee) => {
+    setEditing(true);
+    setSelectedEmployee(employee);
+    setIsEditModalOpen(true);
+    setTimeout(() => setEditing(false), 400);
+  };
 
   if (!clientReady)
     return (
@@ -90,8 +113,8 @@ export default function StaffManagement() {
     );
 
   return (
-    <div className="min-h-screen px-3 sm:px-6 py-6 text-gray-800 overflow-x-hidden transition-all duration-300">
-      {/* Header */}
+    <div className="min-h-screen px-3 sm:px-6 py-6 bg-gray-50 text-gray-800">
+      {/* ===== Header ===== */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 className="text-2xl sm:text-3xl font-semibold text-gray-800">
           Staff Management
@@ -109,14 +132,6 @@ export default function StaffManagement() {
             Refresh
           </Button>
 
-          {/* <Button
-            onClick={handleExport}
-            variant="outline"
-            className="flex items-center justify-center gap-2 text-gray-600 w-full sm:w-auto"
-          >
-            <FileDownIcon className="w-4 h-4" /> Export
-          </Button> */}
-
           <Button
             onClick={() => setIsModalOpen(true)}
             className="flex items-center justify-center gap-2 bg-blue-theme !text-white hover:bg-blue-bold w-full sm:w-auto"
@@ -126,13 +141,14 @@ export default function StaffManagement() {
         </div>
       </div>
 
+      {/* ===== Add Employee Modal ===== */}
       <AdminAddEmployee
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        fetchEmployees={fetchEmployees}
+        fetchEmployees={handleEmployeeAdded}
       />
 
-      {/* Search */}
+      {/* ===== Search ===== */}
       <div className="w-full sm:max-w-md mb-6">
         <Input.Search
           placeholder="Search employees by name..."
@@ -143,10 +159,10 @@ export default function StaffManagement() {
         />
       </div>
 
-      {/* Main Layout */}
+      {/* ===== Main Layout ===== */}
       <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
-        {/* Left Section */}
-        <div className="w-full lg:w-3/4 bg-white rounded-xl shadow-lg p-4 sm:p-6 overflow-hidden">
+        {/* ===== Employee List ===== */}
+        <div className="w-full lg:w-3/4 bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-gray-100">
           {loading ? (
             <div className="flex justify-center py-10">
               <Spin size="large" />
@@ -156,18 +172,18 @@ export default function StaffManagement() {
               {filtered.map((employee) => (
                 <div
                   key={employee.id}
-                  className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 rounded-lg transition-all border cursor-pointer ${
+                  className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 rounded-lg border transition-all cursor-pointer ${
                     selectedEmployee?.id === employee.id
-                      ? "bg-blue-bold/20 border-blue-bold"
+                      ? "bg-blue-50 border-blue-400"
                       : "border-gray-200 hover:bg-gray-50"
                   }`}
                   onClick={() => setSelectedEmployee(employee)}
                 >
                   {/* Avatar + Name */}
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 flex items-center justify-center rounded-full bg-gradient-to-tl from-blue-bold to-blue-theme text-white font-semibold text-sm shrink-0">
+                    <div className="w-10 h-10 flex items-center justify-center rounded-full bg-gradient-to-tl from-blue-bold to-blue-theme text-white font-semibold text-sm">
                       {employee.fullName
-                        .split(" ")
+                        ?.split(" ")
                         .map((n) => n[0]?.toUpperCase())
                         .join("")
                         .slice(0, 2)}
@@ -177,15 +193,20 @@ export default function StaffManagement() {
                         {employee.fullName}
                       </p>
                       <p className="text-xs text-gray-500 truncate">
-                        {employee.title}
+                        {employee.title || "No title"}
                       </p>
                     </div>
                   </div>
 
-                  {/* Info chips */}
-                  <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-gray-600">
+                  {/* Info */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-gray-600">
                     <span>
-                      {new Date(employee.createdAt).toLocaleDateString()}
+                      Joined {new Date(employee.createdAt).toLocaleDateString()}
+                    </span>
+                    <span>
+                      {employee.User?.[0]?.phone
+                        ? `📞 ${employee.User[0].phone}`
+                        : "No phone"}
                     </span>
                     <span>{employee.totalLoggedTime || 0}</span>
                     <span
@@ -201,7 +222,6 @@ export default function StaffManagement() {
                     </span>
                   </div>
 
-                  {/* Actions */}
                   {/* Actions */}
                   <div className="flex gap-2 justify-end sm:justify-start">
                     <Tooltip title="View Sessions">
@@ -224,11 +244,15 @@ export default function StaffManagement() {
                         variant="outline"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setIsEditModalOpen(true);
+                          openEditModal(employee);
                         }}
                         className="text-blue-600 hover:bg-blue-50"
                       >
-                        <Pencil className="w-4 h-4" />
+                        {editing && selectedEmployee?.id === employee.id ? (
+                          <Spin size="small" />
+                        ) : (
+                          <Pencil className="w-4 h-4" />
+                        )}
                       </Button>
                     </Tooltip>
 
@@ -259,25 +283,25 @@ export default function StaffManagement() {
           )}
         </div>
 
+        {/* ===== Edit Modal ===== */}
         <EditEmployeeModal
           isOpen={isEditModalOpen}
+          editing={editing}
           onClose={() => setIsEditModalOpen(false)}
           employeeId={selectedEmployee?.id}
-          onUpdated={(updated) => {
-            setEmployees((prev) =>
-              prev.map((emp) => (emp.id === updated.id ? updated : emp))
-            );
+          onUpdated={async (updated) => {
+            await fetchEmployees();
             setSelectedEmployee(updated);
           }}
         />
 
-        {/* Right Section (Details) */}
-        <div className="w-full lg:w-1/4 bg-white rounded-xl shadow-lg p-5 flex flex-col items-center text-center">
+        {/* ===== Employee Details ===== */}
+        <div className="w-full lg:w-1/4 bg-white rounded-xl shadow-lg p-5 flex flex-col items-center text-center border border-gray-100">
           {selectedEmployee ? (
             <>
               <div className="w-16 h-16 flex items-center justify-center rounded-full bg-gradient-to-tl from-blue-bold to-blue-theme text-white font-semibold text-lg shadow-sm">
                 {selectedEmployee.fullName
-                  .split(" ")
+                  ?.split(" ")
                   .map((n) => n[0]?.toUpperCase())
                   .join("")
                   .slice(0, 2)}
@@ -289,18 +313,16 @@ export default function StaffManagement() {
                 {selectedEmployee.title || "No title assigned"}
               </p>
 
-              <div className="w-full text-left text-sm text-gray-700 space-y-2 border-t pt-4">
+              <Divider />
+
+              <div className="w-full text-left text-sm text-gray-700 space-y-2">
                 <p>
                   <span className="font-medium text-gray-600">Joined:</span>{" "}
                   {new Date(selectedEmployee.createdAt).toLocaleDateString()}
                 </p>
                 <p>
-                  <span className="font-medium text-gray-600">
-                    Hourly Rate:
-                  </span>{" "}
-                  {selectedEmployee.hourlyRate
-                    ? `$${selectedEmployee.hourlyRate}/hr`
-                    : "N/A"}
+                  <span className="font-medium text-gray-600">Phone:</span>{" "}
+                  {selectedEmployee.phone || "Not provided"}
                 </p>
                 <p>
                   <span className="font-medium text-gray-600">Email:</span>{" "}

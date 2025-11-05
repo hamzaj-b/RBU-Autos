@@ -18,11 +18,24 @@ export default function CustomerManagement() {
   const [modalOpen, setModalOpen] = useState(false);
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState(null);
+
   const [formData, setFormData] = useState({
-    fullName: "",
+    firstName: "",
+    lastName: "",
     email: "",
-    addressJson: "",
-    vehicleJson: { make: "", model: "", variant: "", info: "" },
+    phone: "",
+    addressJson: {},
+    vehicleJson: [
+      {
+        make: "",
+        model: "",
+        variant: "",
+        year: "",
+        vin: "",
+        color: "",
+        info: "",
+      },
+    ],
     notes: "",
   });
 
@@ -36,9 +49,8 @@ export default function CustomerManagement() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      if (res.ok) {
-        setCustomers(data.customers || []);
-      } else message.error(data.error || "Failed to load customers");
+      if (res.ok) setCustomers(data.customers || []);
+      else message.error(data.error || "Failed to load customers");
     } catch (err) {
       console.error(err);
       message.error("Network error loading customers");
@@ -54,11 +66,16 @@ export default function CustomerManagement() {
   // ─── Save or Update ───────────────────────────────
   const handleSave = async () => {
     const isEdit = !!editingCustomer;
-    if (!formData.fullName || !formData.email) {
-      message.warning("Full name and email are required");
-      toast.error("Full name and email are required!");
+    if (!formData.firstName || !formData.lastName || !formData.email) {
+      toast.error("First name, last name, and email are required!");
       return;
     }
+
+    const payload = {
+      ...formData,
+      fullName: `${formData.firstName} ${formData.lastName}`.trim(),
+      phone: formData.phone || null,
+    };
 
     try {
       setLoading(true);
@@ -73,27 +90,18 @@ export default function CustomerManagement() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
       if (res.ok) {
-        message.success(isEdit ? "Customer updated!" : "Customer created!");
-        toast.success(
-          isEdit
-            ? "Customer updated successfully!"
-            : "Customer created successfully!"
-        );
+        toast.success(isEdit ? "Customer updated!" : "Customer created!");
         setModalOpen(false);
         setEditingCustomer(null);
         fetchCustomers();
-      } else {
-        message.error(data.error || "Operation failed");
-        toast.error(data.error || "Failed to save customer!");
-      }
+      } else toast.error(data.error || "Failed to save customer!");
     } catch (err) {
       console.error("Save customer error:", err);
-      message.error("Unexpected error");
       toast.error("Unexpected error occurred while saving!");
     } finally {
       setLoading(false);
@@ -110,16 +118,11 @@ export default function CustomerManagement() {
       });
       const data = await res.json();
       if (res.ok) {
-        message.success("Customer deleted");
         toast.success("Customer deleted successfully!");
         fetchCustomers();
-      } else {
-        message.error(data.error || "Failed to delete");
-        toast.error(data.error || "Failed to delete customer!");
-      }
+      } else toast.error(data.error || "Failed to delete customer!");
     } catch (err) {
       console.error("Delete error:", err);
-      message.error("Network error");
       toast.error("Network error while deleting!");
     } finally {
       setLoading(false);
@@ -190,10 +193,25 @@ export default function CustomerManagement() {
       ),
     },
     {
+      title: "Phone",
+      dataIndex: "User",
+      render: (userArr) => userArr?.[0]?.phone || "—",
+    },
+    {
       title: "Vehicle",
       dataIndex: "vehicleJson",
-      render: (v) =>
-        v?.make ? `${v.make} ${v.model || ""} (${v.variant || ""})` : "—",
+      render: (v) => {
+        if (!v) return "—";
+        const vehicles = Array.isArray(v) ? v : [v];
+        return vehicles
+          .map(
+            (veh) =>
+              `${veh.make || ""} ${veh.model || ""} (${veh.year || ""}) ${
+                veh.color ? `- ${veh.color}` : ""
+              }`
+          )
+          .join(", ");
+      },
     },
     {
       title: "Address",
@@ -224,19 +242,17 @@ export default function CustomerManagement() {
               size="sm"
               variant="outline"
               onClick={() => {
+                const [firstName, ...rest] = record.fullName.split(" ");
                 setEditingCustomer(record);
                 setFormData({
-                  fullName: record.fullName,
+                  firstName,
+                  lastName: rest.join(" "),
                   email: record.User?.[0]?.email || "",
-                  number: record.User?.[0]?.number || "",
-                  addressJson: record.addressJson || "",
-                  vehicleJson: record.vehicleJson || {
-                    make: "",
-                    model: "",
-                    variant: "",
-                    info: "",
-                    color: "",
-                  },
+                  phone: record.User?.[0]?.phone || "",
+                  addressJson: record.addressJson || {},
+                  vehicleJson: Array.isArray(record.vehicleJson)
+                    ? record.vehicleJson
+                    : [record.vehicleJson || {}],
                   notes: record.notes || "",
                 });
                 setModalOpen(true);
@@ -265,7 +281,6 @@ export default function CustomerManagement() {
     },
   ];
 
-  // ─── Render ───────────────────────────────────────
   if (!clientReady)
     return (
       <div className="flex justify-center items-center h-screen bg-gray-50">
@@ -357,11 +372,11 @@ export default function CustomerManagement() {
         </div>
       </div>
 
-      {/* Search Bar */}
+      {/* 🔍 Search Bar */}
       <div className="mb-5 w-full sm:max-w-sm">
         <Input
           prefix={<Search className="w-4 h-4 text-gray-400" />}
-          placeholder="Search customers..."
+          placeholder="Search by name, email, or phone..."
           allowClear
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -384,7 +399,6 @@ export default function CustomerManagement() {
         </div>
       </Spin>
 
-      {/* Modals */}
       <CustomerModal
         open={modalOpen}
         setOpen={setModalOpen}
@@ -401,7 +415,7 @@ export default function CustomerManagement() {
         formData={formData}
         setFormData={setFormData}
         loading={loading}
-        handleInvite={handleInvite}
+        handleInvite={() => {}}
       />
     </div>
   );

@@ -24,7 +24,7 @@ async function POST(req) {
     }
 
     const body = await req.json();
-    const { email, fullName, addressJson, vehicleJson, notes } = body;
+    const { email, phone, fullName, addressJson, vehicleJson, notes } = body;
 
     if (!email || !fullName) {
       return NextResponse.json(
@@ -33,25 +33,32 @@ async function POST(req) {
       );
     }
 
-    // check if user exists
-    const existing = await prisma.user.findUnique({ where: { email } });
+    // ✅ Check if user already exists
+    const existing = await prisma.user.findFirst({
+      where: {
+        OR: [{ email }, phone ? { phone } : undefined].filter(Boolean),
+      },
+    });
+
     if (existing) {
       return NextResponse.json(
-        { error: "User already exists" },
+        { error: "User with this email or phone already exists" },
         { status: 400 }
       );
     }
 
-    // Create user & customer profile
+    // ✅ Create User
     const user = await prisma.user.create({
       data: {
         email,
+        phone: phone || null,
         userType: "CUSTOMER",
         passwordEncrypted: null,
         isActive: true,
       },
     });
 
+    // ✅ Create Customer Profile
     const profile = await prisma.customerProfile.create({
       data: {
         userId: user.id,
@@ -62,6 +69,7 @@ async function POST(req) {
       },
     });
 
+    // ✅ Link user ↔ profile
     await prisma.user.update({
       where: { id: user.id },
       data: { customerProfileId: profile.id },
@@ -90,25 +98,51 @@ async function GET(req) {
       limit = 10,
     } = Object.fromEntries(req.nextUrl.searchParams);
 
+    const skip = (page - 1) * limit;
+
+    // ✅ Build dynamic search filter
     const where = search
       ? {
           OR: [
+            // Full name search
             { fullName: { contains: search, mode: "insensitive" } },
+
+            // Email search
             {
               User: {
-                some: { email: { contains: search, mode: "insensitive" } },
+                some: {
+                  email: { contains: search, mode: "insensitive" },
+                },
+              },
+            },
+
+            // Phone search
+            {
+              User: {
+                some: {
+                  phone: { contains: search, mode: "insensitive" },
+                },
               },
             },
           ],
         }
       : {};
 
-    const skip = (page - 1) * limit;
     const total = await prisma.customerProfile.count({ where });
 
     const customers = await prisma.customerProfile.findMany({
       where,
-      include: { User: true },
+      include: {
+        User: {
+          select: {
+            id: true,
+            email: true,
+            phone: true,
+            isActive: true,
+            userType: true,
+          },
+        },
+      },
       skip: Number(skip),
       take: Number(limit),
       orderBy: { createdAt: "desc" },

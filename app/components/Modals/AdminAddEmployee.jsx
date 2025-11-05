@@ -1,104 +1,94 @@
 "use client";
 import React, { useState } from "react";
 import { useAuth } from "@/app/context/AuthContext";
-import { Eye, EyeOff } from "lucide-react"; // 👁️ Import icons
-
-// ✅ Helper function: builds the API payload
-const buildEmployeePayload = ({
-  token,
-  firstName,
-  lastName,
-  email,
-  password,
-  title,
-  hourlyRate,
-  phoneNumber, // ✅ Added phone number
-}) => {
-  const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
-  return {
-    token,
-    email,
-    password,
-    fullName,
-    title,
-    phoneNumber,
-    hourlyRate: Number(hourlyRate),
-  };
-};
+import {
+  Eye,
+  EyeOff,
+  User,
+  Mail,
+  Phone,
+  Briefcase,
+  DollarSign,
+  Loader2,
+} from "lucide-react";
+import { message } from "antd";
 
 export default function AdminAddEmployee({ isOpen, onClose, fetchEmployees }) {
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [title, setTitle] = useState("");
-  const [hourlyRate, setHourlyRate] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState(""); // ✅ New state
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false); // ✅ Toggle state
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState(null);
   const { token } = useAuth();
 
+  const [form, setForm] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    title: "",
+    hourlyRate: "",
+    password: "",
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+
   if (!isOpen) return null;
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setMessage(null);
+    const fullName = `${form.firstName.trim()} ${form.lastName.trim()}`.trim();
 
     try {
-      // ✅ Build payload using helper
-      const payload = buildEmployeePayload({
-        token,
-        firstName,
-        lastName,
-        email,
-        password,
-        title,
-        hourlyRate,
-        phoneNumber,
-      });
-
       const res = await fetch("/api/auth/admin/employee", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          token,
+          fullName,
+          email: form.email,
+          password: form.password,
+          phone: form.phone, // ✅ Only user table stores phone
+          title: form.title,
+          hourlyRate: Number(form.hourlyRate),
+        }),
       });
 
       const data = await res.json();
-      console.log("API Response:", data);
 
       if (res.ok) {
-        setMessage("✅ Employee created!");
+        message.success("✅ Employee created successfully!");
+        fetchEmployees?.();
         onClose();
-        fetchEmployees();
-        // Reset fields
-        setFirstName("");
-        setLastName("");
-        setEmail("");
-        setPassword("");
-        setTitle("");
-        setHourlyRate("");
-        setPhoneNumber("");
+
+        // Reset form
+        setForm({
+          firstName: "",
+          lastName: "",
+          email: "",
+          phone: "",
+          title: "",
+          hourlyRate: "",
+          password: "",
+        });
       } else {
-        setMessage(`❌ ${data.error || "Failed to create employee"}`);
+        message.error(data.error || "Failed to create employee");
       }
-    } catch (error) {
-      console.error("API Error:", error);
-      setMessage("❌ Network error. Please try again.");
+    } catch (err) {
+      message.error("Network error while adding employee");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-md">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 relative">
-        {/* ✖ Close Button */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 relative">
+        {/* Close */}
         <button
-          type="button"
           onClick={onClose}
-          className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 text-2xl leading-none"
+          className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 text-2xl"
         >
           &times;
         </button>
@@ -107,121 +97,143 @@ export default function AdminAddEmployee({ isOpen, onClose, fetchEmployees }) {
           Add New Employee
         </h2>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* ✅ First Name */}
+        <form
+          onSubmit={handleSubmit}
+          className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+        >
+          {/* First Name */}
           <div>
-            <label className="block text-gray-700 font-medium mb-1">
+            <label className="block text-gray-700 text-sm font-medium mb-1">
               First Name
             </label>
-            <input
-              type="text"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <div className="flex items-center border rounded-lg px-3">
+              <User size={16} className="text-gray-400 mr-2" />
+              <input
+                name="firstName"
+                value={form.firstName}
+                onChange={handleChange}
+                required
+                className="w-full py-2 focus:outline-none"
+              />
+            </div>
           </div>
 
-          {/* ✅ Last Name */}
+          {/* Last Name */}
           <div>
-            <label className="block text-gray-700 font-medium mb-1">
+            <label className="block text-gray-700 text-sm font-medium mb-1">
               Last Name
             </label>
-            <input
-              type="text"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <div className="flex items-center border rounded-lg px-3">
+              <User size={16} className="text-gray-400 mr-2" />
+              <input
+                name="lastName"
+                value={form.lastName}
+                onChange={handleChange}
+                required
+                className="w-full py-2 focus:outline-none"
+              />
+            </div>
           </div>
 
-          {/* ✅ Phone Number */}
-          <div>
-            <label className="block text-gray-700 font-medium mb-1">
+          {/* Phone */}
+          <div className="col-span-2">
+            <label className="block text-gray-700 text-sm font-medium mb-1">
               Phone Number
             </label>
-            <input
-              type="tel"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-              required
-              pattern="[0-9+\s()-]*"
-              placeholder="e.g. +44 7123 456789"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <div className="flex items-center border rounded-lg px-3">
+              <Phone size={16} className="text-gray-400 mr-2" />
+              <input
+                type="tel"
+                name="phone"
+                value={form.phone}
+                onChange={handleChange}
+                placeholder="+1 300 1234567"
+                pattern="[0-9+\s()-]*"
+                required
+                className="w-full py-2 focus:outline-none"
+              />
+            </div>
           </div>
 
           {/* Email */}
-          <div>
-            <label className="block text-gray-700 font-medium mb-1">
+          <div className="col-span-2">
+            <label className="block text-gray-700 text-sm font-medium mb-1">
               Email
             </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <div className="flex items-center border rounded-lg px-3">
+              <Mail size={16} className="text-gray-400 mr-2" />
+              <input
+                type="email"
+                name="email"
+                value={form.email}
+                onChange={handleChange}
+                required
+                className="w-full py-2 focus:outline-none"
+              />
+            </div>
           </div>
 
-          {/* ✅ Password with Eye Toggle */}
-          <div className="relative">
-            <label className="block text-gray-700 font-medium mb-1">
+          {/* Password */}
+          <div className="col-span-2 relative">
+            <label className="block text-gray-700 text-sm font-medium mb-1">
               Password
             </label>
-            <input
-              type={showPassword ? "text" : "password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-[32px] md:top-[30px] text-gray-500 hover:text-gray-700"
-            >
-              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
+            <div className="flex items-center border rounded-lg px-3 relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                value={form.password}
+                onChange={handleChange}
+                required
+                className="w-full py-2 focus:outline-none pr-8"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 text-gray-500 hover:text-gray-700"
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
           </div>
 
+          {/* Title */}
           <div>
-            <label className="block text-gray-700 font-medium mb-1">Title</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <label className="block text-gray-700 text-sm font-medium mb-1">
+              Title
+            </label>
+            <div className="flex items-center border rounded-lg px-3">
+              <Briefcase size={16} className="text-gray-400 mr-2" />
+              <input
+                name="title"
+                value={form.title}
+                onChange={handleChange}
+                className="w-full py-2 focus:outline-none"
+              />
+            </div>
           </div>
 
+          {/* Hourly Rate */}
           <div>
-            <label className="block text-gray-700 font-medium mb-1">
+            <label className="block text-gray-700 text-sm font-medium mb-1">
               Hourly Rate
             </label>
-            <input
-              type="number"
-              value={hourlyRate}
-              onChange={(e) => setHourlyRate(e.target.value)}
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <div className="flex items-center border rounded-lg px-3">
+              <DollarSign size={16} className="text-gray-400 mr-2" />
+              <input
+                type="number"
+                name="hourlyRate"
+                value={form.hourlyRate}
+                onChange={handleChange}
+                min="0"
+                required
+                className="w-full py-2 focus:outline-none"
+              />
+            </div>
           </div>
 
-          {message && (
-            <p
-              className={`text-center text-sm ${
-                message.startsWith("✅") ? "text-green-600" : "text-red-600"
-              }`}
-            >
-              {message}
-            </p>
-          )}
-
-          <div className="flex justify-end gap-4 w-full mt-6">
+          {/* Buttons */}
+          <div className="col-span-2 flex justify-end gap-4 mt-5">
             <button
               type="button"
               onClick={onClose}
@@ -229,13 +241,18 @@ export default function AdminAddEmployee({ isOpen, onClose, fetchEmployees }) {
             >
               Cancel
             </button>
-
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 w-1/2 bg-blue-bold !text-white rounded-lg hover:bg-blue-theme disabled:opacity-50 transition"
+              className="px-4 py-2 w-1/2 bg-blue-bold text-white rounded-lg hover:bg-blue-theme disabled:opacity-50 flex items-center justify-center gap-2 transition"
             >
-              {loading ? "Submitting..." : "Submit"}
+              {loading ? (
+                <>
+                  <Loader2 className="animate-spin w-4 h-4" /> Creating...
+                </>
+              ) : (
+                "Create"
+              )}
             </button>
           </div>
         </form>
