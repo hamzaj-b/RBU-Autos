@@ -16,7 +16,7 @@ export default function CustomerModal({
   // Ensure vehicleJson is an array
   const vehicles = Array.isArray(formData.vehicleJson)
     ? formData.vehicleJson
-    : [formData.vehicleJson || { make: "", model: "", variant: "", info: "" }];
+    : [formData.vehicleJson || { make: "", model: "", variant: "", info: "" , color: "" }];
 
   // ✅ Add another vehicle block
   const addVehicle = () => {
@@ -24,7 +24,7 @@ export default function CustomerModal({
       ...p,
       vehicleJson: [
         ...(Array.isArray(p.vehicleJson) ? p.vehicleJson : []),
-        { make: "", model: "", variant: "", info: "" },
+        { make: "", model: "", variant: "", info: "" , color: "" },
       ],
     }));
   };
@@ -87,6 +87,13 @@ export default function CustomerModal({
                 setFormData((p) => ({ ...p, email: e.target.value }))
               }
             />
+            <Input
+              placeholder="Phone number"
+              value={formData.number}
+              onChange={(e) =>
+                setFormData((p) => ({ ...p, number: e.target.value }))
+              }
+            />
           </div>
         </div>
 
@@ -111,7 +118,7 @@ export default function CustomerModal({
             </h3>
 
             <div className="grid grid-cols-2 gap-4">
-              {["make", "model", "variant", "info"].map((key) => (
+              {["make", "model", "variant", "info" , "color"].map((key) => (
                 <Input
                   key={key}
                   placeholder={key.charAt(0).toUpperCase() + key.slice(1)}

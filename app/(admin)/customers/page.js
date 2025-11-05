@@ -228,12 +228,14 @@ export default function CustomerManagement() {
                 setFormData({
                   fullName: record.fullName,
                   email: record.User?.[0]?.email || "",
+                  number: record.User?.[0]?.number || "",
                   addressJson: record.addressJson || "",
                   vehicleJson: record.vehicleJson || {
                     make: "",
                     model: "",
                     variant: "",
                     info: "",
+                    color: "",
                   },
                   notes: record.notes || "",
                 });
@@ -331,8 +333,9 @@ export default function CustomerManagement() {
               setFormData({
                 fullName: "",
                 email: "",
+                number: "",
                 addressJson: "",
-                vehicleJson: { make: "", model: "", variant: "", info: "" },
+                vehicleJson: { make: "", model: "", variant: "", info: "" ,color:""},
                 notes: "",
               });
               setModalOpen(true);
