@@ -75,7 +75,7 @@ export default function WalkInBookingPage() {
 
         setCustomers(
           custData.customers?.map((c) => ({
-            label: `${c.fullName} (${c.User?.[0]?.email || "no email"})`,
+            label: `${c.fullName} (${c.User?.[0]?.email || "no email"}) (${c.User?.[0]?.number || "no number"})`,
             value: c.id,
           })) || []
         );
@@ -374,8 +374,7 @@ export default function WalkInBookingPage() {
                     <Clock className="w-4 h-4 text-blue-600" />
                     <span className="font-medium">
                       Total Duration(Estimated):{" "}
-                      <span className="text-[#0f74b2]">{totalDuration}</span>{" "}
-                      min
+                      <span className="text-[#0f74b2]">{minutesToHoursString(totalDuration)}</span>{" "}
                     </span>
                   </div>
                   <span className="font-semibold text-[#0f74b2]">
