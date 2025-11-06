@@ -21,6 +21,7 @@ import { useAuth } from "@/app/context/AuthContext";
 import ConfirmDialog from "@/app/components/shared/ConfirmModal";
 import { useRouter } from "next/navigation";
 import { ChevronDown } from "lucide-react";
+import CheckoutSection from "@/app/components/app/CheckoutSection";
 
 export default function RepairTracker() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -272,29 +273,6 @@ export default function RepairTracker() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          {/* <div className="hidden md:flex gap-2 flex-wrap justify-end">
-          {[
-            "all",
-            "OPEN",
-            "ASSIGNED",
-            "IN_PROGRESS",
-            "DONE",
-            "COMPLETED",
-            "CANCELLED",
-          ].map((s) => (
-            <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
-              className={`px-3 py-1 rounded-md text-sm font-medium transition ${
-                statusFilter === s
-                  ? "bg-blue-600 !text-white"
-                  : "bg-gray-100 hover:bg-gray-200 text-gray-700"
-              }`}
-            >
-              {s === "all" ? "All" : s.replace("_", " ")}
-            </button>
-          ))}
-        </div> */}
 
           <div className=" w-full md:w-1/5 flex justify-end items-end">
             <div className="relative w-full">
@@ -498,7 +476,7 @@ export default function RepairTracker() {
       >
         {selectedWO ? (
           <div className="space-y-6">
-            {/* Customer Info */}
+            {/* ================== CUSTOMER INFO ================== */}
             <div className="bg-white p-4 rounded-lg border shadow-sm">
               <div className="grid md:grid-cols-2 gap-4 text-sm">
                 <div>
@@ -515,16 +493,20 @@ export default function RepairTracker() {
                     {selectedWO.employeeName || "Unassigned"}
                   </p>
                 </div>
-                {selectedWO.raw?.customer?.vehicleJson && (
+
+                {selectedWO.raw?.vehicleJson && (
                   <div className="md:col-span-1">
                     <p className="text-gray-500 flex items-center gap-1">
                       <Car size={15} /> Vehicle
                     </p>
                     <p className="font-semibold">
-                      {selectedWO.raw.customer.vehicleJson.make} •{" "}
-                      {selectedWO.raw.customer.vehicleJson.model} •{" "}
-                      {selectedWO.raw.customer.vehicleJson.variant ||
-                        selectedWO.raw.customer.vehicleJson.year}
+                      {selectedWO.raw.vehicleJson.make} •{" "}
+                      {selectedWO.raw.vehicleJson.model}
+                    </p>
+                    <p className="font-semibold">
+                      {selectedWO.raw.vehicleJson.variant} •{" "}
+                      {selectedWO.raw.vehicleJson.year} • (
+                      {selectedWO.raw.vehicleJson.vin})
                     </p>
                   </div>
                 )}
@@ -547,11 +529,13 @@ export default function RepairTracker() {
               </div>
             </div>
 
-            {/* Estimated Services */}
+            {/* ================== SERVICES ================== */}
             <div className="bg-white p-4 rounded-lg border shadow-sm">
               <h4 className="text-lg font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                <DollarSign className="text-indigo-500" /> Estimated Services
+                <DollarSign className="text-indigo-500" /> Services (Reference
+                Only)
               </h4>
+
               <table className="w-full text-sm border border-gray-200 rounded-lg">
                 <thead className="bg-gray-50 text-gray-600 text-left">
                   <tr>
@@ -591,214 +575,13 @@ export default function RepairTracker() {
                 </tbody>
               </table>
             </div>
-
-            {/* Labor Entries */}
-            <div className="bg-white shadow-sm rounded-lg border p-5">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-lg font-semibold text-gray-700 flex items-center gap-2">
-                  <Wrench className="text-blue-500" /> Additional Labor
-                </h4>
-                <button
-                  onClick={addLabor}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-600 text-sm rounded-md hover:bg-blue-100 transition"
-                >
-                  <Plus className="w-4 h-4" /> Add Labor
-                </button>
-              </div>
-
-              {laborEntries.length === 0 ? (
-                <p className="text-sm text-gray-400 italic">
-                  No labor entries yet
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  {laborEntries.map((l, i) => (
-                    <div
-                      key={i}
-                      className="grid grid-cols-12 gap-3 bg-gray-50 p-3 rounded-md border hover:shadow-sm transition-all"
-                    >
-                      {/* Task Label + Input */}
-                      <div className="col-span-5">
-                        <label className="block text-xs font-medium text-gray-600 mb-1">
-                          Task
-                        </label>
-                        <Input
-                          placeholder="Enter task description"
-                          value={l.task}
-                          onChange={(e) =>
-                            updateLabor(i, "task", e.target.value)
-                          }
-                          className="w-full"
-                        />
-                      </div>
-
-                      {/* Hours Label + Input */}
-                      <div className="col-span-2">
-                        <label className="block text-xs font-medium text-gray-600 mb-1">
-                          Hours
-                        </label>
-                        <Input
-                          type="number"
-                          placeholder="e.g. 2"
-                          value={l.hours}
-                          onChange={(e) =>
-                            updateLabor(i, "hours", e.target.value)
-                          }
-                          className="w-full text-center"
-                        />
-                      </div>
-
-                      {/* Rate Label + Input */}
-                      <div className="col-span-3">
-                        <label className="block text-xs font-medium text-gray-600 mb-1">
-                          Rate ($)
-                        </label>
-                        <Input
-                          type="number"
-                          placeholder="e.g. 50"
-                          value={l.rate}
-                          onChange={(e) =>
-                            updateLabor(i, "rate", e.target.value)
-                          }
-                          className="w-full text-center"
-                        />
-                      </div>
-
-                      {/* Remove Button */}
-                      <div className="flex items-center justify-center col-span-2">
-                        <Trash2
-                          className="text-gray-400 hover:text-red-500 cursor-pointer transition-all w-5 h-5"
-                          onClick={() => removeLabor(i)}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {laborEntries.length > 0 && (
-                <div className="text-right font-semibold text-gray-700 pt-3 border-t mt-3">
-                  Labor Total:{" "}
-                  <span className="text-emerald-600">
-                    ${laborTotal.toFixed(2)}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* Parts Section */}
-            <div className="bg-white shadow-sm rounded-lg border p-5">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-lg font-semibold text-gray-700 flex items-center gap-2">
-                  <Wrench className="text-purple-500 rotate-90" /> Parts Used
-                </h4>
-                <button
-                  onClick={addPart}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-purple-50 text-purple-600 text-sm rounded-md hover:bg-purple-100 transition"
-                >
-                  <Plus className="w-4 h-4" /> Add Part
-                </button>
-              </div>
-
-              {partsUsed.length === 0 ? (
-                <p className="text-sm text-gray-400 italic">
-                  No parts added yet
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  {partsUsed.map((p, i) => (
-                    <div
-                      key={i}
-                      className="grid grid-cols-12 gap-3 bg-gray-50 p-3 rounded-md border hover:shadow-sm transition-all"
-                    >
-                      {/* Part Name */}
-                      <div className="col-span-5">
-                        <label className="block text-xs font-medium text-gray-600 mb-1">
-                          Part Name
-                        </label>
-                        <Input
-                          placeholder="e.g. Oil Filter"
-                          value={p.name}
-                          onChange={(e) =>
-                            updatePart(i, "name", e.target.value)
-                          }
-                          className="w-full"
-                        />
-                      </div>
-
-                      {/* Quantity */}
-                      <div className="col-span-2">
-                        <label className="block text-xs font-medium text-gray-600 mb-1">
-                          Quantity
-                        </label>
-                        <Input
-                          type="number"
-                          placeholder="e.g. 2"
-                          value={p.qty}
-                          onChange={(e) => updatePart(i, "qty", e.target.value)}
-                          className="w-full text-center"
-                        />
-                      </div>
-
-                      {/* Price */}
-                      <div className="col-span-3">
-                        <label className="block text-xs font-medium text-gray-600 mb-1">
-                          Price ($)
-                        </label>
-                        <Input
-                          type="number"
-                          placeholder="e.g. 15"
-                          value={p.price}
-                          onChange={(e) =>
-                            updatePart(i, "price", e.target.value)
-                          }
-                          className="w-full text-center"
-                        />
-                      </div>
-
-                      {/* Remove Button */}
-                      <div className="flex items-center justify-center col-span-2">
-                        <Trash2
-                          className="text-gray-400 hover:text-red-500 cursor-pointer transition-all w-5 h-5"
-                          onClick={() => removePart(i)}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {partsUsed.length > 0 && (
-                <div className="text-right font-semibold text-gray-700 pt-3 border-t mt-3">
-                  Parts Total:{" "}
-                  <span className="text-emerald-600">
-                    ${partsTotal.toFixed(2)}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* Grand Total */}
-            <div className="bg-gradient-to-r from-emerald-600 to-teal-500 text-white rounded-lg shadow-md flex justify-between items-center p-4 mt-6">
-              <div className="text-lg font-semibold">
-                Grand Total: $
-                {(
-                  (selectedWO.raw?.workOrderServices?.reduce(
-                    (sum, s) => sum + (s.service?.basePrice || 0),
-                    0
-                  ) || 0) +
-                  laborTotal +
-                  partsTotal
-                ).toFixed(2)}
-              </div>
-              <button
-                onClick={submitCompletion}
-                disabled={submitting}
-                className="bg-white !text-emerald-700 hover:bg-gray-50 px-6 py-2 rounded-md font-semibold shadow-sm transition"
-              >
-                {submitting ? "Completing..." : "Mark as Completed"}
-              </button>
-            </div>
+            {/* ================== ADDITIONAL LABOR ================== */}
+            <CheckoutSection
+              selectedWO={selectedWO}
+              fetchWorkOrders={fetchWorkOrders}
+              setCompleteModal={setCompleteModal}
+              token={token}
+            />
           </div>
         ) : (
           <p className="text-gray-400 text-center py-10">

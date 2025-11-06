@@ -3,10 +3,13 @@ const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
 
-// Get by ID
+// ===============================
+// 🟢 GET Business Settings by ID
+// ===============================
 async function GET(req, { params }) {
   try {
     const { id } = params;
+
     const settings = await prisma.businessSettings.findUnique({
       where: { id },
     });
@@ -15,7 +18,13 @@ async function GET(req, { params }) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ settings });
+    // ✅ fallback for old entries without tax field
+    return NextResponse.json({
+      settings: {
+        ...settings,
+        regionalTax: settings.regionalTax ?? 0.0,
+      },
+    });
   } catch (err) {
     console.error("Get BusinessSettings error:", err);
     return NextResponse.json(
@@ -25,11 +34,14 @@ async function GET(req, { params }) {
   }
 }
 
-// Update by ID
+// ===============================
+// 🟢 UPDATE Business Settings by ID
+// ===============================
 async function PUT(req, { params }) {
   try {
     const { id } = params;
     const body = await req.json();
+
     const {
       timezone,
       utc,
@@ -38,19 +50,34 @@ async function PUT(req, { params }) {
       slotMinutes,
       bufferMinutes,
       allowCustomerBooking,
+      regionalTax, // 🆕 added
     } = body;
 
-    // ✅ update all provided fields (including utc)
+    // ✅ validate regionalTax if provided
+    if (regionalTax !== undefined) {
+      const taxValue = Number(regionalTax);
+      if (isNaN(taxValue) || taxValue < 0 || taxValue > 100) {
+        return NextResponse.json(
+          { error: "Invalid regional tax value (must be between 0 and 100)" },
+          { status: 400 }
+        );
+      }
+    }
+
+    // ✅ update all provided fields dynamically
     const updated = await prisma.businessSettings.update({
       where: { id },
       data: {
         ...(timezone && { timezone }),
-        ...(utc && { utc }), // ✅ new utc field
+        ...(utc && { utc }),
         ...(openTime && { openTime }),
         ...(closeTime && { closeTime }),
         ...(slotMinutes && { slotMinutes }),
         ...(bufferMinutes !== undefined && { bufferMinutes }),
         ...(allowCustomerBooking !== undefined && { allowCustomerBooking }),
+        ...(regionalTax !== undefined && {
+          regionalTax: Number(regionalTax),
+        }), // 🆕 update tax
       },
     });
 
@@ -64,7 +91,9 @@ async function PUT(req, { params }) {
   }
 }
 
-// Delete by ID
+// ===============================
+// 🔴 DELETE Business Settings by ID
+// ===============================
 async function DELETE(req, { params }) {
   try {
     const { id } = params;

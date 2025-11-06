@@ -170,12 +170,19 @@ export default function WalkInBookingPage() {
     }
   };
 
-  // 🔹 Submit Walk-in Booking
   const handleSubmit = async () => {
     if (!selectedCustomer || selectedServices.length === 0) {
       toast.error("Select a customer and at least one service");
       return;
     }
+
+    // 🧩 Extract selected vehicle object (if any)
+    const vehicleObject =
+      customerVehicles &&
+      selectedVehicle !== undefined &&
+      selectedVehicle !== null
+        ? customerVehicles[selectedVehicle]
+        : null;
 
     try {
       setSubmitLoading(true);
@@ -191,7 +198,7 @@ export default function WalkInBookingPage() {
         body: JSON.stringify({
           customerId: selectedCustomer,
           serviceIds: selectedServices,
-          vehicle: selectedVehicle || null,
+          selectedVehicle: vehicleObject, // ✅ backend expects this key
           startAt,
           endAt,
           directAssignEmployeeId: selectedEmployee || null,
@@ -368,7 +375,7 @@ export default function WalkInBookingPage() {
               </div>
 
               {/* Vehicle */}
-              {customerVehicles.length > 0 && (
+              {customerVehicles?.length > 0 && (
                 <div>
                   <label className="block text-sm font-medium mb-2 text-gray-700">
                     Select Vehicle
@@ -377,7 +384,9 @@ export default function WalkInBookingPage() {
                     <Select
                       placeholder="Select vehicle"
                       options={customerVehicles.map((v, idx) => ({
-                        label: `${v.make} ${v.model} (${v.year || ""})`,
+                        label: `${v.make} ${v.model} ${
+                          v.variant ? `(${v.variant})` : ""
+                        } - ${v.year || "N/A"}`,
                         value: idx,
                       }))}
                       value={selectedVehicle}

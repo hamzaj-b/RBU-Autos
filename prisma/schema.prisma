@@ -127,7 +127,7 @@ model Booking {
   acceptedAt  DateTime?
   startedAt   DateTime?
   completedAt DateTime?
-
+  vehicleJson Json?
   // meta
   notes       String?
   attachments Json?
@@ -152,6 +152,7 @@ model WorkOrder {
   employeeId String?         @db.ObjectId
   status     WorkOrderStatus @default(DRAFT)
 
+  vehicleJson  Json?
   laborEntries Json?
   partsUsed    Json?
   photos       Json?
@@ -160,6 +161,8 @@ model WorkOrder {
   closedAt     DateTime?
 
   totalRevenue Float? @default(0)
+  taxRate      Float? @default(0) // 💰 percentage value (e.g. 7.5)
+  taxAmount    Float? @default(0) // 💵 actual amount applied
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -220,15 +223,17 @@ model EmployeeSession {
   @@index([userId, loginAt])
   @@index([logoutAt])
 }
+
 model BusinessSettings {
   id                   String   @id @default(auto()) @map("_id") @db.ObjectId
   timezone             String
-  utc                  String   @default("(UTC+00:00)") // ✅ new field
+  utc                  String   @default("(UTC+00:00)")
   openTime             String
   closeTime            String
   slotMinutes          Int
   bufferMinutes        Int      @default(0)
   allowCustomerBooking Boolean  @default(true)
+  regionalTax          Float    @default(0.0) // 🆕 Regional tax percentage (e.g. 7.5)
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 }

@@ -54,6 +54,8 @@ export async function PATCH(req, { params }) {
       ? body.laborEntries
       : [];
     const photos = body?.photos || null;
+    const taxRate = Number(body?.taxRate) || 0; // 💰 from frontend (%)
+    const taxAmount = Number(body?.taxAmount) || 0; // 💵 computed total
 
     // -------------------------
     // 🔍 3. Find Work Order
@@ -85,7 +87,7 @@ export async function PATCH(req, { params }) {
     }
 
     // -------------------------
-    // 💰 4. Compute Revenue Additions
+    // 💰 4. Compute Revenue (Labor + Parts only)
     // -------------------------
     const extraPartsTotal = partsUsed.reduce(
       (sum, p) => sum + (Number(p.price) || 0) * (Number(p.qty) || 1),
@@ -97,8 +99,9 @@ export async function PATCH(req, { params }) {
       0
     );
 
-    const extraTotal = extraPartsTotal + extraLaborTotal;
-    const finalRevenue = (workOrder.totalRevenue || 0) + extraTotal;
+    const subtotal = extraPartsTotal + extraLaborTotal;
+    const appliedTax = taxAmount || (subtotal * taxRate) / 100;
+    const finalRevenue = subtotal + appliedTax;
 
     // -------------------------
     // 💾 5. Transaction: Mark COMPLETED + Update Booking
@@ -110,12 +113,14 @@ export async function PATCH(req, { params }) {
           data: {
             status: WorkOrderStatus.COMPLETED,
             closedAt: new Date(),
-            totalRevenue: finalRevenue,
+            totalRevenue: finalRevenue, // ✅ labor + parts + tax
+            taxRate: taxRate, // 💰 store tax percentage
+            taxAmount: appliedTax, // 💵 store exact tax applied
             partsUsed: partsUsed.length ? partsUsed : workOrder.partsUsed,
             laborEntries: laborEntries.length
               ? laborEntries
               : workOrder.laborEntries,
-            photos: photos ? photos : workOrder.photos,
+            photos: photos || workOrder.photos,
             notes:
               note.length > 0
                 ? `${workOrder.notes || ""}${
@@ -128,7 +133,7 @@ export async function PATCH(req, { params }) {
         const updatedBk = await tx.booking.update({
           where: { id: workOrder.bookingId },
           data: {
-            status: BookingStatus.DONE, // keep booking as DONE
+            status: BookingStatus.DONE,
             completedAt: new Date(),
           },
         });
@@ -142,13 +147,15 @@ export async function PATCH(req, { params }) {
     // -------------------------
     return NextResponse.json(
       {
-        message: "Work order marked as COMPLETED by Admin.",
+        message: "✅ Work order marked as COMPLETED by Admin.",
         workOrder: updatedWorkOrder,
         booking: updatedBooking,
         revenueBreakdown: {
-          previous: workOrder.totalRevenue || 0,
-          extraPartsTotal,
-          extraLaborTotal,
+          partsTotal: extraPartsTotal,
+          laborTotal: extraLaborTotal,
+          subtotal,
+          taxRate,
+          taxAmount: appliedTax,
           finalRevenue,
         },
       },

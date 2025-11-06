@@ -32,7 +32,13 @@ export async function POST(req) {
 
     // 📦 2️⃣ Extract & validate input
     const body = await req.json();
-    const { customerId, serviceIds, directAssignEmployeeId, notes } = body;
+    const {
+      customerId,
+      serviceIds,
+      selectedVehicle, // ✅ expected to be a single vehicle object
+      directAssignEmployeeId,
+      notes,
+    } = body;
 
     if (!customerId || !Array.isArray(serviceIds) || serviceIds.length === 0) {
       return NextResponse.json(
@@ -58,8 +64,6 @@ export async function POST(req) {
       (sum, s) => sum + (s.durationMinutes || 0),
       0
     );
-
-    // 💰 Base revenue from selected services
     const baseRevenue = services.reduce(
       (sum, s) => sum + (s.basePrice || 0),
       0
@@ -98,6 +102,12 @@ export async function POST(req) {
 
     // 🔒 5️⃣ Create booking + workOrder transactionally
     const [booking, workOrder] = await prisma.$transaction(async (tx) => {
+      // ✅ Ensure we store only one selected vehicle safely
+      const vehicleData =
+        selectedVehicle && typeof selectedVehicle === "object"
+          ? selectedVehicle
+          : null;
+
       // ➕ Create booking
       const booking = await tx.booking.create({
         data: {
@@ -108,6 +118,7 @@ export async function POST(req) {
           endAt,
           slotMinutes: totalDuration,
           bookingType: "WALKIN",
+          vehicleJson: vehicleData, // ✅ single vehicle stored here
           notes: notes || null,
           status: BookingStatus.ACCEPTED,
         },
@@ -121,14 +132,15 @@ export async function POST(req) {
         })),
       });
 
-      // ➕ Create workOrder with precomputed base revenue
+      // ➕ Create workOrder with vehicle and revenue
       const workOrder = await tx.workOrder.create({
         data: {
           bookingId: booking.id,
           customerId,
           employeeId: directAssignEmployeeId || null,
+          vehicleJson: vehicleData, // ✅ keep vehicle also on work order
           status: workOrderStatus,
-          totalRevenue: baseRevenue, // 💰 store initial revenue
+          totalRevenue: baseRevenue,
         },
       });
 
@@ -140,7 +152,7 @@ export async function POST(req) {
         })),
       });
 
-      // 🔗 Update booking with workOrder relation
+      // 🔗 Connect booking <-> workOrder
       await tx.booking.update({
         where: { id: booking.id },
         data: { workOrder: { connect: { id: workOrder.id } } },
@@ -150,7 +162,7 @@ export async function POST(req) {
     });
 
     // 🧩 6️⃣ Compose final message
-    let message = "";
+    let message;
     if (!directAssignEmployeeId) {
       message =
         "Walk-in booking created successfully and added to the open work orders queue.";
@@ -162,7 +174,7 @@ export async function POST(req) {
         "Employee is currently busy. Booking added to the waiting queue and will be auto-assigned when available.";
     }
 
-    // ✅ 7️⃣ Return
+    // ✅ 7️⃣ Return response
     return NextResponse.json(
       {
         message,

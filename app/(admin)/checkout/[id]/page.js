@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
 import { Spin, message } from "antd";
-import { Printer, Wrench, Car, User, Download } from "lucide-react";
+import { Printer, Wrench, Car, User } from "lucide-react";
 import html2pdf from "html2pdf.js/dist/html2pdf.bundle.min.js";
 
 export default function InvoicePage() {
@@ -53,13 +53,24 @@ export default function InvoicePage() {
 
   const { raw } = workOrder;
   const customer = raw?.customer;
-  const total =
-    raw.totalRevenue ||
-    raw.workOrderServices?.reduce(
-      (sum, s) => sum + (s.service?.basePrice || 0),
+
+  // 💰 Compute Subtotal, Tax, and Grand Total
+  const partsTotal =
+    raw.partsUsed?.reduce(
+      (sum, p) => sum + (Number(p.price) || 0) * (Number(p.qty) || 1),
       0
-    ) ||
-    0;
+    ) || 0;
+
+  const laborTotal =
+    raw.laborEntries?.reduce(
+      (sum, l) => sum + (Number(l.rate) || 0) * (Number(l.hours) || 1),
+      0
+    ) || 0;
+
+  const subTotal = partsTotal + laborTotal;
+  const taxRate = raw.taxRate || 0;
+  const taxAmount = raw.taxAmount || 0;
+  const total = raw.totalRevenue || subTotal + taxAmount;
   const issueDate = new Date(
     raw.closedAt || raw.createdAt
   ).toLocaleDateString();
@@ -139,13 +150,13 @@ export default function InvoicePage() {
             <h3 className="text-lg font-semibold text-gray-800 mb-2 flex items-center gap-2">
               <Car className="w-4 h-4 text-[#2A7BAE]" /> Vehicle
             </h3>
-            {customer?.vehicleJson ? (
+            {raw?.vehicleJson ? (
               <div className="text-gray-700 font-medium">
-                {customer.vehicleJson.make} {customer.vehicleJson.model} (
-                {customer.vehicleJson.year})
+                {raw.vehicleJson.make} {raw.vehicleJson.model} •{" "}
+                {raw.vehicleJson.variant} ({raw.vehicleJson.year})
                 <br />
                 <span className="text-gray-500 text-sm">
-                  Reg#: {customer.vehicleJson.regNo}
+                  VIN#: {raw.vehicleJson.vin}
                 </span>
               </div>
             ) : (
@@ -154,7 +165,7 @@ export default function InvoicePage() {
           </div>
         </div>
 
-        {/* SERVICES */}
+        {/* SERVICES / PARTS / LABOR */}
         <div className="p-8">
           <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
             <Wrench className="w-4 h-4 text-[#2A7BAE]" /> Services Performed
@@ -163,26 +174,11 @@ export default function InvoicePage() {
             <thead className="bg-gray-50 text-gray-600 text-left print:bg-gray-100">
               <tr>
                 <th className="py-2 px-4">Description</th>
-                <th className="py-2 px-4">Category</th>
-                <th className="py-2 px-4 text-right">Price ($)</th>
+                <th className="py-2 px-4">Details</th>
+                <th className="py-2 px-4 text-right">Amount ($)</th>
               </tr>
             </thead>
             <tbody>
-              {raw.workOrderServices?.map((s) => (
-                <tr
-                  key={s.id}
-                  className="border-t border-gray-200 print:border-gray-300 odd:bg-white even:bg-gray-50 break-inside-avoid"
-                >
-                  <td className="py-2 px-4">{s.service.name}</td>
-                  <td className="py-2 px-4 text-gray-500">
-                    {s.service.category}
-                  </td>
-                  <td className="py-2 px-4 text-right font-medium">
-                    {s.service.basePrice}
-                  </td>
-                </tr>
-              ))}
-
               {raw.partsUsed?.length > 0 && (
                 <>
                   <tr className="bg-gray-100 print:bg-gray-200">
@@ -190,13 +186,13 @@ export default function InvoicePage() {
                       colSpan={3}
                       className="font-semibold text-gray-700 py-2 px-4"
                     >
-                      Additional Parts
+                      Parts
                     </td>
                   </tr>
                   {raw.partsUsed.map((p, idx) => (
                     <tr
                       key={idx}
-                      className="border-t border-gray-200 print:border-gray-300 odd:bg-white even:bg-gray-50 break-inside-avoid"
+                      className="border-t border-gray-200 print:border-gray-300"
                     >
                       <td className="py-2 px-4">{p.name}</td>
                       <td className="py-2 px-4 text-gray-500">
@@ -217,13 +213,13 @@ export default function InvoicePage() {
                       colSpan={3}
                       className="font-semibold text-gray-700 py-2 px-4"
                     >
-                      Labor Entries
+                      Labor
                     </td>
                   </tr>
                   {raw.laborEntries.map((l, idx) => (
                     <tr
                       key={idx}
-                      className="border-t border-gray-200 print:border-gray-300 odd:bg-white even:bg-gray-50 break-inside-avoid"
+                      className="border-t border-gray-200 print:border-gray-300"
                     >
                       <td className="py-2 px-4">{l.task}</td>
                       <td className="py-2 px-4 text-gray-500">
@@ -239,13 +235,26 @@ export default function InvoicePage() {
             </tbody>
           </table>
 
-          {/* TOTALS */}
+          {/* 🧾 TOTALS */}
           <div className="mt-8 flex justify-end break-before-avoid">
-            <div className="bg-gray-50 p-4 rounded-lg border text-right w-64 print:bg-transparent print:border-gray-300">
-              <div className="text-gray-700 font-medium mb-1">Grand Total</div>
-              <div className="text-lg font-semibold text-gray-800">
-                ${total.toFixed(2)}
+            <div className="bg-gray-50 p-4 rounded-lg border text-right w-72 print:bg-transparent print:border-gray-300">
+              <div className="text-gray-700 font-medium flex justify-between mb-1">
+                <span>Subtotal:</span>
+                <span>${subTotal.toFixed(2)}</span>
               </div>
+
+              <div className="text-gray-700 font-medium flex justify-between mb-1">
+                <span>Tax ({taxRate}%):</span>
+                <span>${taxAmount.toFixed(2)}</span>
+              </div>
+
+              <div className="border-t border-gray-300 my-2" />
+
+              <div className="text-gray-800 font-semibold flex justify-between text-lg">
+                <span>Grand Total:</span>
+                <span>${total.toFixed(2)}</span>
+              </div>
+
               <div className="text-xs text-gray-500 mt-1">
                 Issued on {issueDate}
               </div>
@@ -266,19 +275,10 @@ export default function InvoicePage() {
             >
               <Printer className="w-4 h-4" /> Print
             </button>
-
-            {/* <button
-              onClick={handleDownloadPDF}
-              disabled={pdfLoading}
-              className="flex items-center gap-2 bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300 transition disabled:opacity-60"
-            >
-              <Download className="w-4 h-4" />
-              {pdfLoading ? "Generating..." : "Download PDF"}
-            </button> */}
           </div>
         </div>
 
-        {/* PRINT FOOTER (CENTERED THANK YOU) */}
+        {/* PRINT FOOTER */}
         <div className="hidden print:flex justify-center items-end h-24 text-gray-600 text-sm">
           Thank you for choosing RBU Autos Garage!
         </div>

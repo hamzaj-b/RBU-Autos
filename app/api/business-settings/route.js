@@ -3,7 +3,9 @@ const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
 
-// Create Business Settings
+// ===============================
+// 🟢 CREATE Business Settings
+// ===============================
 async function POST(req) {
   try {
     const body = await req.json();
@@ -15,6 +17,7 @@ async function POST(req) {
       slotMinutes,
       bufferMinutes,
       allowCustomerBooking,
+      regionalTax, // 🆕 added
     } = body;
 
     // ✅ validation
@@ -25,16 +28,26 @@ async function POST(req) {
       );
     }
 
-    // ✅ create record with UTC
+    // ✅ numeric validation for tax
+    const taxValue = Number(regionalTax);
+    if (isNaN(taxValue) || taxValue < 0 || taxValue > 100) {
+      return NextResponse.json(
+        { error: "Invalid regional tax value (must be between 0 and 100)" },
+        { status: 400 }
+      );
+    }
+
+    // ✅ create record with default values
     const settings = await prisma.businessSettings.create({
       data: {
         timezone,
-        utc: utc || "(UTC+00:00)", // default if missing
+        utc: utc || "(UTC+00:00)",
         openTime,
         closeTime,
         slotMinutes,
         bufferMinutes: bufferMinutes || 0,
         allowCustomerBooking: allowCustomerBooking ?? true,
+        regionalTax: taxValue || 0.0, // 🆕 save tax
       },
     });
 
@@ -47,13 +60,23 @@ async function POST(req) {
     );
   }
 }
-// Get all Business Settings
+
+// ===============================
+// 🟢 GET Business Settings
+// ===============================
 async function GET() {
   try {
     const settings = await prisma.businessSettings.findMany({
       orderBy: { createdAt: "desc" },
     });
-    return NextResponse.json({ settings });
+
+    // ✅ default to 0 tax if missing (for backward compatibility)
+    const normalized = settings.map((s) => ({
+      ...s,
+      regionalTax: s.regionalTax ?? 0.0,
+    }));
+
+    return NextResponse.json({ settings: normalized });
   } catch (err) {
     console.error("Fetch BusinessSettings error:", err);
     return NextResponse.json(

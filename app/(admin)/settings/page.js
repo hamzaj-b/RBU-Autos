@@ -1,9 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, Switch, TimePicker, Select, Spin, message } from "antd";
+import {
+  Card,
+  Switch,
+  TimePicker,
+  Select,
+  Spin,
+  InputNumber,
+  message,
+} from "antd";
 import { Button } from "@/components/ui/button";
-import { RefreshCcw, Settings2, Clock, Globe2 } from "lucide-react";
+import { RefreshCcw, Settings2, Clock, Globe2, Percent } from "lucide-react";
 import dayjs from "dayjs";
 import timeZones from "@/timeZones.json";
 
@@ -31,6 +39,7 @@ export default function BusinessSettingsPage() {
           slotMinutes: 30,
           bufferMinutes: 0,
           allowCustomerBooking: true,
+          regionalTax: 0, // 🆕 Default
         });
       }
     } catch (err) {
@@ -213,6 +222,31 @@ export default function BusinessSettingsPage() {
                 onChange={(val) =>
                   setSettings((p) => ({ ...p, allowCustomerBooking: val }))
                 }
+              />
+            </section>
+
+            {/* Regional Tax Section 🆕 */}
+            <section className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <h2 className="text-base font-semibold text-gray-800 mb-1 flex items-center gap-1">
+                  <Percent className="w-4 h-4 text-green-600" />
+                  Regional Tax (%)
+                </h2>
+                <p className="text-sm text-gray-500 leading-snug">
+                  Set the regional tax percentage to apply on invoices.
+                </p>
+              </div>
+
+              <InputNumber
+                min={0}
+                max={100}
+                value={settings.regionalTax}
+                formatter={(val) => `${val}%`}
+                parser={(val) => val.replace("%", "")}
+                onChange={(val) =>
+                  setSettings((p) => ({ ...p, regionalTax: Number(val) || 0 }))
+                }
+                className="w-32 text-right"
               />
             </section>
           </div>
