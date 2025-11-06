@@ -92,7 +92,23 @@ export default function EmployeeRepairTracker() {
   }, [fetchWorkOrders]);
 
 
- 
+ const formatDateTime = (isoString) => {
+  if (!isoString) return "—";
+
+  const date = new Date(isoString);
+
+  const options = {
+    year: "numeric",
+    month: "short", // "Nov"
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true, // 12-hour format
+  };
+
+  return date.toLocaleString("en-US", options);
+}
+
 
   // 🚀 Start WorkOrder
   const handleStart = async (item) => {
@@ -314,13 +330,18 @@ export default function EmployeeRepairTracker() {
                     .slice(0, 2)}
                 </div>
                 </div>
-                <div className="">
+                <div>
                   <h3 className="text-base font-semibold">
                     {wo.services?.join(", ") || "—"}</h3>
                   <p className="text-sm text-gray-500 flex flex-wrap">
                     {wo.customerName} • {minutesToHoursString(wo.raw.booking.slotMinutes)}
                   </p>
+                 
+                 <div className="flex items-center gap-4"> 
                   {getStatusTag(wo.status)}
+                  <span className="flex items-center text-xs text-gray-500 flex-wrap">  {!["OPEN", "ASSIGNED"].includes(wo.status) && (<span> Started At :{formatDateTime(wo.openedAt)}</span>)} </span>
+                  <span className="flex items-center text-xs text-gray-500 flex-wrap">{!["OPEN", "ASSIGNED" , "IN_PROGRESS"].includes(wo.status) && (<span>  Ended At :{formatDateTime(wo.closedAt)}</span>)} </span> 
+                 </div>
                 </div>
               </div>
 
