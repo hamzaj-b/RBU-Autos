@@ -7,9 +7,9 @@ import { pusherServer } from "@/lib/pusher";
 const prisma = new PrismaClient();
 const SECRET_KEY = process.env.JWT_SECRET || "supersecret";
 
-export async function POST(req) {
+async function POST(req) {
   try {
-    // 🔐 Authenticate (Customer only)
+    // 🔐 Authenticate
     const authHeader = req.headers.get("authorization");
     if (!authHeader)
       return NextResponse.json({ error: "No token provided" }, { status: 401 });
@@ -39,9 +39,9 @@ export async function POST(req) {
         { status: 400 }
       );
 
-    // 📦 Parse request body
+    // 📦 Parse request
     const body = await req.json();
-    const { serviceIds, startAt, notes } = body;
+    const { serviceIds, startAt, notes, vehicleJson } = body;
 
     if (!Array.isArray(serviceIds) || serviceIds.length === 0 || !startAt)
       return NextResponse.json(
@@ -75,13 +75,11 @@ export async function POST(req) {
     const { openTime, closeTime, allowCustomerBooking } = business;
     if (!allowCustomerBooking)
       return NextResponse.json(
-        {
-          error: "Online booking by customers is currently disabled.",
-        },
+        { error: "Online booking by customers is currently disabled." },
         { status: 403 }
       );
 
-    // 🧮 Get services
+    // 🧮 Fetch Services
     const services = await prisma.service.findMany({
       where: { id: { in: serviceIds } },
       select: { id: true, name: true, durationMinutes: true, basePrice: true },
@@ -97,10 +95,10 @@ export async function POST(req) {
       (sum, s) => sum + (s.durationMinutes || 0),
       0
     );
-    const endTime = new Date(startTime.getTime() + totalDuration * 60000);
     const totalPrice = services.reduce((sum, s) => sum + (s.basePrice || 0), 0);
+    const endTime = new Date(startTime.getTime() + totalDuration * 60000);
 
-    // 🕒 Validate business hours (local zone only)
+    // 🕒 Validate business hours
     const open = DateTime.fromFormat(openTime, "HH:mm");
     const close = DateTime.fromFormat(closeTime, "HH:mm");
     const bookingStart = DateTime.fromJSDate(startTime);
@@ -124,7 +122,7 @@ export async function POST(req) {
       );
     }
 
-    // 🚫 Prevent overlap for same customer
+    // 🚫 Prevent overlapping pre-bookings
     const overlap = await prisma.booking.findFirst({
       where: {
         customerId,
@@ -141,7 +139,7 @@ export async function POST(req) {
         { status: 400 }
       );
 
-    // 💾 Transaction: Create booking + services
+    // 💾 Create Booking (like Walk-In)
     const booking = await prisma.$transaction(async (tx) => {
       const newBooking = await tx.booking.create({
         data: {
@@ -154,6 +152,7 @@ export async function POST(req) {
           notes: notes || null,
           bookingType: "PREBOOKING",
           status: BookingStatus.PENDING,
+          vehicleJson: vehicleJson || null, // ✅ Save selected vehicle
         },
       });
 
@@ -167,16 +166,15 @@ export async function POST(req) {
       return newBooking;
     });
 
-    // 👤 Fetch customer info for notifications
+    // 👤 Customer Info
     const customer = await prisma.customerProfile.findUnique({
       where: { id: customerId },
-      select: { fullName: true, userId: true },
+      select: { fullName: true },
     });
-
     const customerName = customer?.fullName || "Unknown Customer";
     const serviceNames = services.map((s) => s.name);
 
-    // ✅ 1️⃣ Notify Admins (Pusher)
+    // ✅ 1️⃣ Notify Admins
     await pusherServer.trigger("admin-channel", "new-booking", {
       message: "📅 New pre-booking created",
       booking,
@@ -184,7 +182,7 @@ export async function POST(req) {
       services: serviceNames,
     });
 
-    // ✅ 2️⃣ Save notifications for Admins
+    // ✅ 2️⃣ Store Notifications
     const admins = await prisma.user.findMany({
       where: { userType: "ADMIN", isActive: true },
       select: { id: true },
@@ -203,15 +201,14 @@ export async function POST(req) {
             customerName,
             startAt: startTime,
             services: serviceNames,
+            vehicle: vehicleJson || null,
           },
         })),
       });
     }
 
     console.log(
-      `✅ Booking + Admin notifications stored: ${customerName} (${serviceNames.join(
-        ", "
-      )})`
+      `✅ Pre-booking stored: ${customerName} (${serviceNames.join(", ")})`
     );
 
     return NextResponse.json(
@@ -223,6 +220,7 @@ export async function POST(req) {
           totalPrice,
           startAt: startTime,
           endAt: endTime,
+          vehicle: vehicleJson || null,
         },
       },
       { status: 201 }
@@ -235,3 +233,131 @@ export async function POST(req) {
     );
   }
 }
+
+async function GET(req) {
+  try {
+    // 1️⃣ Authentication
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader)
+      return NextResponse.json({ error: "No token provided" }, { status: 401 });
+
+    const token = authHeader.split(" ")[1];
+    let decoded;
+    try {
+      decoded = jwt.verify(token, SECRET_KEY);
+    } catch {
+      return NextResponse.json(
+        { error: "Invalid or expired token" },
+        { status: 401 }
+      );
+    }
+
+    if (decoded.userType !== "CUSTOMER" || !decoded.customerId) {
+      return NextResponse.json(
+        { error: "Only customers can view their pre-bookings" },
+        { status: 403 }
+      );
+    }
+
+    const customerId = decoded.customerId;
+
+    // 2️⃣ Query Params
+    const { searchParams } = new URL(req.url);
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const limit = parseInt(
+      searchParams.get("pageSize") || searchParams.get("limit") || "10",
+      10
+    );
+    const skip = (page - 1) * limit;
+
+    const search = searchParams.get("search")?.trim() || "";
+    const sortOrder = searchParams.get("sortOrder") === "asc" ? "asc" : "desc";
+
+    // 3️⃣ Core Filters (only active bookings)
+    const where = {
+      customerId,
+      bookingType: "PREBOOKING",
+      OR: [
+        { status: "PENDING" },
+        { status: "CANCELLED" },
+        {
+          status: "ACCEPTED",
+          workOrder: { NOT: { status: "COMPLETED" } },
+        },
+      ],
+    };
+
+    // Optional search filter
+    if (search) {
+      where.OR.push({
+        notes: { contains: search, mode: "insensitive" },
+      });
+      where.OR.push({
+        bookingServices: {
+          some: {
+            service: { name: { contains: search, mode: "insensitive" } },
+          },
+        },
+      });
+    }
+
+    // 4️⃣ Fetch Data
+    const [total, bookings] = await Promise.all([
+      prisma.booking.count({ where }),
+      prisma.booking.findMany({
+        where,
+        include: {
+          bookingServices: { include: { service: true } },
+          workOrder: { select: { status: true } },
+        },
+        orderBy: { createdAt: sortOrder },
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    // 5️⃣ Shape Response (hide history)
+    const items = bookings.map((b) => ({
+      id: b.id,
+      bookingType: b.bookingType,
+      services: b.bookingServices.map((bs) => bs.service.name),
+      totalDuration: b.bookingServices.reduce(
+        (sum, bs) => sum + (bs.service.durationMinutes || 0),
+        0
+      ),
+      totalPrice: b.bookingServices.reduce(
+        (sum, bs) => sum + (bs.service.basePrice || 0),
+        0
+      ),
+      status: b.status,
+      workOrderStatus: b.workOrder?.status || null,
+      notes: b.notes,
+      startAt: b.startAt,
+      endAt: b.endAt,
+      date: b.date,
+      createdAt: b.createdAt,
+      updatedAt: b.updatedAt,
+      vehicleJson: b.vehicleJson || null,
+    }));
+
+    // 6️⃣ Response
+    return NextResponse.json({
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      count: items.length,
+      filters: {
+        search,
+      },
+      bookings: items,
+    });
+  } catch (err) {
+    console.error("❌ Fetch active pre-bookings error:", err);
+    return NextResponse.json(
+      { error: err.message || "Failed to fetch active pre-bookings" },
+      { status: 500 }
+    );
+  }
+}
+module.exports = { POST, GET };

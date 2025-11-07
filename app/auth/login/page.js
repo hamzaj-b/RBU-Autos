@@ -3,24 +3,129 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/app/context/AuthContext";
+import { auth, RecaptchaVerifier, signInWithPhoneNumber } from "@/lib/firebase";
+import toast from "react-hot-toast";
 
 export default function SignInPage() {
-  const { login } = useAuth();
+  const { login, loginWithOTP } = useAuth();
+
+  // Shared tab state
+  const [activeTab, setActiveTab] = useState("employee");
+
+  // ===== Employee/Admin Fields =====
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // ===== Customer OTP Fields =====
+  const [emailOrPhone, setEmailOrPhone] = useState("");
+  const [resolvedPhone, setResolvedPhone] = useState("");
+  const [otp, setOtp] = useState("");
+  const [confirmationResult, setConfirmationResult] = useState(null);
+  const [otpLoading, setOtpLoading] = useState(false);
+
+  // ===========================
+  // EMPLOYEE / ADMIN LOGIN
+  // ===========================
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError(""); //
     setLoading(true);
     const res = await login(email, password);
     setLoading(false);
     if (!res.success) setError(res.message);
   };
 
+  // ===========================
+  // CUSTOMER LOGIN (OTP)
+  // ===========================
+  const handleStartLogin = async () => {
+    try {
+      setOtpLoading(true);
+      setError(""); //
+      toast.loading("Checking account...", { id: "otpFlow" });
+
+      const body = emailOrPhone.startsWith("+")
+        ? { phone: emailOrPhone }
+        : { email: emailOrPhone };
+
+      const res = await fetch("/api/auth/customer/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      const data = await res.json();
+      if (!data.success) {
+        toast.error(data.error || "Customer not found", { id: "otpFlow" });
+        setOtpLoading(false);
+        return;
+      }
+
+      const phone = data.phone;
+      setResolvedPhone(phone);
+
+      // Setup Recaptcha
+      if (!window.recaptchaVerifier) {
+        window.recaptchaVerifier = new RecaptchaVerifier(
+          auth,
+          "recaptcha-container",
+          {
+            size: "invisible",
+            callback: () => console.log("reCAPTCHA verified ✅"),
+          }
+        );
+      }
+
+      // Send OTP
+      const result = await signInWithPhoneNumber(
+        auth,
+        phone,
+        window.recaptchaVerifier
+      );
+      setConfirmationResult(result);
+
+      toast.success(`✅ OTP sent to ${phone}`, { id: "otpFlow" });
+    } catch (err) {
+      console.error("❌ OTP Send Error:", err);
+      toast.error(err.message || "Failed to send OTP", { id: "otpFlow" });
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!confirmationResult) {
+      toast.error("Please request OTP first.");
+      return;
+    }
+
+    try {
+      // toast.loading("Verifying OTP...", { id: "otpVerify" });
+
+      const userCred = await confirmationResult.confirm(otp);
+      const idToken = await userCred.user.getIdToken();
+
+      const result = await loginWithOTP(resolvedPhone, idToken);
+      if (result.success) {
+        // toast.success("🎉 Login successful!", { id: "otpVerify" });
+      } else {
+        toast.error(result.message || "OTP login failed", { id: "otpVerify" });
+      }
+    } catch (err) {
+      console.error("❌ OTP Verify Error:", err);
+      toast.error("Invalid or expired OTP.", { id: "otpVerify" });
+    }
+  };
+
+  // ===========================
+  // UI
+  // ===========================
   return (
     <section className="bg-gradient-to-tr from-blue-theme to-blue-900 min-h-screen text-gray-800 flex items-center justify-center">
       <div className="w-full max-w-md bg-white rounded-lg shadow p-6 mx-2">
+        {/* ===== Logo + Title ===== */}
         <div className="text-center mb-4">
           <img src="/rbu-logo.png" alt="Logo" width={100} className="mx-auto" />
           <h2 className="text-2xl font-extrabold text-gray-800 mt-2">
@@ -28,66 +133,134 @@ export default function SignInPage() {
           </h2>
         </div>
 
-        <h1 className="text-xl font-bold  text-center mb-6">
-          Login to your account
-        </h1>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block mb-1 text-sm font-medium text-gray-700">
-              Email
-            </label>
-            <input
-              type="email"
-              className="w-full border border-gray-300 rounded-lg p-2.5"
-              placeholder="name@company.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block mb-1 text-sm font-medium text-gray-700">
-              Password
-            </label>
-            <input
-              type="password"
-              className="w-full border border-gray-300 rounded-lg p-2.5"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-
-          {error && <p className="text-sm text-red-500">{error}</p>}
-
+        {/* ===== Tab Switcher ===== */}
+        <div className="flex justify-center mb-6 border-b border-gray-200">
           <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-theme !text-white font-bold py-2.5 rounded-lg hover:bg-blue-bold disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`flex-1 py-2 font-semibold ${
+              activeTab === "employee"
+                ? "text-blue-600 border-b-2 border-blue-600"
+                : "text-gray-500"
+            }`}
+            onClick={() => setActiveTab("employee")}
           >
-            {loading ? "Signing in..." : "Sign in"}
+            Admin / Employee
           </button>
+          <button
+            className={`flex-1 py-2 font-semibold ${
+              activeTab === "customer"
+                ? "text-blue-600 border-b-2 border-blue-600"
+                : "text-gray-500"
+            }`}
+            onClick={() => setActiveTab("customer")}
+          >
+            Customer
+          </button>
+        </div>
 
-          {/* {!isLocationValid && (
-            <p className="text-xs text-yellow-600 text-center">
-              Please allow location access to proceed. Refresh the page to
-              retry.
-            </p>
-          )} */}
+        {/* ===== Admin / Employee Login Form ===== */}
+        {activeTab === "employee" && (
+          <>
+            <h1 className="text-xl font-bold text-center mb-6">
+              Login to your account
+            </h1>
 
-          {/* <p className="text-sm text-center text-gray-500 mt-3">
-            Don’t have an account?{" "}
-            <Link
-              href="/auth/signup"
-              className="text-blue-bold font-semibold hover:underline"
-            >
-              Get Started
-            </Link>
-          </p> */}
-        </form>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block mb-1 text-sm font-medium text-gray-700">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  className="w-full border border-gray-300 rounded-lg p-2.5"
+                  placeholder="name@company.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block mb-1 text-sm font-medium text-gray-700">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  className="w-full border border-gray-300 rounded-lg p-2.5"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+
+              {error && <p className="text-sm text-red-500">{error}</p>}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-blue-theme !text-white font-bold py-2.5 rounded-lg hover:bg-blue-bold disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? "Signing in..." : "Sign in"}
+              </button>
+            </form>
+          </>
+        )}
+
+        {/* ===== Customer OTP Login ===== */}
+        {activeTab === "customer" && (
+          <>
+            <h1 className="text-xl font-bold text-center mb-6">
+              Customer Login (OTP)
+            </h1>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block mb-1 text-sm font-medium text-gray-700">
+                  Email or Phone
+                </label>
+                <input
+                  type="text"
+                  className="w-full border border-gray-300 rounded-lg p-2.5"
+                  placeholder="Email or +92XXXXXXXXXX"
+                  value={emailOrPhone}
+                  onChange={(e) => setEmailOrPhone(e.target.value)}
+                />
+              </div>
+
+              {!confirmationResult ? (
+                <button
+                  onClick={handleStartLogin}
+                  disabled={otpLoading}
+                  className="w-full bg-blue-theme !text-white font-bold py-2.5 rounded-lg hover:bg-blue-bold disabled:opacity-50"
+                >
+                  {otpLoading ? "Sending..." : "Send OTP"}
+                </button>
+              ) : (
+                <>
+                  <div>
+                    <label className="block mb-1 text-sm font-medium text-gray-700">
+                      Enter OTP
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full border border-gray-300 rounded-lg p-2.5"
+                      placeholder="Enter 6-digit code"
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value)}
+                    />
+                  </div>
+                  <button
+                    onClick={handleVerifyOtp}
+                    className="w-full bg-green-600 !text-white font-bold py-2.5 rounded-lg hover:bg-green-700"
+                  >
+                    Verify OTP
+                  </button>
+                </>
+              )}
+            </div>
+            <div id="recaptcha-container"></div>
+          </>
+        )}
       </div>
     </section>
   );

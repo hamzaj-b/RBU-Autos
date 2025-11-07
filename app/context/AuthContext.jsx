@@ -18,6 +18,7 @@ export function AuthProvider({ children }) {
   const { location, isValid, refetch, waitForNextUpdate } =
     useUserLocation(false);
 
+  // 🧠 Restore from cookies/localStorage
   useEffect(() => {
     const savedToken = Cookies.get("authToken");
     const savedUser = Cookies.get("authUser");
@@ -55,7 +56,7 @@ export function AuthProvider({ children }) {
     return null;
   }
 
-  // 🔑 Login flow
+  // 🔑 Login flow (Admin + Employee)
   async function login(email, password) {
     toast.loading("Logging in...", { id: "login" });
 
@@ -85,7 +86,6 @@ export function AuthProvider({ children }) {
       if (data.user.userType === "EMPLOYEE") {
         toast.loading("Getting your location...", { id: "loc" });
 
-        // ask for location
         refetch();
         const loc = await waitForNextUpdate();
         toast.dismiss("loc");
@@ -99,7 +99,7 @@ export function AuthProvider({ children }) {
         ) {
           console.error("❌ Location failed or denied:", loc);
           toast.error("📍 Location required — logging out...");
-          await logout(); // immediate logout
+          await logout();
           return { success: false, message: "Location denied" };
         }
 
@@ -123,7 +123,6 @@ export function AuthProvider({ children }) {
           });
 
           const sessionData = await sessionRes.json();
-          // console.log("🧾 Session API response:", sessionData);
 
           if (sessionRes.ok) {
             setSessionId(sessionData.session.id);
@@ -153,6 +152,43 @@ export function AuthProvider({ children }) {
     } catch (error) {
       console.error("Login error:", error.message);
       toast.error(error.message || "Login failed", { id: "login" });
+      return { success: false, message: error.message };
+    }
+  }
+
+  // 🔐 Customer OTP Login flow
+  async function loginWithOTP(phone, firebaseToken) {
+    toast.loading("Verifying OTP...", { id: "otpLogin" });
+
+    try {
+      const res = await fetch("/api/auth/customer/verify-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, firebaseToken }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "OTP verification failed");
+
+      // ✅ Store cookies
+      Cookies.set("authToken", data.token, { expires: 1 });
+      Cookies.set("authUser", JSON.stringify(data.user), { expires: 1 });
+
+      setToken(data.token);
+      setUser(data.user);
+      setUsername(data.user.username || null);
+
+      toast.success(`Welcome ${data.user.username || "Customer"}!`, {
+        id: "otpLogin",
+      });
+
+      // 🚀 redirect to dashboard
+      window.location.href = "/dashboard";
+
+      return { success: true };
+    } catch (error) {
+      console.error("OTP Login error:", error.message);
+      toast.error(error.message || "OTP login failed", { id: "otpLogin" });
       return { success: false, message: error.message };
     }
   }
@@ -190,6 +226,7 @@ export function AuthProvider({ children }) {
         username,
         sessionId,
         login,
+        loginWithOTP, // 👈 added new OTP flow
         logout,
         loading,
         location,

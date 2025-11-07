@@ -11,7 +11,14 @@ async function POST(req) {
     const body = await req.json();
     const { email, password } = body;
 
-    // 🔍 1. Find user + related profiles
+    if (!email || !password) {
+      return NextResponse.json(
+        { error: "Email and password are required" },
+        { status: 400 }
+      );
+    }
+
+    // 🔍 Find user by email
     const user = await prisma.user.findUnique({
       where: { email },
       include: {
@@ -20,6 +27,7 @@ async function POST(req) {
       },
     });
 
+    // ❌ If no user or no password
     if (!user || !user.passwordEncrypted) {
       return NextResponse.json(
         { error: "Invalid credentials" },
@@ -27,7 +35,23 @@ async function POST(req) {
       );
     }
 
-    // 🔐 2. Verify password
+    // 🚫 Restrict customer accounts
+    if (user.userType === "CUSTOMER") {
+      return NextResponse.json(
+        { error: "Please login via Customer Login (Phone OTP)" },
+        { status: 403 }
+      );
+    }
+
+    // ✅ Allow only ADMIN or EMPLOYEE
+    if (!["ADMIN", "EMPLOYEE"].includes(user.userType)) {
+      return NextResponse.json(
+        { error: "Unauthorized user type" },
+        { status: 403 }
+      );
+    }
+
+    // 🔐 Verify password
     const decrypted = decryptPassword(user.passwordEncrypted);
     if (decrypted !== password) {
       return NextResponse.json(
@@ -36,28 +60,23 @@ async function POST(req) {
       );
     }
 
-    // 🧱 3. Build token payload
+    // 🧱 Build token payload
     const tokenPayload = {
       id: user.id,
       email: user.email,
       userType: user.userType,
     };
 
-    // 👤 Get fullName from the correct profile
     let username = "Admin";
     if (user.userType === "EMPLOYEE" && user.employeeProfileId) {
       tokenPayload.employeeId = user.employeeProfileId;
       username = user.employee?.fullName || username;
     }
-    if (user.userType === "CUSTOMER" && user.customerProfileId) {
-      tokenPayload.customerId = user.customerProfileId;
-      username = user.customer?.fullName || username;
-    }
 
-    // 🪙 4. Generate token
+    // 🪙 Generate JWT
     const token = jwt.sign(tokenPayload, SECRET_KEY, { expiresIn: "24h" });
 
-    // ✅ 5. Return token + user info
+    // ✅ Return token + user info
     return NextResponse.json({
       token,
       user: {
@@ -65,8 +84,7 @@ async function POST(req) {
         email: user.email,
         userType: user.userType,
         employeeId: user.employeeProfileId || null,
-        customerId: user.customerProfileId || null,
-        username, // 👈 added fullName here
+        username,
       },
     });
   } catch (err) {
