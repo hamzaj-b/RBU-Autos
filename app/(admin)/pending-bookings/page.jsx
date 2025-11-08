@@ -38,6 +38,8 @@ export default function PreBookingsPage() {
   const [actionType, setActionType] = useState(null);
   const [note, setNote] = useState("");
   const [busyEmployees, setBusyEmployees] = useState([]); // [{ id, fullName, busyUntil... }]
+  const [viewModal, setViewModal] = useState(false);
+
 
   // Debounce search
   const mountedRef = useRef(true);
@@ -75,6 +77,7 @@ export default function PreBookingsPage() {
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
+      console.log(data);
       setPreBookings(data.bookings || []);
     } catch (err) {
       console.error(err);
@@ -218,39 +221,57 @@ export default function PreBookingsPage() {
       ),
     },
     {
-      title: "Actions",
-      key: "actions",
-      render: (_, record) =>
-        record.status === "PENDING" && (
-          <div className="flex gap-2">
-            <Button
-              className="!text-white !bg-blue-theme"
-              icon={<CheckCircle size={16} />}
-              onClick={() => {
-                setSelectedBooking(record.raw || record);
-                setActionType("APPROVE");
-                setActionModal(true);
-                setNote("");
-                fetchAvailableEmployees(record.startAt, record.totalDuration);
-              }}
-            >
-              Approve
-            </Button>
-            <Button
-              danger
-              icon={<XCircle size={16} />}
-              onClick={() => {
-                setSelectedBooking(record.raw || record);
-                setActionType("REJECT");
-                setActionModal(true);
-                setNote("");
-              }}
-            >
-              Reject
-            </Button>
-          </div>
-        ),
-    },
+  title: "Actions",
+  key: "actions",
+  render: (_, record) => (
+    <div className="flex gap-2">
+      {/* 👁️ View Details */}
+      <Button
+        className="border-blue-600 text-blue-600"
+        icon={<UserCheck size={16} />}
+        onClick={() => {
+          setSelectedBooking(record.raw || record);
+          setViewModal(true);
+        }}
+      >
+        View
+      </Button>
+
+      {/* ✅ Approve */}
+      {record.status === "PENDING" && (
+        <>
+          <Button
+            className="!text-white !bg-blue-theme"
+            icon={<CheckCircle size={16} />}
+            onClick={() => {
+              setSelectedBooking(record.raw || record);
+              setActionType("APPROVE");
+              setActionModal(true);
+              setNote("");
+              fetchAvailableEmployees(record.startAt, record.totalDuration);
+            }}
+          >
+            Approve
+          </Button>
+
+          <Button
+            danger
+            icon={<XCircle size={16} />}
+            onClick={() => {
+              setSelectedBooking(record.raw || record);
+              setActionType("REJECT");
+              setActionModal(true);
+              setNote("");
+            }}
+          >
+            Reject
+          </Button>
+        </>
+      )}
+    </div>
+  ),
+},
+
   ];
 
   return (
@@ -359,6 +380,68 @@ export default function PreBookingsPage() {
         </Card>
       </div>
 
+{/* 👁️ View Details Modal */}
+<Modal
+  open={viewModal}
+  onCancel={() => setViewModal(false)}
+  footer={null}
+  centered
+  title={
+    <div className="text-lg font-semibold text-gray-800">
+      Booking Details
+    </div>
+  }
+  className="!max-w-lg sm:!max-w-xl"
+  bodyStyle={{ maxHeight: "70vh", overflowY: "auto" }}
+>
+  {selectedBooking ? (
+    <div className="space-y-3 text-gray-700">
+    
+      {/* 🏠 Address */}
+      {selectedBooking.customer?.addressJson && (
+        <div className="bg-gray-50 rounded-lg p-3">
+          <p className="font-semibold text-gray-800 mb-2">Address Details:</p>
+          <pre className="text-sm whitespace-pre-wrap text-gray-700">
+            {selectedBooking.customer.addressJson.raw}
+          </pre>
+        </div>
+      )}
+
+      {/* 🚗 Vehicle */}
+      {selectedBooking.customer?.vehicleJson && (
+        <div className="bg-gray-50 rounded-lg p-3">
+          <p className="font-semibold text-gray-800 mb-2">Vehicle Details:</p>
+          <ul className="text-sm list-disc list-inside">
+            <li><strong>Make:</strong> {selectedBooking.customer.vehicleJson.make}</li>
+            <li><strong>Model:</strong> {selectedBooking.customer.vehicleJson.model}</li>
+            <li><strong>Year:</strong> {selectedBooking.customer.vehicleJson.year}</li>
+            <li><strong>Reg No:</strong> {selectedBooking.customer.vehicleJson.regNo}</li>
+          </ul>
+        </div>
+      )}
+
+      <p>
+        <strong>Start Time:</strong>{" "}
+        {new Date(selectedBooking.startAt).toLocaleString([], {
+          day: "2-digit",
+          month: "short",
+          hour: "2-digit",
+          minute: "2-digit",
+        })}
+      </p>
+      <p>
+        <strong>Status:</strong>{" "}
+        <Tag color={selectedBooking.status === "PENDING" ? "gold" : selectedBooking.status === "ACCEPTED" ? "green" : "red"}>
+          {selectedBooking.status}
+        </Tag>
+      </p>
+    </div>
+  ) : (
+    <p className="text-gray-500 text-center py-4">No booking selected</p>
+  )}
+</Modal>
+
+
       {/* 🔹 Action Modal */}
       <Modal
         open={actionModal}
@@ -411,7 +494,7 @@ export default function PreBookingsPage() {
               {employeeLoading ? (
                 <Skeleton active paragraph={{ rows: 1 }} />
               ) : busyEmployees.length === 0 ? (
-                <div className="text-xs text-gray-500">None in this window</div>
+                <div className="text-xs text-gray-500">No Employee is Busy Right Now.</div>
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {busyEmployees.map((emp) => (

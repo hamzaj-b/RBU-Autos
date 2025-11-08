@@ -16,7 +16,14 @@ import {
 import { Eye, Edit2, Trash2, Calendar } from "lucide-react";
 import toast from "react-hot-toast";
 import { useAuth } from "@/app/context/AuthContext";
+import dayjs from "dayjs";
 
+ const minutesToHoursString = (minutes) => {
+  if (!minutes || isNaN(minutes)) return "0h 0m";
+  const hrs = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return `${hrs}h ${mins}m`;
+};
 const { Search } = Input;
 
 // 🔹 Debounce hook (pure and safe)
@@ -105,7 +112,7 @@ export default function BookingsPage() {
 
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Failed to fetch bookings");
-
+        console.log("booking manage data" , data);
         setBookings(data.bookings || []);
         setPagination((prev) => ({
           ...prev,
@@ -161,7 +168,7 @@ export default function BookingsPage() {
   };
 
   const openEdit = (record) => {
-    setSelectedBooking(record.raw || record);
+    setSelectedBooking(record || record.raw);
     setEditNotes(record.notes || "");
     setEditStatus(record.status);
     setEditModal(true);
@@ -172,11 +179,12 @@ export default function BookingsPage() {
     try {
       // Prepare the request payload
       const payload = {
-        notes: editNotes, // Notes to be updated
-        startAt: editStartAt, // Start time to be updated
-        endAt: editEndAt, // End time to be updated
-        serviceIds: editServiceIds, // Services to be updated
-      };
+  notes: editNotes,
+  startAt: editStartAt?.second(0).toISOString(),
+  endAt: editEndAt?.second(0).toISOString(),
+  serviceIds: editServiceIds,
+};
+
 
       // Send PUT request to update the booking
       const res = await fetch(`/api/bookings/walkin/${selectedBooking.id}`, {
@@ -508,62 +516,86 @@ export default function BookingsPage() {
       </Modal>
 
       {/* ✅ Edit Booking Modal */}
-      <Modal
-        open={editModal}
-        onCancel={() => setEditModal(false)}
-        onOk={saveEdit}
-        okText="Save Changes"
-        title="Edit Booking"
-        confirmLoading={loading}
-        centered
-        className="!max-w-lg sm:!max-w-xl"
-        bodyStyle={{ maxHeight: "70vh", overflowY: "auto" }}
-      >
-        <div className="space-y-4">
-        {selectedBooking?.status && selectedBooking.status !== "PENDING" && (
-  <p className="text-sm text-gray-500 py-2 px-4 bg-blue-theme/10 rounded-md">
-    The booking status is {selectedBooking.status}, please do not change details.
-  </p>
-)}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Notes
-            </label>
-            <Input.TextArea
-              rows={3}
-              value={editNotes}
-              onChange={(e) => setEditNotes(e.target.value)}
-              placeholder="Update notes..."
-              className="w-full"
-            />
-          </div>
+     <Modal
+  open={editModal}
+  onCancel={() => setEditModal(false)}
+  onOk={saveEdit}
+  okText="Save Changes"
+  title="Edit Booking"
+  confirmLoading={loading}
+  centered
+  className="!max-w-lg sm:!max-w-xl"
+  bodyStyle={{ maxHeight: "70vh", overflowY: "auto" }}
+  afterOpenChange={(open) => {
+    if (open && selectedBooking) {
+      // Pre-fill values when modal opens
+      setEditNotes(selectedBooking.notes || "");
+      setEditStartAt(selectedBooking.startAt ? dayjs(selectedBooking.startAt) : dayjs(selectedBooking.createdAt));
+      setEditEndAt(selectedBooking.endAt ? dayjs(selectedBooking.endAt) : dayjs(selectedBooking.updatedAt));
+    }
+  }}
+>
+  <div className="space-y-4">
+    {/* Notice for non-pending bookings */}
+    {selectedBooking?.status && selectedBooking.status !== "PENDING" && (
+      <p className="text-sm border border-red-300 text-red-700 py-2 px-4 bg-red-100 rounded-md">
+        The booking status is {selectedBooking.status}, please do not change details.
+      </p>
+    )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Start Time
-              </label>
-              <DatePicker
-                showTime
-                value={editStartAt}
-                onChange={(date) => setEditStartAt(date)}
-                className="w-full"
-              />
-            </div>
-            {/* <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                End Time
-              </label>
-              <DatePicker
-                showTime
-                value={editEndAt}
-                onChange={(date) => setEditEndAt(date)}
-                className="w-full"
-              />
-            </div> */}
-          </div>
-        </div>
-      </Modal>
+    {/* Notes */}
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        Notes
+      </label>
+      <Input.TextArea
+        rows={3}
+        value={editNotes}
+        onChange={(e) => setEditNotes(e.target.value)}
+        placeholder="Update notes..."
+        className="w-full"
+      />
+    </div>
+<div className="flex items-center py-2 justify-between "> <p className="text-gray-700 font-bold">Total Time:</p>
+<p className="text-gray-700 bg-blue-theme/10 rounded-full border border-blue-theme/60 px-4 ">{minutesToHoursString(selectedBooking?.totalDuration) ||
+  "N/A"}</p>
+ </div> 
+    {/* Start/End Time */}
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Start Time
+        </label>
+        <DatePicker
+          showTime={{
+            use12Hours: true,
+            format: "hh:mm A", // 12-hour + AM/PM toggle
+          }}
+          format="YYYY-MM-DD hh:mm A"
+          value={editStartAt}
+          onChange={(date) => setEditStartAt(date)}
+          className="w-full"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          End Time
+        </label>
+         <DatePicker
+          showTime={{
+            use12Hours: true,
+            format: "hh:mm A",
+          }}
+          format="YYYY-MM-DD hh:mm A"
+          value={editEndAt}
+          onChange={(date) => setEditEndAt(date)}
+          className="w-full"
+        />
+      </div>
+    </div>
+  </div>
+</Modal>
+
     </div>
   );
 }

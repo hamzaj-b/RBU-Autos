@@ -427,9 +427,9 @@ export default function WalkInBookingPage() {
               <div className="md:col-span-2 bg-[#f9fbfd] rounded-xl p-4 border border-gray-100">
                 <div className="flex flex-col md:flex-row justify-between gap-2">
                   <span className="text-gray-700 font-medium flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-blue-600" />
+                    <Clock className="w-4 h-4 text-blue-bold" />
                     Duration:{" "}
-                    <span className="text-blue-600">
+                    <span className="text-blue-bold">
                       {minutesToHoursString(totalDuration)}
                     </span>
                   </span>
@@ -461,7 +461,7 @@ export default function WalkInBookingPage() {
                   <Button
                     onClick={fetchAvailableEmployees}
                     type="primary"
-                    className="bg-[#0f74b2]"
+                    className="bg-blue-theme"
                     loading={employeeLoading}
                   >
                     Check Available Employees
@@ -503,7 +503,7 @@ export default function WalkInBookingPage() {
                   size="large"
                   loading={submitLoading}
                   onClick={handleSubmit}
-                  className="bg-[#0f74b2]"
+                  className="bg-bg-blue-theme"
                 >
                   Create Booking
                 </Button>
