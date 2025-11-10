@@ -13,6 +13,8 @@ import {
   Car,
   ShieldCheck,
   KeyRound,
+  PlusCircle,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, message, Spin, Switch, Card } from "antd";
@@ -73,9 +75,21 @@ export default function ProfilePage() {
             base.address || base.addressJson?.raw || base.addressJson || "",
           notes: base.notes || "",
           isActive: base.isActive ?? true,
-          vehicle: base.vehicleJson
-            ? JSON.parse(JSON.stringify(base.vehicleJson))
-            : { make: "", year: "", model: "", regNo: "" },
+          vehicle: Array.isArray(base.vehicleJson)
+            ? base.vehicleJson
+            : base.vehicleJson
+            ? [base.vehicleJson]
+            : [
+                {
+                  make: "",
+                  model: "",
+                  variant: "",
+                  year: "",
+                  vin: "",
+                  color: "",
+                  info: "",
+                },
+              ],
         });
       } catch (err) {
         console.error(err);
@@ -245,7 +259,6 @@ export default function ProfilePage() {
           </Card>
         )}
 
-        {/* CUSTOMER FIELDS */}
         {user.userType === "CUSTOMER" && (
           <>
             <Card title="🏠 Personal Details">
@@ -269,6 +282,7 @@ export default function ProfilePage() {
               </div>
             </Card>
 
+            {/* 🚗 Multiple Vehicles Section */}
             <Card
               title={
                 <span className="flex items-center gap-2">
@@ -276,32 +290,96 @@ export default function ProfilePage() {
                 </span>
               }
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  placeholder="Make"
-                  value={formData.vehicle.make}
-                  onChange={(e) => handleVehicleChange("make", e.target.value)}
-                  disabled={!isEditing}
-                />
-                <Input
-                  placeholder="Year"
-                  value={formData.vehicle.year}
-                  onChange={(e) => handleVehicleChange("year", e.target.value)}
-                  disabled={!isEditing}
-                />
-                <Input
-                  placeholder="Model"
-                  value={formData.vehicle.model}
-                  onChange={(e) => handleVehicleChange("model", e.target.value)}
-                  disabled={!isEditing}
-                />
-                <Input
-                  placeholder="Reg. No"
-                  value={formData.vehicle.regNo}
-                  onChange={(e) => handleVehicleChange("regNo", e.target.value)}
-                  disabled={!isEditing}
-                />
-              </div>
+              {Array.isArray(formData.vehicle)
+                ? formData.vehicle.map((veh, index) => (
+                    <div
+                      key={index}
+                      className="border border-gray-200 rounded-lg p-4 mb-4 bg-gray-50 relative"
+                    >
+                      <div className="flex justify-between items-center mb-3">
+                        <h4 className="font-semibold text-gray-700">
+                          Vehicle #{index + 1}
+                        </h4>
+                        {isEditing && formData.vehicle.length > 1 && (
+                          <button
+                            onClick={() =>
+                              setFormData((p) => ({
+                                ...p,
+                                vehicle: p.vehicle.filter(
+                                  (_, i) => i !== index
+                                ),
+                              }))
+                            }
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {[
+                          "make",
+                          "model",
+                          "variant",
+                          "year",
+                          "vin",
+                          "color",
+                          "info",
+                        ].map((key) => (
+                          <Input
+                            key={key}
+                            placeholder={key.toUpperCase()}
+                            value={veh[key] || ""}
+                            onChange={(e) =>
+                              setFormData((p) => {
+                                const updated = [...p.vehicle];
+                                updated[index] = {
+                                  ...updated[index],
+                                  [key]: e.target.value,
+                                };
+                                return { ...p, vehicle: updated };
+                              })
+                            }
+                            disabled={!isEditing}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ))
+                : null}
+
+              {/* Add new vehicle button */}
+              {isEditing && (
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    onClick={() =>
+                      setFormData((p) => ({
+                        ...p,
+                        vehicle: [
+                          ...(Array.isArray(p.vehicle)
+                            ? p.vehicle
+                            : [p.vehicle]),
+                          {
+                            make: "",
+                            model: "",
+                            variant: "",
+                            year: "",
+                            vin: "",
+                            color: "",
+                            info: "",
+                          },
+                        ],
+                      }))
+                    }
+                    variant="outline"
+                    className="flex items-center gap-2 border-blue-500 text-blue-600 hover:bg-blue-50"
+                  >
+                    <PlusCircle size={18} /> Add Another Vehicle
+                  </Button>
+                </div>
+              )}
             </Card>
           </>
         )}
