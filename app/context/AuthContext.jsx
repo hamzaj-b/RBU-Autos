@@ -3,22 +3,19 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
-import { useUserLocation } from "@/hooks/useUserLocation";
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
-  const [sessionId, setSessionId] = useState(null);
   const [username, setUsername] = useState(null);
+  const [sessionId, setSessionId] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 📍 location hook (manual trigger only)
-  const { location, isValid, refetch, waitForNextUpdate } =
-    useUserLocation(false);
-
-  // 🧠 Restore from cookies/localStorage
+  // ============================================================
+  // Restore auth state from cookies/localStorage
+  // ============================================================
   useEffect(() => {
     const savedToken = Cookies.get("authToken");
     const savedUser = Cookies.get("authUser");
@@ -37,26 +34,9 @@ export function AuthProvider({ children }) {
     setLoading(false);
   }, []);
 
-  // 🧭 helper — waits for valid location update
-  async function waitForValidLocation(timeout = 10000) {
-    const start = Date.now();
-    while (Date.now() - start < timeout) {
-      if (
-        location.latitude &&
-        location.longitude &&
-        location.address &&
-        !location.error
-      ) {
-        console.log("✅ useUserLocation finally returned:", location);
-        return location;
-      }
-      await new Promise((r) => setTimeout(r, 300));
-    }
-    console.warn("⚠️ waitForValidLocation() timed out — location:", location);
-    return null;
-  }
-
-  // 🔑 Login flow (Admin + Employee)
+  // ============================================================
+  // LOGIN  (NO SESSION START ANYMORE)
+  // ============================================================
   async function login(email, password) {
     toast.loading("Logging in...", { id: "login" });
 
@@ -70,7 +50,7 @@ export function AuthProvider({ children }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Login failed");
 
-      // ✅ store auth cookies
+      // Store cookies
       Cookies.set("authToken", data.token, { expires: 1 });
       Cookies.set("authUser", JSON.stringify(data.user), { expires: 1 });
 
@@ -82,81 +62,23 @@ export function AuthProvider({ children }) {
         id: "login",
       });
 
-      // 👨‍🔧 Employee flow only
-      if (data.user.userType === "EMPLOYEE") {
-        toast.loading("Getting your location...", { id: "loc" });
-
-        refetch();
-        const loc = await waitForNextUpdate();
-        toast.dismiss("loc");
-
-        if (
-          !loc ||
-          !loc.latitude ||
-          !loc.longitude ||
-          !loc.address ||
-          loc.error
-        ) {
-          console.error("❌ Location failed or denied:", loc);
-          toast.error("📍 Location required — logging out...");
-          await logout();
-          return { success: false, message: "Location denied" };
-        }
-
-        console.log("✅ Location acquired:", loc);
-
-        // 🎯 start session with full data
-        toast.loading("Starting session...", { id: "session" });
-        try {
-          const sessionRes = await fetch("/api/employeeSession/start", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${data.token}`,
-            },
-            body: JSON.stringify({
-              source: "web",
-              location: loc.address,
-              latitude: loc.latitude,
-              longitude: loc.longitude,
-            }),
-          });
-
-          const sessionData = await sessionRes.json();
-
-          if (sessionRes.ok) {
-            setSessionId(sessionData.session.id);
-            localStorage.setItem("sessionId", sessionData.session.id);
-            toast.success("🕒 Session started successfully!", {
-              id: "session",
-            });
-          } else {
-            toast.error(sessionData.error || "Failed to start session", {
-              id: "session",
-            });
-          }
-        } catch (err) {
-          console.error("🔥 Error starting session:", err);
-          toast.error("Error starting session", { id: "session" });
-        }
-      }
-
-      // 🚀 redirect based on role
+      // REDIRECT (without session start)
       if (data.user.userType === "ADMIN") {
         window.location.href = "/";
       } else {
-        window.location.href = "/dashboard";
+        window.location.href = "/dashboard"; // employee or customer
       }
 
       return { success: true };
-    } catch (error) {
-      console.error("Login error:", error.message);
-      toast.error(error.message || "Login failed", { id: "login" });
-      return { success: false, message: error.message };
+    } catch (err) {
+      toast.error(err.message || "Login failed", { id: "login" });
+      return { success: false, message: err.message };
     }
   }
 
-  // 🔐 Customer OTP Login flow
+  // ============================================================
+  // CUSTOMER OTP LOGIN
+  // ============================================================
   async function loginWithOTP(phone, firebaseToken) {
     toast.loading("Verifying OTP...", { id: "otpLogin" });
 
@@ -170,7 +92,6 @@ export function AuthProvider({ children }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "OTP verification failed");
 
-      // ✅ Store cookies
       Cookies.set("authToken", data.token, { expires: 1 });
       Cookies.set("authUser", JSON.stringify(data.user), { expires: 1 });
 
@@ -182,18 +103,18 @@ export function AuthProvider({ children }) {
         id: "otpLogin",
       });
 
-      // 🚀 redirect to dashboard
       window.location.href = "/dashboard";
 
       return { success: true };
-    } catch (error) {
-      console.error("OTP Login error:", error.message);
-      toast.error(error.message || "OTP login failed", { id: "otpLogin" });
-      return { success: false, message: error.message };
+    } catch (err) {
+      toast.error(err.message || "OTP login failed", { id: "otpLogin" });
+      return { success: false, message: err.message };
     }
   }
 
-  // 🚪 Logout
+  // ============================================================
+  // LOGOUT
+  // ============================================================
   async function logout() {
     toast.loading("Logging out...", { id: "logout" });
 
@@ -204,20 +125,25 @@ export function AuthProvider({ children }) {
           headers: { Authorization: `Bearer ${token}` },
         });
       }
-    } catch (error) {
-      console.error("Logout API error:", error.message);
+    } catch (err) {
+      console.error("Logout error:", err);
     } finally {
       Cookies.remove("authToken");
       Cookies.remove("authUser");
       localStorage.removeItem("sessionId");
+
       setUser(null);
       setToken(null);
       setUsername(null);
       setSessionId(null);
-      toast.success("👋 Logged out successfully!", { id: "logout" });
+
+      toast.success("Logged out!", { id: "logout" });
     }
   }
 
+  // ===================================================================
+  // Provide context values
+  // ===================================================================
   return (
     <AuthContext.Provider
       value={{
@@ -225,13 +151,11 @@ export function AuthProvider({ children }) {
         token,
         username,
         sessionId,
+        setSessionId,
         login,
-        loginWithOTP, // 👈 added new OTP flow
+        loginWithOTP,
         logout,
         loading,
-        location,
-        isLocationValid: isValid,
-        refetchLocation: refetch,
       }}
     >
       {children}

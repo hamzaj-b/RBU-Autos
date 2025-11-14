@@ -123,8 +123,8 @@ export default function SignInPage() {
   // UI
   // ===========================
   return (
-    <section className="bg-gradient-to-tr from-blue-theme to-blue-900 min-h-screen text-gray-800 flex items-center justify-center">
-      <div className="w-full max-w-md bg-white rounded-lg shadow p-6 mx-2">
+    <section className="bg-gradient-to-tr from-blue-theme via-blue-bold to-sky-300 min-h-screen text-gray-800 flex items-center justify-center">
+      <div className="w-full max-w-md bg-white border rounded-lg shadow-lg p-6 mx-2">
         {/* ===== Logo + Title ===== */}
         <div className="text-center mb-4">
           <img src="/rbu-logo.png" alt="Logo" width={100} className="mx-auto" />
@@ -133,28 +133,33 @@ export default function SignInPage() {
           </h2>
         </div>
 
-        {/* ===== Tab Switcher ===== */}
-        <div className="flex justify-center mb-6 border-b border-gray-200">
-          <button
-            className={`flex-1 py-2 font-semibold ${
-              activeTab === "employee"
-                ? "text-blue-600 border-b-2 border-blue-600"
-                : "text-gray-500"
-            }`}
-            onClick={() => setActiveTab("employee")}
-          >
-            Admin / Employee
-          </button>
-          <button
-            className={`flex-1 py-2 font-semibold ${
-              activeTab === "customer"
-                ? "text-blue-600 border-b-2 border-blue-600"
-                : "text-gray-500"
-            }`}
-            onClick={() => setActiveTab("customer")}
-          >
-            Customer
-          </button>
+        {/* ===== Sleek UI Tab Switcher ===== */}
+        <div className="flex items-center justify-center mb-6">
+          <div className="bg-gray-100 rounded-md p-1 flex w-full max-w-xs shadow-inner">
+            <button
+              onClick={() => setActiveTab("employee")}
+              className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all duration-300
+        ${
+          activeTab === "employee"
+            ? "bg-blue-theme !text-white shadow"
+            : "text-gray-600 hover:text-gray-800"
+        }`}
+            >
+              Admin / Employee
+            </button>
+
+            <button
+              onClick={() => setActiveTab("customer")}
+              className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all duration-300
+        ${
+          activeTab === "customer"
+            ? "bg-blue-theme !text-white shadow"
+            : "text-gray-600 hover:text-gray-800"
+        }`}
+            >
+              Customer
+            </button>
+          </div>
         </div>
 
         {/* ===== Admin / Employee Login Form ===== */}

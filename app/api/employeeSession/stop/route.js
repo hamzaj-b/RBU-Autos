@@ -5,40 +5,67 @@ const jwt = require("jsonwebtoken");
 const prisma = new PrismaClient();
 const SECRET_KEY = process.env.JWT_SECRET || "supersecret";
 
-function getTzOffsetMs(timeZone) {
-  const tempDate = new Date();
-  const formatter = new Intl.DateTimeFormat("en-US", {
-    timeZone: timeZone,
-    timeZoneName: "shortOffset",
+/**
+ * Convert garage closing time (local timezone) → UTC Date for the login day.
+ */
+function getCloseTimeUtcForLogin(loginAt, closeTime, timezone) {
+  const localFormatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
   });
-  const parts = formatter.formatToParts(tempDate);
-  const offsetPart = parts.find((part) => part.type === "timeZoneName");
-  let offsetStr = offsetPart ? offsetPart.value : "+00:00";
 
-  offsetStr = offsetStr.replace(/^GMT|UTC/i, "").trim();
+  const localDateStr = localFormatter.format(loginAt); // e.g. 2025-10-23
+  const localDateTimeStr = `${localDateStr}T${closeTime}:00`;
 
-  const match = offsetStr.match(/([+-])0*(\d{1,2})(?::0*(\d{1,2}))?/);
-  if (!match) throw new Error(`Invalid offset format: ${offsetStr}`);
-  const [, sign, hoursStr, minsStr] = match;
-  const hours = parseInt(hoursStr, 10);
-  const mins = minsStr ? parseInt(minsStr, 10) : 0;
-  const totalMins = hours * 60 + mins;
-  return totalMins * 60 * 1000 * (sign === "-" ? -1 : 1);
+  // Wall clock local time
+  const localDate = new Date(localDateTimeStr);
+
+  // 2️⃣ Figure out the *actual UTC offset* (in minutes) of that timezone at that moment
+  const tzOffsetMin = -localDate
+    .toLocaleString("en-US", { timeZone: timezone })
+    .match(/(\d+):(\d+):(\d+)/) // not reliable, use arithmetic instead
+    ? 0
+    : 0; // placeholder to keep syntax
+
+  // --- simpler and bulletproof approach: compute via arithmetic ---
+  const fake = new Date(
+    localDate.toLocaleString("en-US", { timeZone: timezone })
+  );
+  const offsetMinutes = (fake.getTime() - localDate.getTime()) / 60000;
+
+  // 3️⃣ Apply offset in correct direction (local → UTC)
+  const utcDate = new Date(localDate.getTime() - offsetMinutes * 60000);
+
+  // console.log("🔹 [getCloseTimeUtcForLogin]");
+  // console.log("Local Date:", localDateStr);
+  // console.log("Local CloseTime:", closeTime);
+  // console.log("Offset (min):", offsetMinutes);
+  // console.log("→ Computed UTC CloseTime:", utcDate.toISOString());
+
+  return utcDate;
 }
 
-async function PUT(req) {
+async function POST(req) {
   try {
+    const body = await req.json();
+    const { sessionId } = body;
+
+    if (!sessionId) {
+      return NextResponse.json(
+        { error: "sessionId is required" },
+        { status: 400 }
+      );
+    }
+
+    // Validate employee token
     const authHeader = req.headers.get("authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    let decoded;
-    try {
-      decoded = jwt.verify(authHeader.split(" ")[1], SECRET_KEY);
-    } catch {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
+    const decoded = jwt.verify(authHeader.split(" ")[1], SECRET_KEY);
 
     if (decoded.userType !== "EMPLOYEE") {
       return NextResponse.json(
@@ -47,16 +74,15 @@ async function PUT(req) {
       );
     }
 
-    const body = await req.json().catch(() => ({}));
-    const { sessionId } = body;
+    const employeeId = decoded.employeeId;
+    const settings = await prisma.businessSettings.findFirst();
 
-    if (!sessionId) {
-      return NextResponse.json(
-        { error: "Session ID is required" },
-        { status: 400 }
-      );
-    }
+    if (!settings) throw new Error("Business settings not configured");
 
+    const { timezone, closeTime } = settings;
+    const now = new Date();
+
+    // Fetch that specific session
     const session = await prisma.employeeSession.findUnique({
       where: { id: sessionId },
     });
@@ -65,51 +91,62 @@ async function PUT(req) {
       return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
 
-    if (session.employeeId !== decoded.employeeId) {
+    if (session.employeeId !== employeeId) {
       return NextResponse.json(
-        { error: "Unauthorized to stop this session" },
+        { error: "Session does not belong to this employee" },
         { status: 403 }
       );
     }
 
     if (session.logoutAt) {
       return NextResponse.json(
-        { message: "Session already closed", session },
-        { status: 200 }
+        { error: "Session already closed" },
+        { status: 400 }
       );
     }
 
-    const settings = await prisma.businessSettings.findFirst();
-    if (!settings) throw new Error("Business settings not configured");
+    const loginAt = new Date(session.loginAt);
 
-    const { closeTime, timezone } = settings;
-    if (!closeTime || !timezone)
-      throw new Error("Close time or timezone not configured");
+    // Determine local dates
+    const localFormatter = new Intl.DateTimeFormat("en-CA", {
+      timeZone: timezone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
 
-    const offsetMs = getTzOffsetMs(timezone);
+    const loginLocalDay = localFormatter.format(loginAt);
+    const nowLocalDay = localFormatter.format(now);
 
-    const formatter = new Intl.DateTimeFormat("en-CA", { timeZone: timezone });
-    const loginLocalDay = formatter.format(new Date(session.loginAt));
+    let logoutAt;
 
-    const localIso = `${loginLocalDay}T${closeTime}:00Z`;
-    const pretendUTC = new Date(localIso);
-    const utcTimestamp = pretendUTC.getTime() - offsetMs;
-    const closeTimeDate = new Date(utcTimestamp);
+    if (loginLocalDay !== nowLocalDay) {
+      // Previous-day session → end at closing time of login day
+      logoutAt = getCloseTimeUtcForLogin(loginAt, closeTime, timezone);
+    } else {
+      // Same day → end at current time
+      logoutAt = now;
+    }
 
-    const now = new Date();
-    const logoutAt = now > closeTimeDate ? closeTimeDate : now;
+    // Ensure correctness
+    if (logoutAt < loginAt) {
+      logoutAt = new Date(loginAt);
+    }
 
-    const updatedSession = await prisma.employeeSession.update({
-      where: { id: session.id },
+    // Close session
+    const updated = await prisma.employeeSession.update({
+      where: { id: sessionId },
       data: { logoutAt },
     });
 
     return NextResponse.json({
-      message: "Employee session stopped successfully",
-      session: updatedSession,
+      message: "Session stopped successfully",
+      session: updated,
+      logoutAt,
+      type: loginLocalDay !== nowLocalDay ? "previous-day" : "same-day",
     });
   } catch (err) {
-    console.error("Session stop error:", err);
+    console.error("🚨 Session STOP error:", err);
     return NextResponse.json(
       { error: err.message || "Failed to stop session" },
       { status: 500 }
@@ -117,4 +154,4 @@ async function PUT(req) {
   }
 }
 
-module.exports = { PUT };
+module.exports = { POST };

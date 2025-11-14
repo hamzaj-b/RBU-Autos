@@ -7,22 +7,23 @@ import {
   XCircle,
   UserPlus,
   Wrench,
-  Plus,
-  Trash2,
+  Printer,
   Car,
   User,
   DollarSign,
-  Printer,
   ClockFading,
+  ChevronDown,
 } from "lucide-react";
-import { Spin, message, Tag, Modal, Input } from "antd";
+import { Spin, message, Tag, Modal } from "antd";
 import Select from "react-select";
 import { useAuth } from "@/app/context/AuthContext";
 import ConfirmDialog from "@/app/components/shared/ConfirmModal";
-import { useRouter } from "next/navigation";
-import { ChevronDown } from "lucide-react";
 import CheckoutSection from "@/app/components/app/CheckoutSection";
+import { Button } from "@/components/ui/button";
 
+// ========================================================================
+//   REPAIR TRACKER PAGE
+// ========================================================================
 export default function RepairTracker() {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -30,79 +31,100 @@ export default function RepairTracker() {
   const [workOrders, setWorkOrders] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [selectedWO, setSelectedWO] = useState(null);
+
+  // Pagination → backend uses limit not pageSize
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10); // 🔥 uses backend naming
+  const [total, setTotal] = useState(0);
+
+  // Modal states
   const [assignModal, setAssignModal] = useState(false);
-  const [completeModal, setCompleteModal] = useState(false);
-  const [cancelDialog, setCancelDialog] = useState(false);
+  const [selectedWO, setSelectedWO] = useState(null);
   const [selectedEmp, setSelectedEmp] = useState(null);
   const [assigning, setAssigning] = useState(false);
+  const [isReassign, setIsReassign] = useState(false);
+
+  const [completeModal, setCompleteModal] = useState(false);
   const [laborEntries, setLaborEntries] = useState([]);
   const [partsUsed, setPartsUsed] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+
+  const [cancelDialog, setCancelDialog] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const router = useRouter();
 
   const { token, logout } = useAuth();
-  const statuses = [
-    "all",
-    "OPEN",
-    "ASSIGNED",
-    "IN_PROGRESS",
-    "DONE",
-    "COMPLETED",
-    "CANCELLED",
-  ];
-  // 🔄 Debounce Search
+
+  // ========================================================================
+  //   SEARCH DEBOUNCE
+  // ========================================================================
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 500);
-    return () => clearTimeout(timer);
+    const t = setTimeout(() => setDebouncedSearch(searchTerm), 500);
+    return () => clearTimeout(t);
   }, [searchTerm]);
 
-  // 📦 Fetch WorkOrders
+  // ========================================================================
+  //   FETCH WORK ORDERS (with pagination)
+  // ========================================================================
   const fetchWorkOrders = useCallback(async () => {
     if (!token) return;
+
     try {
       setLoading(true);
+
       const params = new URLSearchParams({
         search: debouncedSearch,
         sortOrder: "desc",
+        page,
+        limit, // 🔥 backend expects "limit"
       });
+
       if (statusFilter !== "all") params.append("status", statusFilter);
 
       const res = await fetch(`/api/workOrders?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+
       if (res.status === 401) {
         message.error("Session expired. Please log in again.");
         logout();
         return;
       }
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
+
       setWorkOrders(data.workOrders || []);
+      setTotal(data.total || 0);
     } catch (err) {
       console.error(err);
       message.error("Failed to fetch work orders");
     } finally {
       setLoading(false);
     }
-  }, [debouncedSearch, statusFilter, token]);
+  }, [debouncedSearch, statusFilter, page, limit, token]);
 
   useEffect(() => {
     if (token) fetchWorkOrders();
   }, [token, fetchWorkOrders]);
 
-  // 📋 Fetch Employees
+  // ========================================================================
+  //   FETCH EMPLOYEES
+  // ========================================================================
   useEffect(() => {
     if (!token) return;
+
     (async () => {
       try {
         const res = await fetch("/api/auth/admin/employee", {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
+
         setEmployees(
-          data.employees?.map((e) => ({ label: e.fullName, value: e.id })) || []
+          data.employees?.map((e) => ({
+            label: e.fullName,
+            value: e.id,
+          })) || []
         );
       } catch (err) {
         console.error("Employee fetch error:", err);
@@ -110,10 +132,13 @@ export default function RepairTracker() {
     })();
   }, [token]);
 
-  // 🧰 Actions
+  // ========================================================================
+  //   ASSIGN EMPLOYEE
+  // ========================================================================
   const handleAssign = async (woId) => {
     if (!selectedEmp) return message.warning("Select an employee first!");
     setAssigning(true);
+
     try {
       const res = await fetch(`/api/workOrders/${woId}/assign`, {
         method: "PATCH",
@@ -123,12 +148,14 @@ export default function RepairTracker() {
         },
         body: JSON.stringify({ employeeId: selectedEmp.value }),
       });
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
+
       message.success("Employee assigned successfully!");
-      fetchWorkOrders();
       setAssignModal(false);
       setSelectedEmp(null);
+      fetchWorkOrders();
     } catch (err) {
       message.error(err.message || "Failed to assign employee");
     } finally {
@@ -136,17 +163,53 @@ export default function RepairTracker() {
     }
   };
 
-  // ✅ Mark as Done
+  // ========================================================================
+  //   RE-ASSIGN EMPLOYEE
+  // ========================================================================
+  const handleReassign = async (woId) => {
+    if (!selectedEmp) return message.warning("Select an employee first!");
+    setAssigning(true);
+
+    try {
+      const res = await fetch(`/api/workOrders/${woId}/reassign`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ employeeId: selectedEmp.value }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      message.success("Employee re-assigned successfully!");
+      setAssignModal(false);
+      setSelectedEmp(null);
+      fetchWorkOrders();
+    } catch (err) {
+      message.error(err.message || "Failed to reassign employee");
+    } finally {
+      setAssigning(false);
+    }
+  };
+
+  // ========================================================================
+  //   MARK AS DONE
+  // ========================================================================
   const handleMarkAsDone = async (wo) => {
     try {
       setSubmitting(true);
+
       const res = await fetch(`/api/workOrders/${wo.id}/mark-as-done`, {
         method: "PATCH",
         headers: { Authorization: `Bearer ${token}` },
       });
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      message.success("Work order marked as DONE successfully!");
+
+      message.success("Work order marked as DONE!");
       fetchWorkOrders();
     } catch (err) {
       message.error(err.message || "Failed to mark as done");
@@ -155,13 +218,14 @@ export default function RepairTracker() {
     }
   };
 
-  // 🧾 Complete (Checkout Modal)
+  // ========================================================================
+  //   COMPLETE WORK ORDER
+  // ========================================================================
   const handleComplete = (wo) => {
     if (wo.status !== "DONE") {
-      return message.warning(
-        "Work order must be marked as DONE before completing."
-      );
+      return message.warning("Work order must be DONE to complete.");
     }
+
     setSelectedWO(wo);
     setLaborEntries([]);
     setPartsUsed([]);
@@ -171,6 +235,7 @@ export default function RepairTracker() {
   const submitCompletion = async () => {
     try {
       setSubmitting(true);
+
       const res = await fetch(`/api/workOrders/${selectedWO.id}/completed`, {
         method: "PATCH",
         headers: {
@@ -179,19 +244,23 @@ export default function RepairTracker() {
         },
         body: JSON.stringify({ laborEntries, partsUsed }),
       });
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      message.success("Work order completed successfully!");
+
+      message.success("Work order completed!");
       setCompleteModal(false);
       fetchWorkOrders();
     } catch (err) {
-      message.error(err.message || "Failed to complete work order");
+      message.error(err.message || "Failed to complete");
     } finally {
       setSubmitting(false);
     }
   };
 
-  // ❌ Cancel WorkOrder
+  // ========================================================================
+  //   CANCEL WORK ORDER
+  // ========================================================================
   const handleCancel = (wo) => {
     setSelectedWO(wo);
     setCancelDialog(true);
@@ -203,20 +272,24 @@ export default function RepairTracker() {
         method: "PATCH",
         headers: { Authorization: `Bearer ${token}` },
       });
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      message.success("Work order cancelled successfully!");
+
+      message.success("Cancelled successfully!");
       fetchWorkOrders();
     } catch (err) {
-      message.error(err.message || "Failed to cancel work order");
+      message.error(err.message);
     } finally {
       setCancelDialog(false);
     }
   };
 
-  // 🏷️ Status Tag
+  // ========================================================================
+  //   STATUS TAG
+  // ========================================================================
   const getStatusTag = (status) => {
-    const colorMap = {
+    const map = {
       OPEN: "blue",
       ASSIGNED: "gold",
       IN_PROGRESS: "purple",
@@ -224,113 +297,109 @@ export default function RepairTracker() {
       COMPLETED: "cyan",
       CANCELLED: "red",
     };
-    return <Tag color={colorMap[status] || "default"}>{status}</Tag>;
+    return <Tag color={map[status] || "default"}>{status}</Tag>;
   };
 
-  // ➕ Helpers for parts/labor
-  const addLabor = () =>
-    setLaborEntries([...laborEntries, { task: "", hours: 1, rate: 0 }]);
-  const addPart = () =>
-    setPartsUsed([...partsUsed, { name: "", qty: 1, price: 0 }]);
-  const updateLabor = (i, field, value) =>
-    setLaborEntries((prev) =>
-      prev.map((l, idx) => (i === idx ? { ...l, [field]: value } : l))
-    );
-  const updatePart = (i, field, value) =>
-    setPartsUsed((prev) =>
-      prev.map((p, idx) => (i === idx ? { ...p, [field]: value } : p))
-    );
-  const removeLabor = (i) =>
-    setLaborEntries(laborEntries.filter((_, idx) => i !== idx));
-  const removePart = (i) =>
-    setPartsUsed(partsUsed.filter((_, idx) => i !== idx));
+  // Pagination helpers
+  const totalPages = Math.ceil(total / limit);
+  const start = (page - 1) * limit + 1;
+  const end = Math.min(page * limit, total);
 
-  // Totals
-  const laborTotal = laborEntries.reduce(
-    (sum, l) => sum + (Number(l.rate) || 0) * (Number(l.hours) || 0),
-    0
-  );
-  const partsTotal = partsUsed.reduce(
-    (sum, p) => sum + (Number(p.price) || 0) * (Number(p.qty) || 0),
-    0
-  );
-
+  // ========================================================================
+  //   VIEW
+  // ========================================================================
   return (
     <div className="container mx-auto p-6 space-y-6 text-gray-900">
-      {/* 🔍 Filters */}
+      {/* Filters */}
       <div className="bg-white p-4 rounded-lg mb-5 shadow-sm border border-gray-100">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div className="relative w-full md:w-4/5 ">
-            <Search
-              className="absolute left-3 top-2 md:top-3 text-gray-400"
-              size={18}
-            />
+        <div className="flex flex-col md:flex-row md:justify-between gap-4">
+          {/* Search */}
+          <div className="relative w-full md:w-4/5">
+            <Search className="absolute left-3 top-3 text-gray-400" size={18} />
             <input
               type="text"
               placeholder="Search by customer or service..."
-              className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg  focus:outline-none"
+              className="w-full pl-10 pr-4 py-2 bg-gray-50 border rounded-lg"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setPage(1);
+              }}
             />
           </div>
 
-          <div className=" w-full md:w-1/5 flex justify-end items-end">
-            <div className="relative w-full">
-              {/* Selected button */}
-              <button
-                onClick={() => setIsOpen((prev) => !prev)}
-                className="w-full flex justify-between items-center px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium
-                  hover:border-blue-400 focus:ring-2 focus:ring-blue-500 transition-all"
-              >
-                <span>
-                  {statusFilter === "all"
-                    ? "All"
-                    : statusFilter.replace("_", " ")}
-                </span>
-                <ChevronDown
-                  className={`w-4 h-4 transform transition-transform ${
-                    isOpen ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
+          {/* Filter Dropdown */}
+          <div className="w-full md:w-1/5">
+            <Button
+              onClick={() => setIsOpen((p) => !p)}
+              className="w-full flex justify-between items-center px-3 py-2 bg-white hover:bg-gray-100 border rounded-lg"
+            >
+              <span>{statusFilter === "all" ? "All" : statusFilter}</span>
+              <ChevronDown
+                className={`w-4 h-4 transition ${isOpen ? "rotate-180" : ""}`}
+              />
+            </Button>
 
-              {/* Dropdown menu */}
-              {isOpen && (
-                <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden animate-in fade-in slide-in-from-top-1">
-                  {statuses.map((s) => {
-                    const active = s === statusFilter;
-                    return (
-                      <div
-                        key={s}
-                        onClick={() => {
-                          setStatusFilter(s);
-                          setIsOpen(false);
-                        }}
-                        className={`px-3 py-2 text-sm cursor-pointer transition-colors ${
-                          active
-                            ? "bg-blue-theme text-white"
-                            : "hover:bg-blue-50 text-gray-700"
-                        }`}
-                      >
-                        {s === "all" ? "All" : s.replace("_", " ")}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+            {isOpen && (
+              <div className="absolute mt-1 w-fit bg-white border rounded-lg shadow">
+                {[
+                  "All",
+                  "OPEN",
+                  "ASSIGNED",
+                  "IN_PROGRESS",
+                  "DONE",
+                  "COMPLETED",
+                  "CANCELLED",
+                ].map((s) => (
+                  <div
+                    key={s}
+                    className={`px-3 py-2 text-sm cursor-pointer ${
+                      s === statusFilter
+                        ? "bg-blue-theme text-white"
+                        : "hover:bg-blue-50"
+                    }`}
+                    onClick={() => {
+                      setStatusFilter(s);
+                      setPage(1);
+                      setIsOpen(false);
+                    }}
+                  >
+                    {s}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* 📋 Work Orders */}
-      <div className="bg-white w-full rounded-xl shadow-sm border border-gray-100 divide-y">
+      {/* PAGE SIZE DROPDOWN (LIMIT) */}
+      <div className="flex justify-end gap-2 items-center text-sm mb-2">
+        <span className="text-gray-600">Rows per page:</span>
+        <select
+          value={limit}
+          onChange={(e) => {
+            setLimit(Number(e.target.value));
+            setPage(1);
+          }}
+          className="border rounded-md px-2 py-1 bg-white"
+        >
+          {[10, 20, 50, 100].map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Work Orders */}
+      <div className="bg-white rounded-xl shadow-sm border divide-y">
         {loading ? (
-          <div className="flex justify-center py-20">
+          <div className="py-20 flex justify-center">
             <Spin size="large" />
           </div>
         ) : workOrders.length === 0 ? (
-          <p className="text-center text-gray-400 py-10">
+          <p className="text-center py-10 text-gray-400">
             No work orders found.
           </p>
         ) : (
@@ -349,83 +418,92 @@ export default function RepairTracker() {
                       .slice(0, 2)}
                   </div>
                 </div>
-                <div className="">
-                  <h3 className="text-base font-semibold">{wo.customerName}</h3>
-                  <p className="text-sm text-gray-500 flex flex-wrap !mb-1">
+
+                <div>
+                  <h3 className="font-semibold">{wo.customerName}</h3>
+                  <p className="text-gray-500 text-sm">
                     {wo.services?.join(", ")} •{" "}
                     {wo.employeeName || "Unassigned"}
                   </p>
-                  <p className="text-sm text-gray-500 flex flex-col !mb-0">
-                    {(wo.status === "DONE" || wo.status === "COMPLETED") && (
-                      <>
-                        <span className="block">
-                          <strong>Start At:</strong>{" "}
-                          {new Date(wo.openedAt).toLocaleString()}
-                        </span>
-                        <span className="block">
-                          <strong>Close At:</strong>{" "}
-                          {new Date(wo.closedAt).toLocaleString()}
-                        </span>
-                      </>
-                    )}
-                  </p>
+
                   {getStatusTag(wo.status)}
                 </div>
               </div>
 
-              <div className="flex gap-2 mt-3 md:mt-0 justify-end">
+              {/* Actions */}
+              <div className="flex gap-2 mt-3 md:mt-0">
+                {/* ASSIGN */}
                 {wo.status === "OPEN" && (
-                  <button
+                  <Button
                     onClick={() => {
                       setSelectedWO(wo);
+                      setIsReassign(false);
                       setAssignModal(true);
                     }}
-                    className="px-3 py-1 text-xs rounded-md bg-blue-600 !text-white hover:bg-blue-700 font-medium"
+                    className="px-3 py-1 text-xs bg-blue-600 text-white rounded"
                   >
                     <UserPlus className="inline w-4 h-4 mr-1" /> Assign
-                  </button>
+                  </Button>
                 )}
 
+                {/* REASSIGN */}
+                {["ASSIGNED", "WAITING"].includes(wo.status) && (
+                  <Button
+                    onClick={() => {
+                      setSelectedWO(wo);
+                      setIsReassign(true);
+                      setAssignModal(true);
+                    }}
+                    className="px-3 py-1 text-xs bg-indigo-600 hover:bg-indigo-700 !text-white rounded"
+                  >
+                    <UserPlus className="inline w-4 h-4 mr-1" /> Reassign
+                  </Button>
+                )}
+
+                {/* MARK DONE */}
                 {wo.status === "IN_PROGRESS" && (
-                  <button
+                  <Button
                     onClick={() => handleMarkAsDone(wo)}
                     disabled={submitting}
                     className="px-3 py-1 text-xs rounded-md bg-emerald-600 !text-white hover:bg-emerald-700 font-medium"
                   >
                     <CheckCircle className="inline w-4 h-4 mr-1" />{" "}
                     {submitting ? "Processing..." : "Mark as Done"}
-                  </button>
+                  </Button>
                 )}
 
+                {/* COMPLETE */}
                 {wo.status === "DONE" && (
-                  <button
+                  <Button
                     onClick={() => handleComplete(wo)}
                     className="px-3 py-1 text-xs rounded-md bg-teal-600 !text-white hover:bg-teal-700 font-medium"
                   >
-                    <CheckCircle className="inline w-4 h-4 mr-1" /> CheckOut
-                  </button>
+                    <CheckCircle className="inline w-4 h-4 mr-1" /> Checkout
+                  </Button>
                 )}
 
-                {wo.status !== "CANCELLED" &&
-                  wo.status !== "COMPLETED" &&
-                  wo.status !== "DONE" && (
-                    <button
-                      onClick={() => handleCancel(wo)}
-                      className="px-3 py-1 text-xs rounded-md bg-rose-600 !text-white hover:bg-rose-700 font-medium"
-                    >
-                      <XCircle className="inline w-4 h-4 mr-1" /> Cancel
-                    </button>
-                  )}
+                {/* CANCEL */}
+                {["DRAFT", "OPEN", "ASSIGNED", "WAITING"].includes(
+                  wo.status
+                ) && (
+                  <Button
+                    onClick={() => handleCancel(wo)}
+                    className="px-3 py-1 text-xs rounded-md bg-rose-600 !text-white hover:bg-rose-700 font-medium"
+                  >
+                    <XCircle className="inline w-4 h-4 mr-1" /> Cancel
+                  </Button>
+                )}
 
+                {/* PRINT */}
                 {wo.status === "COMPLETED" && (
-                  <div
+                  <Button
                     onClick={() => window.open(`/checkout/${wo.id}`, "_blank")}
                     className="text-sm bg-gradient-to-br from-[#0f74b2] via-sky-800 to-blue-900 
-               p-2 rounded-lg hover:scale-105 transition-transform duration-500 
-               text-white italic flex items-center gap-1 hover:underline cursor-pointer"
+                    p-2 rounded-lg hover:scale-105 transition-transform duration-500 
+                    !text-white italic flex items-center gap-1 hover:underline cursor-pointer"
                   >
                     <Printer size={16} /> Print
-                  </div>
+                  </Button>
                 )}
               </div>
             </div>
@@ -433,13 +511,44 @@ export default function RepairTracker() {
         )}
       </div>
 
-      {/* 👷 Assign Modal */}
+      {/* PAGINATION CONTROLS */}
+      {total > 0 && (
+        <div className="flex justify-between items-center mt-4 text-sm">
+          <span className="text-gray-600">
+            Showing <b>{start}</b>–<b>{end}</b> of <b>{total}</b>
+          </span>
+
+          <div className="flex gap-2">
+            <Button
+              disabled={page === 1}
+              onClick={() => setPage((p) => p - 1)}
+              className="px-3 py-1 border rounded hover:bg-emerald-600 hover:!text-white bg-white"
+            >
+              Previous
+            </Button>
+
+            <Button
+              disabled={page === totalPages}
+              onClick={() => setPage((p) => p + 1)}
+              className="px-3 py-1 border rounded hover:bg-emerald-600 hover:!text-white bg-white"
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* ASSIGN / REASSIGN MODAL */}
       <Modal
         open={assignModal}
         onCancel={() => setAssignModal(false)}
         footer={null}
         centered
-        title={<div className="text-lg font-semibold">Assign Employee</div>}
+        title={
+          <div className="text-lg font-semibold">
+            {isReassign ? "Reassign Employee" : "Assign Employee"}
+          </div>
+        }
       >
         <div className="space-y-4">
           <Select
@@ -448,17 +557,28 @@ export default function RepairTracker() {
             onChange={setSelectedEmp}
             placeholder="Select an employee..."
           />
-          <button
-            onClick={() => handleAssign(selectedWO.id)}
+
+          <Button
+            onClick={() =>
+              isReassign
+                ? handleReassign(selectedWO.id)
+                : handleAssign(selectedWO.id)
+            }
             disabled={assigning}
-            className="w-full py-2 rounded-md bg-blue-600 hover:bg-blue-700 !text-white font-medium"
+            className="w-full py-2 rounded-md bg-blue-theme hover:bg-blue-bold !text-white font-medium"
           >
-            {assigning ? "Assigning..." : "Confirm Assignment"}
-          </button>
+            {assigning
+              ? isReassign
+                ? "Reassigning..."
+                : "Assigning..."
+              : isReassign
+              ? "Confirm Reassignment"
+              : "Confirm Assignment"}
+          </Button>
         </div>
       </Modal>
 
-      {/* ✅ Complete Modal */}
+      {/* COMPLETE MODAL */}
       <Modal
         open={completeModal}
         onCancel={() => setCompleteModal(false)}
@@ -476,7 +596,7 @@ export default function RepairTracker() {
       >
         {selectedWO ? (
           <div className="space-y-6">
-            {/* ================== CUSTOMER INFO ================== */}
+            {/* CUSTOMER INFO */}
             <div className="bg-white p-4 rounded-lg border shadow-sm">
               <div className="grid md:grid-cols-2 gap-4 text-sm">
                 <div>
@@ -485,6 +605,7 @@ export default function RepairTracker() {
                   </p>
                   <p className="font-semibold">{selectedWO.customerName}</p>
                 </div>
+
                 <div>
                   <p className="text-gray-500 flex items-center gap-1">
                     <UserPlus size={15} /> Employee
@@ -529,7 +650,7 @@ export default function RepairTracker() {
               </div>
             </div>
 
-            {/* ================== SERVICES ================== */}
+            {/* SERVICES */}
             <div className="bg-white p-4 rounded-lg border shadow-sm">
               <h4 className="text-lg font-semibold text-gray-700 mb-3 flex items-center gap-2">
                 <DollarSign className="text-indigo-500" /> Services (Reference
@@ -575,7 +696,7 @@ export default function RepairTracker() {
                 </tbody>
               </table>
             </div>
-            {/* ================== ADDITIONAL LABOR ================== */}
+
             <CheckoutSection
               selectedWO={selectedWO}
               fetchWorkOrders={fetchWorkOrders}
@@ -590,14 +711,14 @@ export default function RepairTracker() {
         )}
       </Modal>
 
-      {/* ❌ Cancel Confirmation */}
+      {/* CANCEL CONFIRM */}
       <ConfirmDialog
         open={cancelDialog}
         onCancel={() => setCancelDialog(false)}
         type="danger"
         onConfirm={confirmCancel}
         title="Cancel Work Order?"
-        description="This will permanently cancel this work order. Are you sure?"
+        description="This will permanently cancel the work order."
       />
     </div>
   );

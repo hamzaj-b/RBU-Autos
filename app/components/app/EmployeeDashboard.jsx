@@ -10,6 +10,8 @@ import {
   Wrench,
   Activity,
   UserCircle2,
+  CircleStop,
+  Play,
 } from "lucide-react";
 import {
   LineChart,
@@ -20,12 +22,26 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { Button } from "@/components/ui/button";
+import useReverseGeocode from "@/hooks/useReverseGeocode";
 
+// ========================================================================
+//  EMPLOYEE DASHBOARD
+// ========================================================================
 export default function EmployeeDashboard() {
-  const { token } = useAuth();
+  const { token, sessionId, setSessionId } = useAuth();
+
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
 
+  const [sessionLoading, setSessionLoading] = useState(false);
+  const [stopLoading, setStopLoading] = useState(false);
+  const [sessionStarted, setSessionStarted] = useState(false);
+
+  // Auto reverse geolocation hook
+  const location = useReverseGeocode();
+
+  // Fetch employee dashboard data
   useEffect(() => {
     if (!token) return;
     (async () => {
@@ -44,6 +60,85 @@ export default function EmployeeDashboard() {
     })();
   }, [token]);
 
+  // Restore existing session
+  useEffect(() => {
+    if (sessionId) setSessionStarted(true);
+  }, [sessionId]);
+
+  // START SESSION — now calling employeeSession/start
+  const startSession = async () => {
+    if (!token) return;
+    if (!location.address) return;
+
+    setSessionLoading(true);
+
+    try {
+      const res = await fetch("/api/employeeSession/start", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          source: "web",
+          location: location.address,
+          latitude: location.latitude,
+          longitude: location.longitude,
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error);
+
+      // Save sessionId globally
+      setSessionId(json.session.id);
+      localStorage.setItem("sessionId", json.session.id);
+
+      setSessionStarted(true);
+    } catch (err) {
+      console.error("Session start failed:", err);
+    } finally {
+      setSessionLoading(false);
+    }
+  };
+
+  // STOP SESSION — calling /api/employeeSession/stop
+  const stopSession = async () => {
+    if (!token || !sessionId) return;
+
+    setStopLoading(true);
+
+    try {
+      const res = await fetch("/api/employeeSession/stop", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          sessionId,
+          source: "web",
+          latitude: location.latitude,
+          longitude: location.longitude,
+          location: location.address,
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error);
+
+      // Clear global session
+      localStorage.removeItem("sessionId");
+      setSessionId(null);
+      setSessionStarted(false);
+    } catch (err) {
+      console.error("Stop session failed:", err);
+    } finally {
+      setStopLoading(false);
+    }
+  };
+
+  // Loading screen
   if (loading)
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-50">
@@ -62,13 +157,12 @@ export default function EmployeeDashboard() {
 
   return (
     <div className="p-3 sm:p-6 bg-gray-50 min-h-screen overflow-x-hidden">
-      {/* ✅ Responsive Table + Text Wrap Fix */}
+      {/* GLOBAL STYLE FIXES */}
       <style jsx global>{`
         html,
         body {
           overflow-x: hidden !important;
         }
-
         td,
         th,
         h2,
@@ -78,7 +172,6 @@ export default function EmployeeDashboard() {
           white-space: normal !important;
           word-wrap: break-word !important;
         }
-
         @media (max-width: 640px) {
           table {
             width: 100% !important;
@@ -103,8 +196,6 @@ export default function EmployeeDashboard() {
             border: none !important;
             padding: 0.25rem 0 !important;
             font-size: 0.9rem;
-            word-wrap: break-word !important;
-            white-space: normal !important;
           }
           table td::before {
             content: attr(data-label);
@@ -115,28 +206,104 @@ export default function EmployeeDashboard() {
         }
       `}</style>
 
-      {/* 👤 Employee Info */}
-      <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border border-gray-100">
-        <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
-          <UserCircle2 className="text-blue-600 flex-shrink-0" size={50} />
-          <div className="min-w-0">
-            <h2 className="text-lg sm:text-2xl font-bold text-gray-800 break-words">
-              {employee.fullName}
-            </h2>
-            <p className="text-gray-500 text-sm sm:text-base break-words">
-              {employee.title || "Employee"}
-            </p>
-          </div>
-        </div>
+      {/* EMPLOYEE INFO + SESSION CONTROLS */}
+      <div className="bg-white rounded-xl shadow-sm p-5 sm:p-7 border border-gray-100 mb-6">
+        <div className="flex flex-col sm:flex-row justify-between gap-6">
+          {/* LEFT: Employee Profile */}
+          <div className="flex items-start gap-4">
+            <div className="w-16 h-16 flex items-center justify-center rounded-full bg-gradient-to-tl from-blue-bold to-blue-theme text-white font-semibold text-lg shadow-sm">
+              {employee.fullName
+                ?.split(" ")
+                .map((n) => n[0]?.toUpperCase())
+                .join("")
+                .slice(0, 2)}
+            </div>
 
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
-          <Tag color="green" className="text-xs sm:text-sm whitespace-nowrap">
-            Active
-          </Tag>
+            <div className="min-w-0">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight">
+                {employee.fullName}
+              </h2>
+
+              <p className="text-gray-500 text-sm sm:text-base mt-1">
+                {employee.title || "Employee"}
+              </p>
+
+              <div className="mt-2">
+                <Tag
+                  color="green"
+                  className="px-3 py-1 text-xs rounded-md font-medium"
+                >
+                  Active Employee
+                </Tag>
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT: Session Actions */}
+          <div className="flex flex-col items-end justify-center gap-3 w-full sm:w-auto">
+            {/* Section Title */}
+            <span className="text-gray-700 text-sm font-semibold tracking-wide flex items-center gap-2">
+              <Clock className="text-blue-600" size={18} />
+              Work Session
+            </span>
+
+            {/* Buttons */}
+            <div className="flex gap-3 mt-1">
+              {/* START SESSION */}
+              <Button
+                disabled={
+                  sessionStarted ||
+                  sessionLoading ||
+                  location.loading ||
+                  !!location.error
+                }
+                onClick={startSession}
+                className="bg-blue-theme hover:bg-blue-bold !text-white px-5 py-2 rounded-lg shadow-sm disabled:opacity-40 transition-all"
+              >
+                <Play className="w-4 h-4" />
+                {sessionLoading
+                  ? "Starting..."
+                  : sessionStarted
+                  ? "Session Started"
+                  : "Start Session"}
+              </Button>
+
+              {/* STOP SESSION */}
+              <Button
+                disabled={
+                  !sessionStarted ||
+                  stopLoading ||
+                  location.loading ||
+                  !!location.error
+                }
+                onClick={stopSession}
+                className="bg-gradient-to-bl from-red-600 to-rose-800 hover:bg-red-700 !text-white px-5 py-2 rounded-lg shadow-sm disabled:opacity-40 transition-all"
+              >
+                <CircleStop className="w-4 h-4" />
+                {stopLoading ? "Stopping..." : "Stop Session"}
+              </Button>
+            </div>
+
+            {/* SESSION STATUS TEXT */}
+            <div className="flex items-center gap-2 mt-1">
+              {location.loading ? (
+                <p className="text-gray-400 text-xs">
+                  Detecting your location…
+                </p>
+              ) : location.error ? (
+                <p className="text-red-500 text-xs">⚠ {location.error}</p>
+              ) : (
+                <p className="text-gray-500 text-xs flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-green-500 inline-block"></span>
+                  {sessionStarted ? "Session Active" : "No Active Session"}
+                </p>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* 📊 Stat Summary */}
+      {/* STATS */}
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 mb-8">
         <StatCard
           icon={<Briefcase className="w-5 h-5" />}
@@ -163,12 +330,13 @@ export default function EmployeeDashboard() {
         />
       </div>
 
-      {/* 📈 Weekly Chart */}
+      {/* WEEKLY CHART */}
       <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-100 mb-8 overflow-hidden">
         <h3 className="text-base sm:text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
           <Activity className="text-blue-600" size={20} />
           Weekly Performance
         </h3>
+
         <div className="w-full h-[240px] sm:h-[300px] overflow-visible">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
@@ -191,7 +359,7 @@ export default function EmployeeDashboard() {
         </div>
       </div>
 
-      {/* 🕓 Recent Orders */}
+      {/* RECENT ORDERS */}
       <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-100">
         <h3 className="text-base sm:text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
           <Clock className="text-blue-600" size={20} />
@@ -217,10 +385,7 @@ export default function EmployeeDashboard() {
                     key={wo.id}
                     className="border-b hover:bg-gray-50 transition"
                   >
-                    <td
-                      className="py-2 px-3 sm:px-4 text-gray-800 break-words"
-                      data-label="Customer"
-                    >
+                    <td className="py-2 px-3 sm:px-4" data-label="Customer">
                       {wo.customerName || "—"}
                     </td>
                     <td className="py-2 px-3 sm:px-4" data-label="Status">
@@ -236,16 +401,10 @@ export default function EmployeeDashboard() {
                         {wo.status === "DONE" ? "COMPLETED" : wo.status}
                       </Tag>
                     </td>
-                    <td
-                      className="py-2 px-3 sm:px-4 text-gray-700 break-words"
-                      data-label="Services"
-                    >
+                    <td className="py-2 px-3 sm:px-4" data-label="Services">
                       {wo.services?.length ? wo.services.join(", ") : "—"}
                     </td>
-                    <td
-                      className="py-2 px-3 sm:px-4 text-gray-600 whitespace-nowrap"
-                      data-label="Closed At"
-                    >
+                    <td className="py-2 px-3 sm:px-4" data-label="Closed At">
                       {wo.closedAt
                         ? new Date(wo.closedAt).toLocaleDateString()
                         : "—"}
@@ -261,7 +420,9 @@ export default function EmployeeDashboard() {
   );
 }
 
-// ✅ Reusable Stat Card
+// ========================================================================
+//  REUSABLE STAT CARD
+// ========================================================================
 function StatCard({ icon, title, value, color = "text-gray-800" }) {
   return (
     <Card
@@ -270,12 +431,8 @@ function StatCard({ icon, title, value, color = "text-gray-800" }) {
     >
       <div className="flex items-center justify-between gap-2 sm:gap-4">
         <div className="truncate">
-          <p className="text-xs sm:text-sm text-gray-500 break-words">
-            {title}
-          </p>
-          <h2 className={`text-lg sm:text-xl font-bold ${color} break-words`}>
-            {value}
-          </h2>
+          <p className="text-xs sm:text-sm text-gray-500">{title}</p>
+          <h2 className={`text-lg sm:text-xl font-bold ${color}`}>{value}</h2>
         </div>
         <div className="text-gray-400 flex-shrink-0">{icon}</div>
       </div>
