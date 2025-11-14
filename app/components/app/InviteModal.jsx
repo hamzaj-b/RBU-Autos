@@ -35,28 +35,40 @@ export default function InviteModal({
           <h3 className="text-base font-semibold text-gray-700 mb-3">
             👤 Customer Information
           </h3>
-          <div>
-            <label className="text-sm font-medium text-gray-600">
-              Full Name
-            </label>
-            <Input
-              placeholder="Full Name"
-              value={formData.fullName}
-              onChange={(e) =>
-                setFormData((p) => ({ ...p, fullName: e.target.value }))
-              }
-            />
-            <div>
-              <label className="text-sm font-medium text-gray-600">Email</label>
-              <Input
-                placeholder="Email"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData((p) => ({ ...p, email: e.target.value }))
-                }
-              />
-            </div>
-          </div>
+
+          {/* Full Name */}
+          <label className="text-sm font-medium text-gray-600">Full Name</label>
+          <Input
+            placeholder="Full Name"
+            value={formData.fullName}
+            onChange={(e) =>
+              setFormData((p) => ({ ...p, fullName: e.target.value }))
+            }
+          />
+
+          {/* Email */}
+          <label className="text-sm font-medium text-gray-600 mt-3 block">
+            Email
+          </label>
+          <Input
+            placeholder="Email"
+            value={formData.email}
+            onChange={(e) =>
+              setFormData((p) => ({ ...p, email: e.target.value }))
+            }
+          />
+
+          {/* Phone */}
+          <label className="text-sm font-medium text-gray-600 mt-3 block">
+            Phone
+          </label>
+          <Input
+            placeholder="+13001234567"
+            value={formData.phone}
+            onChange={(e) =>
+              setFormData((p) => ({ ...p, phone: e.target.value }))
+            }
+          />
         </div>
 
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 shadow-sm flex items-start gap-3">
@@ -78,7 +90,7 @@ export default function InviteModal({
               : "bg-amber-500 hover:bg-amber-600 text-white"
           }`}
         >
-          <Send className="w-4 h-4 " />
+          <Send className="w-4 h-4 mr-2" />
           {loading ? "Sending Invite..." : "Send Invite"}
         </Button>
       </div>

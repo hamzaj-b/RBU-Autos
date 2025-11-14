@@ -131,38 +131,44 @@ export default function CustomerManagement() {
 
   // ─── Invite ───────────────────────────────────────
   const handleInvite = async () => {
-    if (!formData.fullName || !formData.email) {
-      message.warning("Full name and email required");
-      toast.error("Full name and email required to send invite!");
+    if (!formData.fullName || !formData.email || !formData.phone) {
+      toast.error("Full name, email, and phone are required!");
       return;
     }
+
+    // // Basic phone check
+    // if (!formData.phone.startsWith("+") || formData.phone.length < 10) {
+    //   toast.error("Invalid phone format. Use E.164 like +13001234567");
+    //   return;
+    // }
 
     try {
       setLoading(true);
       const res = await fetch("/api/auth/admin/customer", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
           token,
           email: formData.email,
           fullName: formData.fullName,
+          phone: formData.phone,
         }),
       });
 
       const data = await res.json();
       if (res.ok) {
-        message.success("Invite sent successfully!");
-        toast.success("Invite email sent successfully!");
+        toast.success("Invite sent successfully!");
         setInviteModalOpen(false);
+        setFormData({ fullName: "", email: "", phone: "" });
         fetchCustomers();
       } else {
-        message.error(data.error || "Failed to send invite");
-        toast.error(data.error || "Failed to send customer invite!");
+        toast.error(data.error || "Failed to send invite!");
       }
     } catch (err) {
       console.error("Invite error:", err);
-      message.error("Unexpected error");
-      toast.error("Unexpected error while sending invite!");
+      toast.error("Unexpected error!");
     } finally {
       setLoading(false);
     }
@@ -350,7 +356,13 @@ export default function CustomerManagement() {
                 email: "",
                 number: "",
                 addressJson: "",
-                vehicleJson: { make: "", model: "", variant: "", info: "" ,color:""},
+                vehicleJson: {
+                  make: "",
+                  model: "",
+                  variant: "",
+                  info: "",
+                  color: "",
+                },
                 notes: "",
               });
               setModalOpen(true);
@@ -415,7 +427,7 @@ export default function CustomerManagement() {
         formData={formData}
         setFormData={setFormData}
         loading={loading}
-        handleInvite={() => {}}
+        handleInvite={handleInvite}
       />
     </div>
   );

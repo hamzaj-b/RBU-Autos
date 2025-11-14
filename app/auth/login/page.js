@@ -226,7 +226,7 @@ export default function SignInPage() {
                 <input
                   type="text"
                   className="w-full border border-gray-300 rounded-lg p-2.5"
-                  placeholder="Email or +92XXXXXXXXXX"
+                  placeholder="Email or +1XXXXXXXXXX"
                   value={emailOrPhone}
                   onChange={(e) => setEmailOrPhone(e.target.value)}
                 />

@@ -19,7 +19,23 @@ const transporter = nodemailer.createTransport({
 
 async function POST(req) {
   try {
-    const { token, email, fullName } = await req.json();
+    const { token, email, fullName, phone } = await req.json();
+
+    // Validate
+    if (!email || !fullName || !phone) {
+      return NextResponse.json(
+        { error: "email, fullName and phone are required." },
+        { status: 400 }
+      );
+    }
+
+    // // Basic phone validation
+    // if (!phone.startsWith("+") || phone.length < 10) {
+    //   return NextResponse.json(
+    //     { error: "Invalid phone format. Use E.164 like +13001234567" },
+    //     { status: 400 }
+    //   );
+    // }
 
     // Verify admin token
     const decoded = jwt.verify(token, SECRET_KEY);
@@ -28,18 +44,23 @@ async function POST(req) {
     }
 
     // Check if user exists
-    const existing = await prisma.user.findUnique({ where: { email } });
+    const existing = await prisma.user.findFirst({
+      where: { OR: [{ email }, { phone }] },
+    });
+
     if (existing) {
       return NextResponse.json(
-        { error: "User already exists" },
+        { error: "User with this email or phone already exists" },
         { status: 400 }
       );
     }
 
+    // Create user + profile
     const result = await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
           email,
+          phone,
           userType: "CUSTOMER",
           passwordEncrypted: null,
           isActive: true,
@@ -58,7 +79,7 @@ async function POST(req) {
       return { user, profile };
     });
 
-    // Generate unique password setup token
+    // Password setup token
     const setPassToken = jwt.sign(
       {
         id: result.user.id,
@@ -72,6 +93,7 @@ async function POST(req) {
 
     const link = `${APP_URL}/auth/newPassword?token=${setPassToken}`;
 
+    // Send email
     await transporter.sendMail({
       from: `"RBU Autos Garage CRM" <${process.env.EMAIL_USER}>`,
       to: email,
@@ -80,7 +102,7 @@ async function POST(req) {
     });
 
     return NextResponse.json({
-      message: "✅ Customer invited successfully. Email sent.",
+      message: "Customer invited successfully. Email sent.",
       link,
       user: result.user,
       profile: result.profile,
