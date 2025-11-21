@@ -111,7 +111,7 @@ function NewPasswordForm() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-theme text-black font-bold py-2.5 rounded-lg hover:bg-blue-600 disabled:opacity-50"
+            className="w-full bg-blue-theme !text-white font-bold py-2.5 rounded-lg hover:bg-blue-bold disabled:opacity-50"
           >
             {loading ? "Submitting..." : "Reset Password"}
           </button>

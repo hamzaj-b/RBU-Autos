@@ -6,18 +6,33 @@ const crypto = require("crypto");
 const passwordSetupTemplate = require("@/lib/emailTemplates/newPassword");
 
 const prisma = new PrismaClient();
+
 const SECRET_KEY = process.env.JWT_SECRET || "supersecret";
 const APP_URL = process.env.APP_URL || "https://garage-mechanic-crm.vercel.app";
 
+// ============================
+// DYNAMIC SMTP TRANSPORTER
+// ============================
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT) || 587,
+  secure: process.env.SMTP_SECURE === "true", // "true" or "false"
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
   },
+  // TLS override only when explicitly needed
+  ...(process.env.SMTP_IGNORE_TLS === "true"
+    ? { tls: { rejectUnauthorized: false } }
+    : {}),
 });
 
+// ============================
+// ROUTE
+// ============================
 async function POST(req) {
+  let createdUserId = null;
+
   try {
     const { token, email, fullName, phone } = await req.json();
 
@@ -29,21 +44,13 @@ async function POST(req) {
       );
     }
 
-    // // Basic phone validation
-    // if (!phone.startsWith("+") || phone.length < 10) {
-    //   return NextResponse.json(
-    //     { error: "Invalid phone format. Use E.164 like +13001234567" },
-    //     { status: 400 }
-    //   );
-    // }
-
-    // Verify admin token
+    // Verify admin
     const decoded = jwt.verify(token, SECRET_KEY);
     if (decoded.userType !== "ADMIN") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    // Check if user exists
+    // Check existing
     const existing = await prisma.user.findFirst({
       where: { OR: [{ email }, { phone }] },
     });
@@ -55,7 +62,9 @@ async function POST(req) {
       );
     }
 
-    // Create user + profile
+    // ============================
+    // CREATE USER + PROFILE
+    // ============================
     const result = await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
@@ -68,7 +77,10 @@ async function POST(req) {
       });
 
       const profile = await tx.customerProfile.create({
-        data: { userId: user.id, fullName },
+        data: {
+          userId: user.id,
+          fullName,
+        },
       });
 
       await tx.user.update({
@@ -76,10 +88,14 @@ async function POST(req) {
         data: { customerProfileId: profile.id },
       });
 
+      createdUserId = user.id;
+
       return { user, profile };
     });
 
-    // Password setup token
+    // ============================
+    // CREATE PASSWORD TOKEN
+    // ============================
     const setPassToken = jwt.sign(
       {
         id: result.user.id,
@@ -93,9 +109,13 @@ async function POST(req) {
 
     const link = `${APP_URL}/auth/newPassword?token=${setPassToken}`;
 
-    // Send email
+    // ============================
+    // SEND EMAIL
+    // ============================
     await transporter.sendMail({
-      from: `"RBU Autos Garage CRM" <${process.env.EMAIL_USER}>`,
+      from: `"RBU Autos Garage CRM" <${
+        process.env.SMTP_FROM || process.env.SMTP_USER
+      }>`,
       to: email,
       subject: "Set Your Password - RBU Autos Garage CRM",
       html: passwordSetupTemplate(fullName, link),
@@ -109,8 +129,26 @@ async function POST(req) {
     });
   } catch (err) {
     console.error("Invite customer error:", err);
+
+    // ============================
+    // ROLLBACK USER + PROFILE
+    // ============================
+    if (createdUserId) {
+      try {
+        await prisma.customerProfile.deleteMany({
+          where: { userId: createdUserId },
+        });
+        await prisma.user.delete({ where: { id: createdUserId } });
+      } catch (rollbackErr) {
+        console.error("Rollback failed:", rollbackErr);
+      }
+    }
+
     return NextResponse.json(
-      { error: "Failed to invite customer" },
+      {
+        error: "Failed to invite customer",
+        details: err.message,
+      },
       { status: 500 }
     );
   }
