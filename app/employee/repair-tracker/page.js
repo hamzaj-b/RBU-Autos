@@ -86,7 +86,7 @@ export default function EmployeeRepairTracker() {
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-
+     console.log("workorder data " , data.workOrders);
       setWorkOrders(data.workOrders || []);
       setTotalPages(data.totalPages || 1);
     } catch (err) {

@@ -11,7 +11,7 @@ export default function useCustomerNotifications() {
   useEffect(() => {
     // 🚫 Wait until AuthContext has fully loaded
     if (loading) {
-      console.log("⏳ Waiting for AuthContext to finish loading...");
+      // console.log("⏳ Waiting for AuthContext to finish loading...");
       return;
     }
 
@@ -21,7 +21,7 @@ export default function useCustomerNotifications() {
     }
 
     const channelName = `customer-${user.customerId}`;
-    console.log("🧠 Attempting to subscribe to:", channelName);
+    // console.log("🧠 Attempting to subscribe to:", channelName);
 
     // ✅ Subscribe after user is ready
     const channel = pusherClient.subscribe(channelName);

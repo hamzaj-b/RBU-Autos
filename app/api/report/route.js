@@ -54,13 +54,15 @@ export async function GET(req) {
     }
 
     if (dateFrom && dateTo) {
-      const from = new Date(dateFrom);
-      const to = new Date(dateTo);
+      const from = new Date(`${dateFrom}T00:00:00`);
+      const to = new Date(`${dateTo}T23:59:59`);
+
       if (!isNaN(from) && !isNaN(to)) {
-        where.createdAt = {
+        where.openedAt = {
           gte: from,
           lte: to,
         };
+
       }
     }
 

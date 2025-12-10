@@ -11,6 +11,6 @@ export async function POST() {
       bookingId: "TEST-BOOKING-123",
     }
   );
-  console.log("✅ Test event triggered for customer-68e0c31f153f0482d88e51fd");
+  // console.log("✅ Test event triggered for customer-68e0c31f153f0482d88e51fd");
   return NextResponse.json({ ok: true });
 }

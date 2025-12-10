@@ -360,7 +360,7 @@ export default function WalkInBookingPage() {
                   Customer
                 </label>
                 <Select
-                  placeholder="Search or select customer"
+                  placeholder="Select customer or Search by name, email, or phone..."
                   options={customers}
                   value={selectedCustomer}
                   onChange={setSelectedCustomer}

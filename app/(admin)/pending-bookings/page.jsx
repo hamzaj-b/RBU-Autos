@@ -77,7 +77,7 @@ export default function PreBookingsPage() {
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      console.log(data);
+      // console.log(data);
       setPreBookings(data.bookings || []);
     } catch (err) {
       console.error(err);

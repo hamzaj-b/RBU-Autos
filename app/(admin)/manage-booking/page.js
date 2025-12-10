@@ -112,7 +112,7 @@ export default function BookingsPage() {
 
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Failed to fetch bookings");
-        console.log("booking manage data" , data);
+        // console.log("booking manage data" , data);
         setBookings(data.bookings || []);
         setPagination((prev) => ({
           ...prev,
@@ -130,12 +130,10 @@ export default function BookingsPage() {
       }
     },
     [
-      token,
-      debouncedSearch,
-      filters.status,
-      filters.type,
-      pagination.page,
-      pagination.limit,
+  token,
+  debouncedSearch,
+  filters.status,
+  filters.type,
     ]
   );
 
@@ -318,6 +316,7 @@ export default function BookingsPage() {
     },
   ];
 
+  
   // 🔹 Filters Bar
   const FiltersBar = () => (
     <div className="flex flex-wrap gap-3 items-center mb-4">

@@ -88,9 +88,9 @@ export async function PATCH(req, { params }) {
             notes: updated.notes,
           }
         );
-        console.log(
-          `📢 Notified customer-${booking.customerId} of booking rejection`
-        );
+        // console.log(
+        //   `📢 Notified customer-${booking.customerId} of booking rejection`
+        // );
 
         // 💾 🆕 STORE NOTIFICATION
         await prisma.notification.create({
@@ -105,7 +105,7 @@ export async function PATCH(req, { params }) {
             },
           },
         });
-        console.log("🗂️ Notification stored for rejected booking.");
+        // console.log("🗂️ Notification stored for rejected booking.");
       } catch (err) {
         console.error("⚠️ Pusher customer rejection notify failed:", err);
       }
@@ -217,13 +217,13 @@ export async function PATCH(req, { params }) {
           }
         );
 
-        console.log(
-          `📢 Notified customer-${
-            booking.customerId
-          } of booking approval (employee: ${
-            employee?.fullName
-          }, services: ${serviceNames.join(", ")})`
-        );
+        // console.log(
+        //   `📢 Notified customer-${
+        //     booking.customerId
+        //   } of booking approval (employee: ${
+        //     employee?.fullName
+        //   }, services: ${serviceNames.join(", ")})`
+        // );
 
         // 💾 🆕 STORE NOTIFICATION
         // 🔍 Find the actual user linked to this customer profile
@@ -251,14 +251,14 @@ export async function PATCH(req, { params }) {
             },
           });
 
-          console.log(`✅ Notification stored for user ${customerUser.id}`);
+          // console.log(`✅ Notification stored for user ${customerUser.id}`);
         } else {
           console.warn(
             `⚠️ No matching User found for CustomerProfile ID ${booking.customerId}`
           );
         }
 
-        console.log("🗂️ Notification stored for approved booking.");
+        // console.log("🗂️ Notification stored for approved booking.");
       } catch (err) {
         console.error("⚠️ Pusher trigger failed:", err);
       }

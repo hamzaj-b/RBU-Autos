@@ -32,11 +32,11 @@ const fetchWorkOrders = async () => {
         const data = await res.json();
 
         if (res.ok) {
-          console.groupCollapsed("📦 Work Orders API Response");
-          console.log("✅ Summary:", data.summary);
-          console.log("📊 Pagination:", data.pagination);
-          console.table(data.workOrders);
-          console.groupEnd();
+          // console.groupCollapsed("📦 Work Orders API Response");
+          // console.log("✅ Summary:", data.summary);
+          // console.log("📊 Pagination:", data.pagination);
+          // console.table(data.workOrders);
+          // console.groupEnd();
 
           setWorkOrders(data.workOrders || []);
         } else {

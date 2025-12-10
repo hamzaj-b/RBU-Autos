@@ -61,7 +61,7 @@ const minutesToHoursString = (minutes) => {
   const handleViewDetails = (item) => {
     setSelectedWO(item);
     setViewModal(true);
-    console.log("selectedWO" ,selectedWO);
+    // console.log("selectedWO" ,selectedWO);
   };
 
   // ✅ Accept Work Order API call
@@ -120,7 +120,7 @@ const minutesToHoursString = (minutes) => {
   const handleStart = (item) => {
     message.info(`Starting work order #${item.id}...`);
   };
-console.log("workOrdersworkOrders" , workOrders);
+// console.log("workOrdersworkOrders" , workOrders);
   return (
     <div className={containerWidth}>
       <h2 className="text-lg sm:text-[22px] px-3 sm:px-4 py-2 sm:py-3 text-gray-500 font-semibold mb-2 sm:mb-4">

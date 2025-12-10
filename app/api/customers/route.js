@@ -100,11 +100,14 @@ async function GET(req) {
 
     const skip = (page - 1) * limit;
 
-    // ✅ Build dynamic search filter
+    // 🔥 Normalize phone search (remove spaces, + , - etc)
+    const cleanSearch = search ? search.replace(/\D/g, "") : null;
+
+    // 🔍 Dynamic search conditions
     const where = search
       ? {
           OR: [
-            // Full name search
+            // Name search
             { fullName: { contains: search, mode: "insensitive" } },
 
             // Email search
@@ -116,14 +119,18 @@ async function GET(req) {
               },
             },
 
-            // Phone search
-            {
-              User: {
-                some: {
-                  phone: { contains: search, mode: "insensitive" },
-                },
-              },
-            },
+            // Phone search (normalized)
+            cleanSearch
+              ? {
+                  User: {
+                    some: {
+                      phone: {
+                        contains: cleanSearch,
+                      },
+                    },
+                  },
+                }
+              : undefined,
           ],
         }
       : {};
@@ -163,5 +170,6 @@ async function GET(req) {
     );
   }
 }
+
 
 module.exports = { POST, GET };

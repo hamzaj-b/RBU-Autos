@@ -32,11 +32,11 @@ function getCloseTimeUtcForLogin(loginAt, closeTime, timezone) {
   const offsetMinutes = (tzShifted.getTime() - localDate.getTime()) / 60000;
   const utcDate = new Date(localDate.getTime() + offsetMinutes * 60000);
 
-  console.log("🔹 [getCloseTimeUtcForLogin]");
-  console.log("Local Date:", localDateStr);
-  console.log("Local CloseTime:", closeTime);
-  console.log("Offset (min):", offsetMinutes);
-  console.log("→ Computed UTC CloseTime:", utcDate.toISOString());
+  // console.log("🔹 [getCloseTimeUtcForLogin]");
+  // console.log("Local Date:", localDateStr);
+  // console.log("Local CloseTime:", closeTime);
+  // console.log("Offset (min):", offsetMinutes);
+  // console.log("→ Computed UTC CloseTime:", utcDate.toISOString());
 
   return utcDate;
 }
@@ -70,9 +70,9 @@ async function POST(req) {
     const { timezone, closeTime } = settings;
     const now = new Date();
 
-    console.log("🕓 Current UTC Now:", now.toISOString());
-    console.log("🌍 Business Timezone:", timezone);
-    console.log("🏁 Garage CloseTime:", closeTime);
+    // console.log("🕓 Current UTC Now:", now.toISOString());
+    // console.log("🌍 Business Timezone:", timezone);
+    // console.log("🏁 Garage CloseTime:", closeTime);
 
     // 🔍 Find any open session
     const existingSession = await prisma.employeeSession.findFirst({
@@ -95,23 +95,23 @@ async function POST(req) {
       const loginLocalDay = localFormatter.format(loginAt);
       const nowLocalDay = localFormatter.format(now);
 
-      console.log("📅 Login Local Day:", loginLocalDay);
-      console.log("📅 Now Local Day:", nowLocalDay);
+      // console.log("📅 Login Local Day:", loginLocalDay);
+      // console.log("📅 Now Local Day:", nowLocalDay);
 
       let logoutAt;
 
       if (loginLocalDay !== nowLocalDay) {
         // 🕒 Previous-day session → close at that day's garage close time
         logoutAt = getCloseTimeUtcForLogin(loginAt, closeTime, timezone);
-        console.log(
-          `💤 Previous-day session found. Closing at garage close time (${logoutAt.toISOString()})`
-        );
+        // console.log(
+        //   `💤 Previous-day session found. Closing at garage close time (${logoutAt.toISOString()})`
+        // );
       } else {
         // 🕕 Same-day session → close now
         logoutAt = now;
-        console.log(
-          `🕒 Same-day session found. Closing now (${logoutAt.toISOString()})`
-        );
+        // console.log(
+        //   `🕒 Same-day session found. Closing now (${logoutAt.toISOString()})`
+        // );
       }
 
       // Ensure logoutAt >= loginAt
@@ -126,7 +126,7 @@ async function POST(req) {
         data: { logoutAt },
       });
 
-      console.log(`✅ Closed previous session at ${logoutAt.toISOString()}`);
+      // console.log(`✅ Closed previous session at ${logoutAt.toISOString()}`);
     }
 
     // 💾 Create new session
@@ -142,7 +142,7 @@ async function POST(req) {
       },
     });
 
-    console.log(`✅ New session started at ${now.toISOString()}`);
+    // console.log(`✅ New session started at ${now.toISOString()}`);
 
     return NextResponse.json({
       message: "Employee session started successfully",

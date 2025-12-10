@@ -207,9 +207,9 @@ async function POST(req) {
       });
     }
 
-    console.log(
-      `✅ Pre-booking stored: ${customerName} (${serviceNames.join(", ")})`
-    );
+    // console.log(
+    //   `✅ Pre-booking stored: ${customerName} (${serviceNames.join(", ")})`
+    // );
 
     return NextResponse.json(
       {
