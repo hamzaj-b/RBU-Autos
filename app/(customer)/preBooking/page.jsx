@@ -303,9 +303,9 @@ export default function CustomerPreBookingPage() {
                     </span>
                   </span>
                 </div>
-                <div className="font-semibold text-[#0f74b2] text-base sm:text-lg">
+                {/* <div className="font-semibold text-[#0f74b2] text-base sm:text-lg">
                   Total: ${totalPrice}
-                </div>
+                </div> */}
               </div>
 
               {/* Garage Timings */}

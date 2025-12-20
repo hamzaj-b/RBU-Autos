@@ -375,7 +375,7 @@ export default function EmployeeRepairTracker() {
                     <button
                       disabled={isLoading}
                       onClick={() => handleStart(wo)}
-                      className={`px-3 py-2 text-xs rounded-md text-white ${
+                      className={`px-3 py-2 text-xs rounded-md !text-white ${
                         isLoading
                           ? "bg-gray-400"
                           : "bg-blue-theme hover:bg-blue-bold"
@@ -456,9 +456,9 @@ export default function EmployeeRepairTracker() {
             </p>
             <p>
               <strong>Vehicle:</strong>{" "}
-              {selectedWO.raw.customer.vehicleJson.make} •{" "}
-              {selectedWO.raw.customer.vehicleJson.model} •{" "}
-              {selectedWO.raw.customer.vehicleJson.variant}
+              {selectedWO.raw.vehicleJson.make} •{" "}
+              {selectedWO.raw.vehicleJson.model} •{" "}
+              {selectedWO.raw.vehicleJson.variant}
             </p>
             <p>
               <strong>Total Time:</strong>{" "}

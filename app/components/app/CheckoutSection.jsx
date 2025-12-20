@@ -242,6 +242,10 @@ export default function CheckoutSection({
           <span>Parts Total:</span>
           <span>${partsTotal.toFixed(2)}</span>
         </div>
+        <div className="flex justify-between font-medium">
+          <span>Subtotal:</span>
+          <span>${subTotal.toFixed(2)}</span>
+        </div>
 
         <div className="flex justify-between items-center border-t pt-2 text-gray-800 font-medium">
           <div className="flex items-center gap-2">

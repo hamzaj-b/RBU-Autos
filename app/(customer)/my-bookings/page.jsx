@@ -90,21 +90,21 @@ export default function MyBookingsPage() {
 
   // ======================= Table Columns =======================
   const columns = [
-    {
-      title: "Services",
-      dataIndex: "services",
-      render: (list) =>
-        list?.length ? (
-          list.map((s, i) => (
-            <Tag key={i} color="blue" className="mb-1 text-xs sm:text-sm">
-              {s}
-            </Tag>
-          ))
-        ) : (
-          <span className="text-gray-400 text-sm">—</span>
-        ),
-      onCell: () => ({ "data-label": "Services" }),
-    },
+    // {
+    //   title: "Services",
+    //   dataIndex: "services",
+    //   render: (list) =>
+    //     list?.length ? (
+    //       list.map((s, i) => (
+    //         <Tag key={i} color="blue" className="mb-1 text-xs sm:text-sm">
+    //           {s}
+    //         </Tag>
+    //       ))
+    //     ) : (
+    //       <span className="text-gray-400 text-sm">—</span>
+    //     ),
+    //   onCell: () => ({ "data-label": "Services" }),
+    // },
     {
       title: "Vehicle",
       dataIndex: "vehicleJson", // ✅ now directly mapped from API

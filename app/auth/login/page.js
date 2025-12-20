@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/app/context/AuthContext";
 import { auth, RecaptchaVerifier, signInWithPhoneNumber } from "@/lib/firebase";
 import toast from "react-hot-toast";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function SignInPage() {
   const { login, loginWithOTP } = useAuth();
@@ -15,6 +16,7 @@ export default function SignInPage() {
   // ===== Employee/Admin Fields =====
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false); // ✅ added
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -30,7 +32,7 @@ export default function SignInPage() {
   // ===========================
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(""); //
+    setError("");
     setLoading(true);
     const res = await login(email, password);
     setLoading(false);
@@ -43,7 +45,7 @@ export default function SignInPage() {
   const handleStartLogin = async () => {
     try {
       setOtpLoading(true);
-      setError(""); //
+      setError("");
       toast.loading("Checking account...", { id: "otpFlow" });
 
       const body = emailOrPhone.startsWith("+")
@@ -66,7 +68,6 @@ export default function SignInPage() {
       const phone = data.phone;
       setResolvedPhone(phone);
 
-      // Setup Recaptcha
       if (!window.recaptchaVerifier) {
         window.recaptchaVerifier = new RecaptchaVerifier(
           auth,
@@ -78,7 +79,6 @@ export default function SignInPage() {
         );
       }
 
-      // Send OTP
       const result = await signInWithPhoneNumber(
         auth,
         phone,
@@ -102,16 +102,14 @@ export default function SignInPage() {
     }
 
     try {
-      // toast.loading("Verifying OTP...", { id: "otpVerify" });
-
       const userCred = await confirmationResult.confirm(otp);
       const idToken = await userCred.user.getIdToken();
 
       const result = await loginWithOTP(resolvedPhone, idToken);
-      if (result.success) {
-        // toast.success("🎉 Login successful!", { id: "otpVerify" });
-      } else {
-        toast.error(result.message || "OTP login failed", { id: "otpVerify" });
+      if (!result.success) {
+        toast.error(result.message || "OTP login failed", {
+          id: "otpVerify",
+        });
       }
     } catch (err) {
       console.error("❌ OTP Verify Error:", err);
@@ -133,17 +131,17 @@ export default function SignInPage() {
           </h2>
         </div>
 
-        {/* ===== Sleek UI Tab Switcher ===== */}
+        {/* ===== Tab Switcher ===== */}
         <div className="flex items-center justify-center mb-6">
           <div className="bg-gray-100 rounded-md p-1 flex w-full max-w-xs shadow-inner">
             <button
               onClick={() => setActiveTab("employee")}
               className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all duration-300
-        ${
-          activeTab === "employee"
-            ? "bg-blue-theme !text-white shadow"
-            : "text-gray-600 hover:text-gray-800"
-        }`}
+              ${
+                activeTab === "employee"
+                  ? "bg-blue-theme !text-white shadow"
+                  : "text-gray-600 hover:text-gray-800"
+              }`}
             >
               Admin / Employee
             </button>
@@ -151,18 +149,18 @@ export default function SignInPage() {
             <button
               onClick={() => setActiveTab("customer")}
               className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all duration-300
-        ${
-          activeTab === "customer"
-            ? "bg-blue-theme !text-white shadow"
-            : "text-gray-600 hover:text-gray-800"
-        }`}
+              ${
+                activeTab === "customer"
+                  ? "bg-blue-theme !text-white shadow"
+                  : "text-gray-600 hover:text-gray-800"
+              }`}
             >
               Customer
             </button>
           </div>
         </div>
 
-        {/* ===== Admin / Employee Login Form ===== */}
+        {/* ===== Admin / Employee Login ===== */}
         {activeTab === "employee" && (
           <>
             <h1 className="text-xl font-bold text-center mb-6">
@@ -184,18 +182,28 @@ export default function SignInPage() {
                 />
               </div>
 
-              <div>
+              <div className="relative">
                 <label className="block mb-1 text-sm font-medium text-gray-700">
                   Password
                 </label>
+
                 <input
-                  type="password"
-                  className="w-full border border-gray-300 rounded-lg p-2.5"
+                  type={showPassword ? "text" : "password"}
+                  className="w-full border border-gray-300 rounded-lg p-2.5 pr-10"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
+
+                {/* 👁 Eye Toggle */}
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-[35px] text-gray-500 hover:text-gray-700"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </div>
 
               {error && <p className="text-sm text-red-500">{error}</p>}
