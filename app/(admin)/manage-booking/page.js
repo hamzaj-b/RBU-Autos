@@ -321,12 +321,11 @@ export default function BookingsPage() {
   const FiltersBar = () => (
     <div className="flex flex-wrap gap-3 items-center mb-4">
       <Search
-        placeholder="Search by customer, service, notes…"
+        placeholder="Search by customer, servic, notes…"
         allowClear
         value={searchInput}
         onChange={(e) => {
           setSearchInput(e.target.value);
-          setPagination((p) => ({ ...p, page: 1 }));
         }}
         className="w-64"
       />
@@ -361,6 +360,10 @@ export default function BookingsPage() {
     </div>
   );
 
+  const calculateEndTime = (startAt) => {
+    if (!startAt || !selectedBooking?.totalDuration) return null;
+    return startAt.add(selectedBooking.totalDuration, "minute");
+  };
   // 🔹 Render
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white p-4 sm:p-6">
@@ -565,16 +568,24 @@ export default function BookingsPage() {
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Start Time
         </label>
-        <DatePicker
-          showTime={{
-            use12Hours: true,
-            format: "hh:mm A", // 12-hour + AM/PM toggle
-          }}
-          format="YYYY-MM-DD hh:mm A"
-          value={editStartAt}
-          onChange={(date) => setEditStartAt(date)}
-          className="w-full"
-        />
+       <DatePicker
+  showTime={{
+    use12Hours: true,
+    format: "hh:mm A",
+  }}
+  format="YYYY-MM-DD hh:mm A"
+  value={editStartAt}
+  onChange={(date) => {
+    setEditStartAt(date);
+
+    // 🔥 Auto-calculate end time
+    const autoEnd = calculateEndTime(date);
+    if (autoEnd) {
+      setEditEndAt(autoEnd);
+    }
+  }}
+  className="w-full"
+/>
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
