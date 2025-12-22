@@ -148,8 +148,9 @@ async function DELETE(req, context) {
   try {
     const { id } = await context.params;
     const authHeader = req.headers.get("authorization");
-    if (!authHeader)
+    if (!authHeader) {
       return NextResponse.json({ error: "No token" }, { status: 401 });
+    }
 
     const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, SECRET_KEY);
@@ -161,22 +162,59 @@ async function DELETE(req, context) {
       );
     }
 
-    // Delete user & profile
     const profile = await prisma.customerProfile.findUnique({ where: { id } });
-    if (!profile)
+    if (!profile) {
       return NextResponse.json(
         { error: "Customer not found" },
         { status: 404 }
       );
+    }
 
-    await prisma.user.deleteMany({ where: { customerProfileId: id } });
-    await prisma.customerProfile.delete({ where: { id } });
+    // ✅ check dependencies
+    const [bookingsCount, workOrdersCount] = await Promise.all([
+      prisma.booking.count({ where: { customerId: id } }), // Booking uses customerId
+      prisma.workOrder.count({ where: { customerId: id } }), // adjust if your field differs
+    ]);
+
+    if (bookingsCount > 0 || workOrdersCount > 0) {
+      return NextResponse.json(
+        {
+          error:
+            "Cannot delete this customer because they have existing bookings or work orders.",
+          details: {
+            bookingsCount,
+            workOrdersCount,
+          },
+          hint: "Delete/close the related bookings/work orders first, or deactivate the customer instead.",
+        },
+        { status: 400 }
+      );
+    }
+
+    // ✅ transaction: delete profile first, then user
+    await prisma.$transaction(async (tx) => {
+      await tx.customerProfile.delete({ where: { id } });
+      await tx.user.deleteMany({ where: { customerProfileId: id } });
+    });
 
     return NextResponse.json({ message: "Customer deleted successfully" });
   } catch (err) {
     console.error("Delete customer error:", err);
+
+    // ✅ if Prisma still blocks due to required relations, return a friendly message
+    if (err?.code === "P2014") {
+      return NextResponse.json(
+        {
+          error:
+            "Cannot delete this customer because they have related records (bookings/work orders).",
+          details: err?.meta || err?.message,
+        },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
-      { error: "Failed to delete customer" },
+      { error: "Failed to delete customer", details: err.message },
       { status: 500 }
     );
   }
