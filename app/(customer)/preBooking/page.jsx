@@ -218,16 +218,15 @@ export default function CustomerPreBookingPage() {
                     <Select
                       placeholder="Select your vehicle"
                       options={vehicles.map((v, idx) => ({
-                        label: `${v.make || "Unknown"} ${v.model || ""} ${
-                          v.year ? `(${v.year})` : ""
-                        } — ${v.regNo || "N/A"}`,
+                        label: `${v.make || "Unknown"} ${v.model || ""} ${v.year ? `(${v.year})` : ""
+                          } — ${v.regNo || "N/A"}`,
                         value: idx,
                       }))}
                       value={
                         selectedVehicle
                           ? vehicles.findIndex(
-                              (v) => v.vin === selectedVehicle.vin
-                            )
+                            (v) => v.vin === selectedVehicle.vin
+                          )
                           : null
                       }
                       onChange={(idx) => setSelectedVehicle(vehicles[idx])}
@@ -266,8 +265,12 @@ export default function CustomerPreBookingPage() {
                     Select Date & Time
                   </label>
                   <DatePicker
-                    showTime={{ format: "HH:mm", hideDisabledOptions: true }}
-                    format="YYYY-MM-DD HH:mm"
+                    showTime={{
+                      format: "hh:mm A",
+                      use12Hours: true,
+                      hideDisabledOptions: true,
+                    }}
+                    format="YYYY-MM-DD hh:mm A"
                     className="w-full"
                     size="large"
                     value={selectedDate}
@@ -275,6 +278,7 @@ export default function CustomerPreBookingPage() {
                     onChange={setSelectedDate}
                     placeholder="Choose date and time"
                   />
+
                 </div>
 
                 {/* Notes */}
