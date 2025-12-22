@@ -45,7 +45,7 @@ export default function CustomerManagement() {
   const fetchCustomers = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`/api/customers?search=${search}`, {
+      const res = await fetch(`/api/customers?limit=all&search=${search}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();

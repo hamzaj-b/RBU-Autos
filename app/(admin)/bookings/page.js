@@ -76,10 +76,10 @@ export default function WalkInBookingPage() {
     if (!token) return;
     try {
       const [custRes, servRes] = await Promise.all([
-        fetch("/api/customers", {
+        fetch("/api/customers?limit=all", {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch("/api/services", {
+        fetch("/api/services?limit=all", {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);

@@ -92,13 +92,18 @@ async function POST(req) {
 // ✅ Fetch all customers
 async function GET(req) {
   try {
-    const {
-      search,
-      page = 1,
-      limit = 10,
-    } = Object.fromEntries(req.nextUrl.searchParams);
+    const params = Object.fromEntries(req.nextUrl.searchParams);
 
-    const skip = (page - 1) * limit;
+    const search = params.search || "";
+    const page = Number(params.page || 1);
+
+    // ✅ allow "all"
+    const limitParam = params.limit ?? "10";
+    const isAll = String(limitParam).toLowerCase() === "all";
+    const limit = isAll ? null : Number(limitParam || 10);
+
+    // ✅ only calculate skip if not all
+    const skip = !isAll ? (page - 1) * limit : 0;
 
     // 🔥 Normalize phone search (remove spaces, + , - etc)
     const cleanSearch = search ? search.replace(/\D/g, "") : null;
@@ -131,7 +136,7 @@ async function GET(req) {
                   },
                 }
               : undefined,
-          ],
+          ].filter(Boolean),
         }
       : {};
 
@@ -150,16 +155,15 @@ async function GET(req) {
           },
         },
       },
-      skip: Number(skip),
-      take: Number(limit),
+      ...(isAll ? {} : { skip: Number(skip), take: Number(limit) }),
       orderBy: { createdAt: "desc" },
     });
 
     return NextResponse.json({
       total,
-      page: Number(page),
-      limit: Number(limit),
-      totalPages: Math.ceil(total / limit),
+      page: isAll ? 1 : Number(page),
+      limit: isAll ? "all" : Number(limit),
+      totalPages: isAll ? 1 : Math.ceil(total / limit),
       customers,
     });
   } catch (err) {
@@ -170,6 +174,5 @@ async function GET(req) {
     );
   }
 }
-
 
 module.exports = { POST, GET };

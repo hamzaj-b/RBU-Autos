@@ -40,7 +40,7 @@ export default function CustomerPreBookingPage() {
     const fetchData = async () => {
       try {
         const [servRes, settingsRes, customerRes] = await Promise.all([
-          fetch("/api/services", {
+          fetch("/api/services?limit=all", {
             headers: { Authorization: `Bearer ${token}` },
           }),
           fetch("/api/business-settings", {

@@ -54,13 +54,20 @@ async function POST(req) {
 async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
+
     const search = searchParams.get("search") || "";
     const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
+
+    // ✅ allow limit=all
+    const limitParam = searchParams.get("limit") || "10";
+    const isAll = String(limitParam).toLowerCase() === "all";
+    const limit = isAll ? null : parseInt(limitParam);
+
     const sortBy = searchParams.get("sortBy") || "createdAt";
     const order = searchParams.get("order") === "asc" ? "asc" : "desc";
-    const skip = (page - 1) * limit;
-    const status = searchParams.get("status") || "all"; // 👈 NEW filter
+    const status = searchParams.get("status") || "all"; // filter
+
+    const skip = !isAll ? (page - 1) * limit : 0;
 
     // Build dynamic filter
     const where = {
@@ -74,8 +81,7 @@ async function GET(req) {
     const [services, total] = await Promise.all([
       prisma.service.findMany({
         where,
-        skip,
-        take: limit,
+        ...(isAll ? {} : { skip, take: limit }),
         orderBy: { [sortBy]: order },
       }),
       prisma.service.count({ where }),
@@ -85,9 +91,9 @@ async function GET(req) {
       data: services,
       pagination: {
         total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
+        page: isAll ? 1 : page,
+        limit: isAll ? "all" : limit,
+        totalPages: isAll ? 1 : Math.ceil(total / limit),
       },
     });
   } catch (err) {

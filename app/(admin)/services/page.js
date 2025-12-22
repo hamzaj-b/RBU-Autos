@@ -59,7 +59,7 @@ export default function ServicesPage() {
     try {
       setLoading(true);
       const res = await fetch(
-        `/api/services?search=${debouncedSearch}&sortBy=createdAt&order=${sortOrder}&status=${statusFilter}`,
+        `/api/services?limit=all&search=${debouncedSearch}&sortBy=createdAt&order=${sortOrder}&status=${statusFilter}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const data = await res.json();

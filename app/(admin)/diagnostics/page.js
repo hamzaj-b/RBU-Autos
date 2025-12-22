@@ -58,10 +58,10 @@ export default function ReportsPage() {
     (async () => {
       try {
         const [custRes, servRes, empRes] = await Promise.all([
-          fetch("/api/customers", {
+          fetch("/api/customers?limit=all", {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          fetch("/api/services", {
+          fetch("/api/services?limit=all", {
             headers: { Authorization: `Bearer ${token}` },
           }),
           fetch("/api/auth/admin/employee", {

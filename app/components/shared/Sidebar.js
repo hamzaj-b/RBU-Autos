@@ -50,11 +50,20 @@ export default function Sidebar({ toggleSidebar }) {
         label: "Manage Booking",
         icon: <LucidePencil />,
       },
-      { href: "/diagnostics", label: "Work Order Reports", icon: <ChartLine /> },
+      {
+        href: "/diagnostics",
+        label: "Work Order Reports",
+        icon: <ChartLine />,
+      },
       {
         href: "/staff-management",
         label: "Staff Management",
         icon: <SquareUser />,
+      },
+      {
+        href: "/marketing",
+        label: "Marketing",
+        icon: <Lightbulb />,
       },
       { href: "/settings", label: "Settings", icon: <Settings /> },
     ],
