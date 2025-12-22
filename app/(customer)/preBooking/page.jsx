@@ -265,7 +265,7 @@ export default function CustomerPreBookingPage() {
                     Select Date & Time
                   </label>
                   
-                  {/* <DatePicker
+                  <DatePicker
                     showTime={{
                       format: "hh:mm A",
                       use12Hours: true,
@@ -278,7 +278,7 @@ export default function CustomerPreBookingPage() {
                     disabledDate={disabledDate}
                     onChange={setSelectedDate}
                     placeholder="Choose date and time"
-                  /> */}
+                  />
 
                 </div>
 
