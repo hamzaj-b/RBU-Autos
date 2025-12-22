@@ -440,7 +440,7 @@ export default function RepairTracker() {
                       setIsReassign(false);
                       setAssignModal(true);
                     }}
-                    className="px-3 py-1 text-xs bg-blue-600 text-white rounded"
+                    className="px-3 py-1 text-xs bg-blue-600 !text-white rounded"
                   >
                     <UserPlus className="inline w-4 h-4 mr-1" /> Assign
                   </Button>

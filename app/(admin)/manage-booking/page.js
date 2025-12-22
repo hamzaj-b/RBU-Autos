@@ -316,54 +316,7 @@ export default function BookingsPage() {
     },
   ];
 
-  
-  // 🔹 Filters Bar
-  const FiltersBar = () => (
-    <div className="flex flex-wrap gap-3 items-center mb-4">
-      <Search
-        placeholder="Search by customer, servic, notes…"
-        allowClear
-        value={searchInput}
-        onChange={(e) => {
-          setSearchInput(e.target.value);
-        }}
-        className="w-64"
-      />
-      <Select
-        value={filters.status}
-        onChange={(v) => {
-          setFilters((f) => ({ ...f, status: v }));
-          setPagination((p) => ({ ...p, page: 1 }));
-        }}
-        style={{ width: 160 }}
-        options={[
-          { value: "all", label: "All Status" },
-          { value: "PENDING", label: "Pending" },
-          { value: "ACCEPTED", label: "Accepted" },
-          { value: "DONE", label: "Done" },
-          { value: "CANCELLED", label: "Cancelled" },
-        ]}
-      />
-      <Select
-        value={filters.type}
-        onChange={(v) => {
-          setFilters((f) => ({ ...f, type: v }));
-          setPagination((p) => ({ ...p, page: 1 }));
-        }}
-        style={{ width: 160 }}
-        options={[
-          { value: "all", label: "All Types" },
-          { value: "WALKIN", label: "Walk-In" },
-          { value: "PREBOOKING", label: "Pre-Booking" },
-        ]}
-      />
-    </div>
-  );
 
-  const calculateEndTime = (startAt) => {
-    if (!startAt || !selectedBooking?.totalDuration) return null;
-    return startAt.add(selectedBooking.totalDuration, "minute");
-  };
   // 🔹 Render
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white p-4 sm:p-6">
@@ -422,7 +375,46 @@ export default function BookingsPage() {
               {/* ✅ Responsive Filter Bar */}
               <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="w-full sm:w-auto">
-                  <FiltersBar />
+                   <div className="flex flex-wrap gap-3 items-center mb-4">
+      <Search
+        placeholder="Search by customer, service, notes…"
+        allowClear
+        value={searchInput}
+        onChange={(e) => {
+          setSearchInput(e.target.value);
+          setPagination((p) => ({ ...p, page: 1 }));
+        }}
+        className="w-64"
+      />
+      <Select
+        value={filters.status}
+        onChange={(v) => {
+          setFilters((f) => ({ ...f, status: v }));
+          setPagination((p) => ({ ...p, page: 1 }));
+        }}
+        style={{ width: 160 }}
+        options={[
+          { value: "all", label: "All Status" },
+          { value: "PENDING", label: "Pending" },
+          { value: "ACCEPTED", label: "Accepted" },
+          { value: "DONE", label: "Done" },
+          { value: "CANCELLED", label: "Cancelled" },
+        ]}
+      />
+      <Select
+        value={filters.type}
+        onChange={(v) => {
+          setFilters((f) => ({ ...f, type: v }));
+          setPagination((p) => ({ ...p, page: 1 }));
+        }}
+        style={{ width: 160 }}
+        options={[
+          { value: "all", label: "All Types" },
+          { value: "WALKIN", label: "Walk-In" },
+          { value: "PREBOOKING", label: "Pre-Booking" },
+        ]}
+      />
+    </div>
                 </div>
               </div>
 
@@ -568,24 +560,16 @@ export default function BookingsPage() {
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Start Time
         </label>
-       <DatePicker
-  showTime={{
-    use12Hours: true,
-    format: "hh:mm A",
-  }}
-  format="YYYY-MM-DD hh:mm A"
-  value={editStartAt}
-  onChange={(date) => {
-    setEditStartAt(date);
-
-    // 🔥 Auto-calculate end time
-    const autoEnd = calculateEndTime(date);
-    if (autoEnd) {
-      setEditEndAt(autoEnd);
-    }
-  }}
-  className="w-full"
-/>
+        <DatePicker
+          showTime={{
+            use12Hours: true,
+            format: "hh:mm A", // 12-hour + AM/PM toggle
+          }}
+          format="YYYY-MM-DD hh:mm A"
+          value={editStartAt}
+          onChange={(date) => setEditStartAt(date)}
+          className="w-full"
+        />
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
