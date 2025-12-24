@@ -9,9 +9,13 @@ const SECRET_KEY = process.env.JWT_SECRET || "supersecret";
 // ✅ Create new customer (without sending password email)
 async function POST(req) {
   try {
+    // ============================
+    // AUTH
+    // ============================
     const authHeader = req.headers.get("authorization");
-    if (!authHeader)
+    if (!authHeader) {
       return NextResponse.json({ error: "No token" }, { status: 401 });
+    }
 
     const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, SECRET_KEY);
@@ -23,72 +27,110 @@ async function POST(req) {
       );
     }
 
+    // ============================
+    // BODY
+    // ============================
     const body = await req.json();
     const { email, phone, fullName, addressJson, vehicleJson, notes } = body;
 
-    if (!email || !fullName) {
+    if (!fullName || fullName.trim() === "") {
       return NextResponse.json(
-        { error: "Email and fullName are required" },
+        { error: "fullName is required" },
         { status: 400 }
       );
     }
 
-    // ✅ Check if user already exists
-    const existing = await prisma.user.findFirst({
-      where: {
-        OR: [{ email }, phone ? { phone } : undefined].filter(Boolean),
-      },
-    });
+    // ============================
+    // CHECK EXISTING (EMAIL ONLY IF PRESENT)
+    // ============================
+    const orConditions = [];
 
-    if (existing) {
-      return NextResponse.json(
-        { error: "User with this email or phone already exists" },
-        { status: 400 }
-      );
+    if (email && email.trim() !== "") {
+      orConditions.push({ email: email.trim().toLowerCase() });
     }
 
-    // ✅ Create User
+    if (phone && phone.trim() !== "") {
+      orConditions.push({ phone: phone.trim() });
+    }
+
+    if (orConditions.length > 0) {
+      const existing = await prisma.user.findFirst({
+        where: { OR: orConditions },
+      });
+
+      if (existing) {
+        return NextResponse.json(
+          { error: "User with this email or phone already exists" },
+          { status: 400 }
+        );
+      }
+    }
+
+    // ============================
+    // CREATE USER (EMAIL OMITTED IF EMPTY)
+    // ============================
+    const userData = {
+      phone: phone && phone.trim() !== "" ? phone.trim() : undefined,
+      userType: "CUSTOMER",
+      passwordEncrypted: null,
+      isActive: true,
+    };
+
+    // ONLY add email if it exists
+    if (email && email.trim() !== "") {
+      userData.email = email.trim().toLowerCase();
+    }
+
     const user = await prisma.user.create({
-      data: {
-        email,
-        phone: phone || null,
-        userType: "CUSTOMER",
-        passwordEncrypted: null,
-        isActive: true,
-      },
+      data: userData,
     });
 
-    // ✅ Create Customer Profile
+    // ============================
+    // CREATE PROFILE
+    // ============================
     const profile = await prisma.customerProfile.create({
       data: {
         userId: user.id,
-        fullName,
+        fullName: fullName.trim(),
         addressJson: addressJson || {},
         vehicleJson: vehicleJson || {},
         notes: notes || null,
       },
     });
 
-    // ✅ Link user ↔ profile
+    // ============================
+    // LINK
+    // ============================
     await prisma.user.update({
       where: { id: user.id },
       data: { customerProfileId: profile.id },
     });
 
-    return NextResponse.json({
-      message: "Customer created successfully",
-      user,
-      profile,
-    });
+    return NextResponse.json(
+      {
+        message: "Customer created successfully",
+        user,
+        profile,
+      },
+      { status: 201 }
+    );
   } catch (err) {
     console.error("Create customer error:", err);
+
+    // Unique constraint safety
+    if (err.code === "P2002") {
+      return NextResponse.json(
+        { error: "User with this email or phone already exists" },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
       { error: "Failed to create customer" },
       { status: 500 }
     );
   }
 }
-
 // ✅ Fetch all customers
 async function GET(req) {
   try {

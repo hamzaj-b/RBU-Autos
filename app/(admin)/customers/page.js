@@ -66,8 +66,8 @@ export default function CustomerManagement() {
   // ─── Save or Update ───────────────────────────────
   const handleSave = async () => {
     const isEdit = !!editingCustomer;
-    if (!formData.firstName || !formData.lastName || !formData.email) {
-      toast.error("First name, last name, and email are required!");
+    if (!formData.firstName || !formData.lastName || !formData.phone) {
+      toast.error("First name, last name, and phone are required!");
       return;
     }
 
@@ -131,8 +131,8 @@ export default function CustomerManagement() {
 
   // ─── Invite ───────────────────────────────────────
   const handleInvite = async () => {
-    if (!formData.fullName || !formData.email || !formData.phone) {
-      toast.error("Full name, email, and phone are required!");
+    if (!formData.fullName || !formData.phone) {
+      toast.error("Full name and phone are required!");
       return;
     }
 
@@ -367,7 +367,7 @@ export default function CustomerManagement() {
               });
               setModalOpen(true);
             }}
-            className="bg-blue-theme hover:bg-blue-bold !text-white flex items-center gap-2 w-full sm:w-auto justify-center"
+            className="bg-blue-theme hover:bg-blue-bold text-white! flex items-center gap-2 w-full sm:w-auto justify-center"
           >
             <Plus className="w-4 h-4" /> Add Customer
           </Button>
@@ -377,7 +377,7 @@ export default function CustomerManagement() {
               setFormData({ fullName: "", email: "" });
               setInviteModalOpen(true);
             }}
-            className="bg-amber-500 hover:bg-amber-600 text-white flex items-center gap-2 w-full sm:w-auto justify-center"
+            className="bg-amber-500 hover:bg-amber-600 text-white! flex items-center gap-2 w-full sm:w-auto justify-center"
           >
             <Send className="w-4 h-4" /> Invite Customer
           </Button>
