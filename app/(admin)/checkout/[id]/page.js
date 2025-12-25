@@ -5,7 +5,6 @@ import { useParams } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
 import { Spin, message } from "antd";
 import { Printer, Wrench, Car, User } from "lucide-react";
-import html2pdf from "html2pdf.js/dist/html2pdf.bundle.min.js";
 
 export default function InvoicePage() {
   const { id } = useParams();
@@ -85,6 +84,11 @@ export default function InvoicePage() {
 
     try {
       setPdfLoading(true);
+
+      // ✅ Browser-only import (SAFE)
+      const html2pdf = (await import("html2pdf.js/dist/html2pdf.bundle.min.js"))
+        .default;
+
       const element = invoiceRef.current;
 
       const opt = {
@@ -104,7 +108,7 @@ export default function InvoicePage() {
       message.success("Invoice downloaded successfully!");
     } catch (err) {
       console.error("PDF generation error:", err);
-      message.error("Failed to generate PDF. Check console for details.");
+      message.error("Failed to generate PDF.");
     } finally {
       setPdfLoading(false);
     }
