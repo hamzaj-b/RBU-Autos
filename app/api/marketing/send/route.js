@@ -10,17 +10,16 @@ const prisma = new PrismaClient();
 const SECRET_KEY = process.env.JWT_SECRET || "supersecret";
 
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST, // 127.0.0.1
-  port: Number(process.env.SMTP_PORT), // 587
-  secure: false, 
-  name: 'localhost',
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT) || 587,
+  secure: process.env.SMTP_SECURE === "true",
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
-  tls: {
-    rejectUnauthorized: false
-  }
+  ...(process.env.SMTP_IGNORE_TLS === "true"
+    ? { tls: { rejectUnauthorized: false } }
+    : {}),
 });
 
 // simple email check

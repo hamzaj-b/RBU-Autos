@@ -162,7 +162,14 @@ async function DELETE(req, context) {
       );
     }
 
-    const profile = await prisma.customerProfile.findUnique({ where: { id } });
+    // ============================
+    // FETCH PROFILE (NEEDED FOR userId)
+    // ============================
+    const profile = await prisma.customerProfile.findUnique({
+      where: { id },
+      select: { id: true, userId: true },
+    });
+
     if (!profile) {
       return NextResponse.json(
         { error: "Customer not found" },
@@ -170,10 +177,12 @@ async function DELETE(req, context) {
       );
     }
 
-    // ✅ check dependencies
+    // ============================
+    // DEPENDENCY CHECK
+    // ============================
     const [bookingsCount, workOrdersCount] = await Promise.all([
-      prisma.booking.count({ where: { customerId: id } }), // Booking uses customerId
-      prisma.workOrder.count({ where: { customerId: id } }), // adjust if your field differs
+      prisma.booking.count({ where: { customerId: id } }),
+      prisma.workOrder.count({ where: { customerId: id } }),
     ]);
 
     if (bookingsCount > 0 || workOrdersCount > 0) {
@@ -185,28 +194,36 @@ async function DELETE(req, context) {
             bookingsCount,
             workOrdersCount,
           },
-          hint: "Delete/close the related bookings/work orders first, or deactivate the customer instead.",
+          hint: "Delete or close related bookings/work orders first, or deactivate the customer instead.",
         },
         { status: 400 }
       );
     }
 
-    // ✅ transaction: delete profile first, then user
+    // ============================
+    // TRANSACTION (SAFE DELETE)
+    // ============================
     await prisma.$transaction(async (tx) => {
-      await tx.customerProfile.delete({ where: { id } });
-      await tx.user.deleteMany({ where: { customerProfileId: id } });
+      await tx.customerProfile.delete({
+        where: { id: profile.id },
+      });
+
+      await tx.user.delete({
+        where: { id: profile.userId },
+      });
     });
 
-    return NextResponse.json({ message: "Customer deleted successfully" });
+    return NextResponse.json({
+      message: "Customer and associated user deleted successfully",
+    });
   } catch (err) {
     console.error("Delete customer error:", err);
 
-    // ✅ if Prisma still blocks due to required relations, return a friendly message
     if (err?.code === "P2014") {
       return NextResponse.json(
         {
           error:
-            "Cannot delete this customer because they have related records (bookings/work orders).",
+            "Cannot delete this customer because they have related records.",
           details: err?.meta || err?.message,
         },
         { status: 400 }

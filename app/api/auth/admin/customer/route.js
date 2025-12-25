@@ -1,31 +1,10 @@
 const { NextResponse } = require("next/server");
 const { PrismaClient } = require("@prisma/client");
 const jwt = require("jsonwebtoken");
-const nodemailer = require("nodemailer");
-const crypto = require("crypto");
-const passwordSetupTemplate = require("@/lib/emailTemplates/newPassword");
 
 const prisma = new PrismaClient();
 
 const SECRET_KEY = process.env.JWT_SECRET || "supersecret";
-const APP_URL = process.env.APP_URL || "https://garage-mechanic-crm.vercel.app";
-
-// ============================
-// DYNAMIC SMTP TRANSPORTER
-// ============================
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT) || 587,
-  secure: process.env.SMTP_SECURE === "true", // "true" or "false"
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-  // TLS override only when explicitly needed
-  ...(process.env.SMTP_IGNORE_TLS === "true"
-    ? { tls: { rejectUnauthorized: false } }
-    : {}),
-});
 
 // ============================
 // ROUTE
@@ -34,30 +13,37 @@ async function POST(req) {
   let createdUserId = null;
 
   try {
-    const { token, email, fullName, phone } = await req.json();
+    const { token, fullName, phone } = await req.json();
 
-    // Validate
-    if (!email || !fullName || !phone) {
+    // ============================
+    // VALIDATION
+    // ============================
+    if (!token || !fullName || !phone) {
       return NextResponse.json(
-        { error: "email, fullName and phone are required." },
+        { error: "token, fullName and phone are required." },
         { status: 400 }
       );
     }
 
-    // Verify admin
+    // ============================
+    // VERIFY ADMIN TOKEN
+    // ============================
     const decoded = jwt.verify(token, SECRET_KEY);
+
     if (decoded.userType !== "ADMIN") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    // Check existing
+    // ============================
+    // CHECK EXISTING USER (PHONE)
+    // ============================
     const existing = await prisma.user.findFirst({
-      where: { OR: [{ email }, { phone }] },
+      where: { phone },
     });
 
     if (existing) {
       return NextResponse.json(
-        { error: "User with this email or phone already exists" },
+        { error: "User with this phone already exists" },
         { status: 400 }
       );
     }
@@ -68,8 +54,8 @@ async function POST(req) {
     const result = await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
-          email,
           phone,
+          email: null, // no email required
           userType: "CUSTOMER",
           passwordEncrypted: null,
           isActive: true,
@@ -93,52 +79,25 @@ async function POST(req) {
       return { user, profile };
     });
 
-    // ============================
-    // CREATE PASSWORD TOKEN
-    // ============================
-    const setPassToken = jwt.sign(
-      {
-        id: result.user.id,
-        email: result.user.email,
-        purpose: "SET_PASSWORD",
-        jti: crypto.randomUUID(),
-      },
-      SECRET_KEY,
-      { expiresIn: "15m" }
-    );
-
-    const link = `${APP_URL}/auth/newPassword?token=${setPassToken}`;
-
-    // ============================
-    // SEND EMAIL
-    // ============================
-    await transporter.sendMail({
-      from: `"RBU Autos Garage CRM" <${
-        process.env.SMTP_FROM || process.env.SMTP_USER
-      }>`,
-      to: email,
-      subject: "Set Your Password - RBU Autos Garage CRM",
-      html: passwordSetupTemplate(fullName, link),
-    });
-
     return NextResponse.json({
-      message: "Customer invited successfully. Email sent.",
-      link,
+      message: "Customer added successfully",
       user: result.user,
       profile: result.profile,
     });
   } catch (err) {
-    console.error("Invite customer error:", err);
+    console.error("Add customer error:", err);
 
     // ============================
-    // ROLLBACK USER + PROFILE
+    // ROLLBACK SAFETY
     // ============================
     if (createdUserId) {
       try {
         await prisma.customerProfile.deleteMany({
           where: { userId: createdUserId },
         });
-        await prisma.user.delete({ where: { id: createdUserId } });
+        await prisma.user.delete({
+          where: { id: createdUserId },
+        });
       } catch (rollbackErr) {
         console.error("Rollback failed:", rollbackErr);
       }
@@ -146,7 +105,7 @@ async function POST(req) {
 
     return NextResponse.json(
       {
-        error: "Failed to invite customer",
+        error: "Failed to add customer",
         details: err.message,
       },
       { status: 500 }

@@ -117,7 +117,7 @@ export default function CustomerModal({
               }
             />
             <Input
-              placeholder="Phone Number"
+              placeholder="+1 234 567 8901"
               value={formData.phone}
               onChange={(e) =>
                 setFormData((p) => ({ ...p, phone: e.target.value }))

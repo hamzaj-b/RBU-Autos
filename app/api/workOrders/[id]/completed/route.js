@@ -36,7 +36,7 @@ export async function PATCH(req, { params }) {
       );
     }
 
-    const { id: workOrderId } = params;
+    const { id: workOrderId } = await params;
     if (!workOrderId) {
       return NextResponse.json(
         { error: "WorkOrder ID required" },

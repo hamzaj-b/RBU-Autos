@@ -7,7 +7,7 @@ const SECRET_KEY = process.env.JWT_SECRET || "supersecret";
 
 async function PATCH(req, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const authHeader = req.headers.get("authorization");
     if (!authHeader)
       return NextResponse.json({ error: "No token provided" }, { status: 401 });

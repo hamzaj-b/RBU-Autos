@@ -9,7 +9,7 @@ const SECRET_KEY = process.env.JWT_SECRET || "supersecret";
 // ✅ GET user by ID
 async function GET(req, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const authHeader = req.headers.get("authorization");
     if (!authHeader)
       return NextResponse.json({ error: "No token provided" }, { status: 401 });
@@ -50,7 +50,7 @@ async function GET(req, { params }) {
 // ✅ PUT update user
 async function PUT(req, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const authHeader = req.headers.get("authorization");
     if (!authHeader)
       return NextResponse.json({ error: "No token provided" }, { status: 401 });
@@ -169,7 +169,7 @@ async function PUT(req, { params }) {
 // ✅ DELETE user (soft delete)
 async function DELETE(req, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const authHeader = req.headers.get("authorization");
     if (!authHeader)
       return NextResponse.json({ error: "No token provided" }, { status: 401 });

@@ -143,7 +143,7 @@ async function PUT(req, { params }) {
 // ✅ DELETE — Cancel booking + related work order
 async function DELETE(req, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     const booking = await prisma.booking.update({
       where: { id },

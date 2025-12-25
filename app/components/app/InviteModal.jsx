@@ -71,7 +71,7 @@ export default function InviteModal({
           />
         </div>
 
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 shadow-sm flex items-start gap-3">
+        {/* <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 shadow-sm flex items-start gap-3">
           <div className="bg-amber-200 text-amber-700 rounded w-7 h-7 flex items-center justify-center font-bold">
             !
           </div>
@@ -79,7 +79,7 @@ export default function InviteModal({
             The customer will receive an email with a secure link to set their
             password. This link will expire in <strong>15 minutes</strong>.
           </p>
-        </div>
+        </div> */}
 
         <Button
           onClick={handleInvite}
@@ -87,11 +87,11 @@ export default function InviteModal({
           className={`w-full font-medium py-2.5 rounded-lg shadow-md ${
             loading
               ? "bg-gray-300 text-gray-700"
-              : "bg-amber-500 hover:bg-amber-600 text-white"
+              : "bg-amber-500 hover:bg-amber-600 text-white!"
           }`}
         >
           <Send className="w-4 h-4 mr-2" />
-          {loading ? "Sending Invite..." : "Send Invite"}
+          {loading ? "Sending Invite..." : "Invite Customer"}
         </Button>
       </div>
     </Modal>
