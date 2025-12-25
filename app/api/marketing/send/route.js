@@ -11,17 +11,15 @@ const SECRET_KEY = process.env.JWT_SECRET || "supersecret";
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT),
-  secure: process.env.SMTP_SECURE === 'false', // Should be false
-  name: 'mx.rbuauto.ca', // Fix for the HELO mismatch
+  port: Number(process.env.SMTP_PORT) || 587,
+  secure: process.env.SMTP_SECURE === "true",
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
-  tls: {
-    // This allows the connection to 127.0.0.1 even though the cert name is different
-    rejectUnauthorized: process.env.SMTP_IGNORE_TLS !== 'true' 
-  }
+  ...(process.env.SMTP_IGNORE_TLS === "true"
+    ? { tls: { rejectUnauthorized: false } }
+    : {}),
 });
 
 // simple email check
