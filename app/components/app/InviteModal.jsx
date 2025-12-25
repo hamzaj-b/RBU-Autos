@@ -1,5 +1,10 @@
 "use client";
+
+import React, { useEffect, useState } from "react";
 import { Modal, Input } from "antd";
+import PhoneInput from "react-phone-input-2";
+import "react-phone-input-2/lib/style.css";
+
 import { Button } from "@/components/ui/button";
 import { Send } from "lucide-react";
 
@@ -11,6 +16,43 @@ export default function InviteModal({
   handleInvite,
   loading,
 }) {
+  /* -------------------------------
+     Local Phone State (UI only)
+  -------------------------------- */
+  const [phoneValue, setPhoneValue] = useState(formData.phone || "");
+  const [phoneError, setPhoneError] = useState("");
+
+  /* -------------------------------
+     Sync phone when modal opens / edits
+  -------------------------------- */
+  useEffect(() => {
+    setPhoneValue(formData.phone || "");
+  }, [formData.phone]);
+
+  /* -------------------------------
+     Invite with STRICT phone validation
+  -------------------------------- */
+  const onInvite = () => {
+    if (!formData.phone) {
+      setPhoneError("Phone number is required");
+      return;
+    }
+
+    // Extract digits only
+    const digits = formData.phone.replace(/\D/g, "");
+
+    // CA/US country code = 1 → local digits must be >= 10
+    const localLength = digits.length - 1;
+
+    if (localLength < 9) {
+      setPhoneError("Please enter a valid phone number (min 9 digits)");
+      return;
+    }
+
+    setPhoneError("");
+    handleInvite(); // ✅ parent already has correct phone
+  };
+
   return (
     <Modal
       open={open}
@@ -18,7 +60,7 @@ export default function InviteModal({
       footer={null}
       width={550}
       centered
-      className="rounded-2xl overflow-hidden"
+      className="rounded-2xl"
       title={
         <div className="flex flex-col">
           <h2 className="text-xl font-semibold text-gray-800">
@@ -58,31 +100,43 @@ export default function InviteModal({
             }
           />
 
-          {/* Phone */}
+          {/* ✅ PHONE INPUT (STRICT + SYNCED) */}
           <label className="text-sm font-medium text-gray-600 mt-3 block">
             Phone
           </label>
-          <Input
-            placeholder="+13001234567"
-            value={formData.phone}
-            onChange={(e) =>
-              setFormData((p) => ({ ...p, phone: e.target.value }))
-            }
+          <PhoneInput
+            country="ca"
+            enableSearch
+            value={phoneValue}
+            onChange={(value, country) => {
+              setPhoneValue(value);
+              setPhoneError("");
+
+              const local = value.slice(country.dialCode.length);
+
+              setFormData((p) => ({
+                ...p,
+                phone: local
+                  ? `+${country.dialCode} ${local}`
+                  : `+${country.dialCode}`,
+              }));
+            }}
+            inputStyle={{
+              width: "100%",
+              height: "40px",
+            }}
+            containerStyle={{ width: "100%" }}
+            dropdownStyle={{ zIndex: 2000 }}
+            placeholder="Phone number"
           />
+
+          {phoneError && (
+            <p className="text-red-500 text-xs mt-1">{phoneError}</p>
+          )}
         </div>
 
-        {/* <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 shadow-sm flex items-start gap-3">
-          <div className="bg-amber-200 text-amber-700 rounded w-7 h-7 flex items-center justify-center font-bold">
-            !
-          </div>
-          <p className="text-sm text-amber-700">
-            The customer will receive an email with a secure link to set their
-            password. This link will expire in <strong>15 minutes</strong>.
-          </p>
-        </div> */}
-
         <Button
-          onClick={handleInvite}
+          onClick={onInvite}
           disabled={loading}
           className={`w-full font-medium py-2.5 rounded-lg shadow-md ${
             loading
