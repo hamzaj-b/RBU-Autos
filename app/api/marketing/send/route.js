@@ -12,7 +12,8 @@ const SECRET_KEY = process.env.JWT_SECRET || "supersecret";
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: Number(process.env.SMTP_PORT),
-  secure: process.env.SMTP_SECURE === 'true', // Should be false
+  secure: process.env.SMTP_SECURE === 'false', // Should be false
+  name: 'mx.rbuauto.ca', // Fix for the HELO mismatch
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
