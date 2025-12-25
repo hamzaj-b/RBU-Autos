@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 
 export async function PATCH(req, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // 🧠 Check if notification exists
     const notification = await prisma.notification.findUnique({

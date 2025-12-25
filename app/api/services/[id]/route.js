@@ -8,7 +8,7 @@ const SECRET_KEY = process.env.JWT_SECRET || "supersecret";
 // ✅ Update Service (Admin only)
 async function PUT(req, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const authHeader = req.headers.get("authorization");
     if (!authHeader)
       return NextResponse.json({ error: "No token provided" }, { status: 401 });
@@ -66,7 +66,7 @@ async function PUT(req, { params }) {
 // ✅ Soft Delete Service (Admin only)
 async function DELETE(req, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // 🧩 1️⃣ Auth check
     const authHeader = req.headers.get("authorization");

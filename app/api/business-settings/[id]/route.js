@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
 // ===============================
 async function GET(req, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     const settings = await prisma.businessSettings.findUnique({
       where: { id },
@@ -39,7 +39,7 @@ async function GET(req, { params }) {
 // ===============================
 async function PUT(req, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
 
     const {
@@ -96,7 +96,7 @@ async function PUT(req, { params }) {
 // ===============================
 async function DELETE(req, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     await prisma.businessSettings.delete({ where: { id } });
 

@@ -23,7 +23,7 @@ async function verifyAuth(req) {
 export async function GET(req, { params }) {
   try {
     await verifyAuth(req);
-    const { id } = params;
+    const { id } = await params;
 
     const booking = await prisma.booking.findUnique({
       where: { id },
@@ -63,7 +63,7 @@ export async function PUT(req, { params }) {
         { status: 403 }
       );
 
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
     const { notes, startAt, endAt, serviceIds } = body;
 
@@ -125,7 +125,7 @@ export async function PUT(req, { params }) {
 export async function PATCH(req, { params }) {
   try {
     const decoded = await verifyAuth(req);
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
     const { action, employeeId, note, reason } = body;
 
@@ -298,7 +298,7 @@ export async function DELETE(req, { params }) {
     if (decoded.userType !== "ADMIN")
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-    const { id } = params;
+    const { id } = await params;
     const booking = await prisma.booking.findUnique({
       where: { id },
       include: { workOrder: true },
