@@ -17,6 +17,7 @@ const transporter = nodemailer.createTransport({
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
+  name: 'crm.rbuauto.ca',
   ...(process.env.SMTP_IGNORE_TLS === "true"
     ? { tls: { rejectUnauthorized: false } }
     : {}),
