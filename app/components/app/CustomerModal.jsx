@@ -1,8 +1,12 @@
 "use client";
+
+import React, { useEffect, useState } from "react";
 import { Modal, Input } from "antd";
+import PhoneInput from "react-phone-input-2";
+import "react-phone-input-2/lib/style.css";
+
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Trash2 } from "lucide-react";
-import React from "react";
 
 export default function CustomerModal({
   open,
@@ -13,6 +17,22 @@ export default function CustomerModal({
   loading,
   editingCustomer,
 }) {
+  /* -------------------------------
+     Local Phone State (UI only)
+  -------------------------------- */
+  const [phoneValue, setPhoneValue] = useState(formData.phone || "");
+  const [phoneError, setPhoneError] = useState("");
+
+  /* -------------------------------
+     Sync phone when editing
+  -------------------------------- */
+  useEffect(() => {
+    setPhoneValue(formData.phone || "");
+  }, [formData.phone]);
+
+  /* -------------------------------
+     Vehicles
+  -------------------------------- */
   const vehicles = Array.isArray(formData.vehicleJson)
     ? formData.vehicleJson
     : [
@@ -53,20 +73,37 @@ export default function CustomerModal({
   };
 
   const handleVehicleChange = (index, key, value) => {
-    setFormData((p) => {
-      const vehicles = Array.isArray(p.vehicleJson)
-        ? p.vehicleJson
-        : p.vehicleJson
-        ? [p.vehicleJson]
-        : [];
+    setFormData((p) => ({
+      ...p,
+      vehicleJson: p.vehicleJson.map((v, i) =>
+        i === index ? { ...v, [key]: value } : v
+      ),
+    }));
+  };
 
-      return {
-        ...p,
-        vehicleJson: vehicles.map((veh, i) =>
-          i === index ? { ...veh, [key]: value } : veh
-        ),
-      };
-    });
+  /* -------------------------------
+     Save with STRICT phone validation
+  -------------------------------- */
+  const onSave = () => {
+    if (!formData.phone) {
+      setPhoneError("Phone number is required");
+      return;
+    }
+
+    // Extract digits only
+    const digits = formData.phone.replace(/\D/g, "");
+
+    // Remove country code digits (for CA/US = 1)
+    // Minimum local length = 10 digits
+    const localLength = digits.length - 1;
+
+    if (localLength < 9) {
+      setPhoneError("Please enter a valid phone number (min 9 digits)");
+      return;
+    }
+
+    setPhoneError("");
+    handleSave();
   };
 
   return (
@@ -76,24 +113,17 @@ export default function CustomerModal({
       footer={null}
       width={700}
       centered
-      className="rounded-2xl overflow-hidden"
       title={
-        <div className="text-xl font-semibold text-gray-800 flex flex-col">
+        <div className="text-xl font-semibold">
           {editingCustomer ? "Edit Customer" : "Add New Customer"}
-          <span className="text-sm font-normal text-gray-500">
-            {editingCustomer
-              ? "Update existing details"
-              : "Create a new profile"}
-          </span>
         </div>
       }
     >
-      <div className="space-y-6 mt-4 h-[80vh] overflow-y-auto">
+      <div className="space-y-6 mt-4 overflow-y-auto">
         {/* 👤 Basic Info */}
-        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 shadow-sm">
-          <h3 className="text-base font-semibold text-gray-700 mb-3">
-            👤 Basic Information
-          </h3>
+        <div className="bg-gray-50 border rounded-xl p-4">
+          <h3 className="font-semibold mb-3">👤 Basic Information</h3>
+
           <div className="grid grid-cols-2 gap-4">
             <Input
               placeholder="First Name"
@@ -102,6 +132,7 @@ export default function CustomerModal({
                 setFormData((p) => ({ ...p, firstName: e.target.value }))
               }
             />
+
             <Input
               placeholder="Last Name"
               value={formData.lastName}
@@ -109,6 +140,7 @@ export default function CustomerModal({
                 setFormData((p) => ({ ...p, lastName: e.target.value }))
               }
             />
+
             <Input
               placeholder="Email"
               value={formData.email}
@@ -116,35 +148,56 @@ export default function CustomerModal({
                 setFormData((p) => ({ ...p, email: e.target.value }))
               }
             />
-            <Input
-              placeholder="+1 234 567 8901"
-              value={formData.phone}
-              onChange={(e) =>
-                setFormData((p) => ({ ...p, phone: e.target.value }))
-              }
-            />
+
+            {/* ✅ PHONE INPUT (Strict validation) */}
+            <div>
+              <PhoneInput
+                country="ca"
+                enableSearch
+                value={phoneValue}
+                onChange={(value, country) => {
+                  setPhoneValue(value);
+                  setPhoneError("");
+
+                  const local = value.slice(country.dialCode.length);
+
+                  setFormData((p) => ({
+                    ...p,
+                    phone: local
+                      ? `+${country.dialCode} ${local}`
+                      : `+${country.dialCode}`,
+                  }));
+                }}
+                inputStyle={{
+                  width: "100%",
+                  height: "40px",
+                }}
+                containerStyle={{ width: "100%" }}
+                placeholder="Phone number"
+              />
+
+              {phoneError && (
+                <p className="text-red-500 text-xs mt-1">{phoneError}</p>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* 🚗 Vehicle Info (Dynamic Sections) */}
+        {/* 🚗 Vehicles */}
         {vehicles.map((vehicle, index) => (
-          <div
-            key={index}
-            className="bg-gray-50 border border-gray-200 rounded-xl p-4 shadow-sm relative"
-          >
-            <h3 className="text-base font-semibold text-gray-700 mb-3 flex justify-between items-center">
-              🚗 Vehicle Details {vehicles.length > 1 && `#${index + 1}`}
+          <div key={index} className="bg-gray-50 border rounded-xl p-4">
+            <div className="flex justify-between mb-2">
+              <h3 className="font-semibold">
+                🚗 Vehicle {vehicles.length > 1 && `#${index + 1}`}
+              </h3>
               {vehicles.length > 1 && (
-                <button
-                  type="button"
+                <Trash2
+                  size={18}
+                  className="text-red-500 cursor-pointer"
                   onClick={() => removeVehicle(index)}
-                  className="text-red-500 hover:text-red-700"
-                  title="Remove Vehicle"
-                >
-                  <Trash2 size={18} />
-                </button>
+                />
               )}
-            </h3>
+            </div>
 
             <div className="grid grid-cols-2 gap-4">
               {["make", "model", "variant", "year", "vin", "color", "info"].map(
@@ -164,62 +217,16 @@ export default function CustomerModal({
         ))}
 
         <div className="flex justify-end">
-          <Button
-            type="button"
-            onClick={addVehicle}
-            variant="outline"
-            className="flex items-center gap-2 border-blue-500 text-blue-600 hover:bg-blue-50"
-          >
-            <PlusCircle size={18} /> Add Another Vehicle
+          <Button variant="outline" onClick={addVehicle}>
+            <PlusCircle size={16} /> Add Vehicle
           </Button>
-        </div>
-
-        {/* 🏠 Address */}
-        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 shadow-sm">
-          <h3 className="text-base font-semibold text-gray-700 mb-3">
-            🏠 Address
-          </h3>
-          <div className="grid grid-cols-2 gap-4">
-            {["city", "street", "house", "state"].map((key) => (
-              <Input
-                key={key}
-                placeholder={key.charAt(0).toUpperCase() + key.slice(1)}
-                value={formData.addressJson?.[key] || ""}
-                onChange={(e) =>
-                  setFormData((p) => ({
-                    ...p,
-                    addressJson: { ...p.addressJson, [key]: e.target.value },
-                  }))
-                }
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* 📝 Notes */}
-        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 shadow-sm">
-          <h3 className="text-base font-semibold text-gray-700 mb-3">
-            📝 Notes
-          </h3>
-          <Input.TextArea
-            rows={3}
-            placeholder="Add any additional notes..."
-            value={formData.notes}
-            onChange={(e) =>
-              setFormData((p) => ({ ...p, notes: e.target.value }))
-            }
-          />
         </div>
 
         {/* 💾 Save */}
         <Button
-          onClick={handleSave}
+          onClick={onSave}
           disabled={loading}
-          className={`w-full font-medium py-2.5 rounded-lg shadow-md ${
-            loading
-              ? "bg-gray-300 text-gray-700"
-              : "bg-blue-theme hover:bg-blue-bold !text-white"
-          }`}
+          className="w-full bg-blue-theme hover:bg-blue-bold !text-white"
         >
           {loading
             ? "Saving..."
