@@ -18,8 +18,8 @@ async function POST(req) {
       );
     }
 
-    // 🔍 Find user by email
-    const user = await prisma.user.findUnique({
+    // 🔍 Find user by email (NOT unique → use findFirst)
+    const user = await prisma.user.findFirst({
       where: { email },
       include: {
         employee: true,

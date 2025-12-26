@@ -18,7 +18,7 @@ export async function POST(req) {
     let user = null;
 
     if (email) {
-      user = await prisma.user.findUnique({
+      user = await prisma.user.findFirst({
         where: { email },
         include: { customer: true },
       });
