@@ -6,6 +6,8 @@ import { useAuth } from "@/app/context/AuthContext";
 import { auth, RecaptchaVerifier, signInWithPhoneNumber } from "@/lib/firebase";
 import toast from "react-hot-toast";
 import { Eye, EyeOff } from "lucide-react";
+import PhoneInput from "react-phone-input-2";
+import "react-phone-input-2/lib/style.css";
 
 export default function SignInPage() {
   const { login, loginWithOTP } = useAuth();
@@ -22,6 +24,10 @@ export default function SignInPage() {
 
   // ===== Customer OTP Fields =====
   const [emailOrPhone, setEmailOrPhone] = useState("");
+  const [phoneValue, setPhoneValue] = useState(""); // UI digits for PhoneInput
+  const [phoneE164, setPhoneE164] = useState(""); // +<dialCode><number> (no spaces)
+  const [phoneError, setPhoneError] = useState("");
+
   const [resolvedPhone, setResolvedPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [confirmationResult, setConfirmationResult] = useState(null);
@@ -46,26 +52,28 @@ export default function SignInPage() {
     try {
       setOtpLoading(true);
       setError("");
+      setPhoneError("");
       toast.loading("Checking account...", { id: "otpFlow" });
 
-      const body = emailOrPhone.startsWith("+")
-        ? { phone: emailOrPhone }
-        : { email: emailOrPhone };
+      if (!phoneE164 || phoneE164.length < 8) {
+        setPhoneError("Phone number is required");
+        toast.error("Please enter a valid phone number", { id: "otpFlow" });
+        return;
+      }
 
       const res = await fetch("/api/auth/customer/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ phone: phoneE164 }),
       });
 
       const data = await res.json();
       if (!data.success) {
         toast.error(data.error || "Customer not found", { id: "otpFlow" });
-        setOtpLoading(false);
         return;
       }
 
-      const phone = data.phone;
+      const phone = data.phone; // backend should return E.164 like +1xxxxxxxxxx
       setResolvedPhone(phone);
 
       if (!window.recaptchaVerifier) {
@@ -229,15 +237,36 @@ export default function SignInPage() {
             <div className="space-y-4">
               <div>
                 <label className="block mb-1 text-sm font-medium text-gray-700">
-                  Email or Phone
+                  Phone
                 </label>
-                <input
-                  type="text"
-                  className="w-full border border-gray-300 rounded-lg p-2.5"
-                  placeholder="Email or +1XXXXXXXXXX"
-                  value={emailOrPhone}
-                  onChange={(e) => setEmailOrPhone(e.target.value)}
+
+                <PhoneInput
+                  country="ca"
+                  enableSearch
+                  value={phoneValue}
+                  onChange={(value, country) => {
+                    setPhoneValue(value);
+                    setPhoneError("");
+
+                    // value is digits only including dial code (no +)
+                    // Convert to E.164: +<digits>
+                    const e164 = value ? `+${value}` : `+${country.dialCode}`;
+                    setPhoneE164(e164);
+                  }}
+                  inputStyle={{
+                    width: "100%",
+                    height: "42px",
+                    borderRadius: "0.5rem",
+                    border: "1px solid #d1d5db",
+                  }}
+                  containerStyle={{ width: "100%" }}
+                  dropdownStyle={{ zIndex: 2000 }}
+                  placeholder="Phone number"
                 />
+
+                {phoneError && (
+                  <p className="text-sm text-red-500 mt-1">{phoneError}</p>
+                )}
               </div>
 
               {!confirmationResult ? (
